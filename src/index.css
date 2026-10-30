@@ -5,15 +5,15 @@
   --font-body: "Noto Sans TC", "Space Grotesk", system-ui, sans-serif;
   --font-en: "Space Grotesk", "Noto Sans TC", system-ui, sans-serif;
 
-  --color-ink: #07070c;
-  --color-ink-2: #0e0e16;
-  --color-ink-3: #161622;
-  --color-panel: #1a1a28;
-  --color-mist: #8b8ba3;
-  --color-fog: #c4c4d4;
-  --color-paper: #f4f0e6;
-  --color-gold: #f0c14a;
-  --color-gold-dim: #b8942e;
+  --color-ink: #08080f;
+  --color-ink-2: #10101a;
+  --color-ink-3: #181824;
+  --color-panel: #1c1c2a;
+  --color-mist: #8e8ea8;
+  --color-fog: #c8c8d8;
+  --color-paper: #f3efe6;
+  --color-gold: #efc04a;
+  --color-gold-dim: #c49a2c;
   --color-teal: #5eead4;
   --color-teal-dim: #2dd4bf;
   --color-rose: #f472b6;
@@ -42,9 +42,8 @@
   body {
     @apply bg-ink text-paper font-body antialiased;
     background-image:
-      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(94, 234, 212, 0.08), transparent),
-      radial-gradient(ellipse 60% 40% at 100% 50%, rgba(240, 193, 74, 0.05), transparent),
-      radial-gradient(ellipse 50% 30% at 0% 80%, rgba(167, 139, 250, 0.06), transparent);
+      radial-gradient(ellipse 70% 45% at 50% -15%, rgba(94, 234, 212, 0.06), transparent),
+      radial-gradient(ellipse 40% 30% at 100% 0%, rgba(240, 193, 74, 0.04), transparent);
     min-height: 100dvh;
   }
 
@@ -52,24 +51,16 @@
     background: rgba(94, 234, 212, 0.35);
     color: #fff;
   }
+
+  /* Comfortable default focus for keyboard users */
+  :focus-visible {
+    outline: 2px solid rgba(94, 234, 212, 0.7);
+    outline-offset: 2px;
+  }
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
-  }
-
-  .grain {
-    position: relative;
-  }
-
-  .grain::after {
-    content: "";
-    pointer-events: none;
-    position: absolute;
-    inset: 0;
-    opacity: 0.04;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-    mix-blend-mode: overlay;
   }
 }

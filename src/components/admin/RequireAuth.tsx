@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import type { Session } from '@supabase/supabase-js'
 import { getSupabase, isSupabaseConfigured } from '../../lib/supabase'
+import { LoadingBlock } from '../ui/States'
 
 export function RequireAuth({ children }: { children: ReactNode }) {
   const location = useLocation()
@@ -33,8 +34,8 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   if (!isSupabaseConfigured) {
     return (
       <div className="mx-auto max-w-lg px-4 py-24 text-center">
-        <h1 className="font-display text-2xl font-bold text-paper">Supabase 未設定</h1>
-        <p className="mt-3 text-sm text-mist">
+        <h1 className="font-display text-2xl font-bold text-paper">尚未設定 Supabase</h1>
+        <p className="mt-4 text-base leading-relaxed text-mist">
           請複製 <code className="text-teal">.env.example</code> 為{' '}
           <code className="text-teal">.env.local</code>，填入{' '}
           <code className="text-gold">VITE_SUPABASE_URL</code> 與{' '}
@@ -45,11 +46,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   }
 
   if (session === undefined) {
-    return (
-      <div className="flex min-h-[40vh] items-center justify-center text-mist">
-        驗證中…
-      </div>
-    )
+    return <LoadingBlock label="驗證登入中…" />
   }
 
   if (!session) {

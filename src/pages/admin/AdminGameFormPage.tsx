@@ -5,6 +5,13 @@ import {
   type DbGame,
   type StoreLinks,
 } from '../../lib/supabase'
+import {
+  adminBtnPrimary,
+  adminBtnSecondary,
+  fieldClass,
+  labelClass,
+  LoadingBlock,
+} from '../../components/ui/States'
 
 type FormState = {
   slug: string
@@ -58,7 +65,7 @@ async function uploadFile(
   file: File,
 ): Promise<string> {
   const sb = getSupabase()
-  if (!sb) throw new Error('Supabase not configured')
+  if (!sb) throw new Error('尚未設定 Supabase')
   const ext = file.name.split('.').pop() || 'bin'
   const path = `${slug || 'untitled'}/${Date.now()}.${ext}`
   const { error } = await sb.storage.from(bucket).upload(path, file, {
@@ -69,6 +76,9 @@ async function uploadFile(
   return path
 }
 
+const fileInputClass =
+  'mt-2 block w-full cursor-pointer rounded-xl border border-dashed border-white/20 bg-ink-2 px-4 py-4 text-sm text-fog file:mr-4 file:rounded-lg file:border-0 file:bg-white/10 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-paper hover:border-teal/40'
+
 export function AdminGameFormPage() {
   const { id } = useParams<{ id: string }>()
   const isNew = !id || id === 'new'
@@ -78,6 +88,7 @@ export function AdminGameFormPage() {
   const [loading, setLoading] = useState(!isNew)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [savedOk, setSavedOk] = useState(false)
   const [coverFile, setCoverFile] = useState<File | null>(null)
   const [demoFile, setDemoFile] = useState<File | null>(null)
   const [buildFile, setBuildFile] = useState<File | null>(null)
@@ -95,7 +106,7 @@ export function AdminGameFormPage() {
       .then(({ data, error: qErr }) => {
         if (cancelled) return
         if (qErr || !data) {
-          setError(qErr?.message ?? 'Game not found')
+          setError(qErr?.message ?? '找不到遊戲')
           setLoading(false)
           return
         }
@@ -127,22 +138,24 @@ export function AdminGameFormPage() {
 
   function setField<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((f) => ({ ...f, [key]: value }))
+    setSavedOk(false)
   }
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
     setError(null)
+    setSavedOk(false)
     setSaving(true)
     const sb = getSupabase()
     if (!sb) {
-      setError('Supabase not configured')
+      setError('尚未設定 Supabase')
       setSaving(false)
       return
     }
 
     try {
       let slug = form.slug.trim() || slugify(form.title)
-      if (!slug) throw new Error('Slug is required')
+      if (!slug) throw new Error('請填寫網址代稱（Slug）')
 
       let cover_path = form.cover_path || null
       let demo_path = form.demo_path || null
@@ -194,6 +207,7 @@ export function AdminGameFormPage() {
         setCoverFile(null)
         setDemoFile(null)
         setBuildFile(null)
+        setSavedOk(true)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
@@ -203,206 +217,242 @@ export function AdminGameFormPage() {
   }
 
   if (loading) {
-    return <p className="text-mist">載入中…</p>
+    return <LoadingBlock label="載入表單…" />
   }
 
   return (
     <div>
-      <Link to="/admin" className="text-sm text-mist hover:text-gold">
-        ← 列表 List
+      <Link
+        to="/admin"
+        className="inline-flex min-h-11 items-center text-base text-mist hover:text-gold"
+      >
+        ← 返回列表
       </Link>
-      <h1 className="mt-3 font-display text-2xl font-bold">
-        {isNew ? '新增遊戲 New game' : '編輯遊戲 Edit game'}
+      <h1 className="mt-4 font-display text-3xl font-bold">
+        {isNew ? '新增遊戲' : '編輯遊戲'}
       </h1>
+      <p className="mt-2 text-base text-mist">
+        填寫資料 → 上傳檔案 → 儲存。勾選「發佈」後會出現在公開網站。
+      </p>
 
-      <form onSubmit={(e) => void onSubmit(e)} className="mt-8 max-w-2xl space-y-5">
-        <label className="block">
-          <span className="text-xs text-mist">Title *</span>
-          <input
-            required
-            value={form.title}
-            onChange={(e) => {
-              const title = e.target.value
-              setForm((f) => ({
-                ...f,
-                title,
-                slug: isNew && !f.slug ? slugify(title) : f.slug,
-              }))
-            }}
-            className="mt-1 w-full rounded-xl border border-white/10 bg-ink-2 px-3 py-2 text-sm outline-none focus:border-teal/50"
-          />
-        </label>
+      <form onSubmit={(e) => void onSubmit(e)} className="mt-10 space-y-7">
+        <section className="space-y-6 rounded-2xl border border-white/10 bg-ink-2/40 p-5 sm:p-6">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-gold">基本資料</h2>
 
-        <label className="block">
-          <span className="text-xs text-mist">Slug *</span>
-          <input
-            required
-            value={form.slug}
-            onChange={(e) => setField('slug', e.target.value)}
-            className="mt-1 w-full rounded-xl border border-white/10 bg-ink-2 px-3 py-2 font-en text-sm outline-none focus:border-teal/50"
-          />
-        </label>
-
-        <label className="block">
-          <span className="text-xs text-mist">Tagline</span>
-          <input
-            value={form.tagline}
-            onChange={(e) => setField('tagline', e.target.value)}
-            className="mt-1 w-full rounded-xl border border-white/10 bg-ink-2 px-3 py-2 text-sm outline-none focus:border-teal/50"
-          />
-        </label>
-
-        <label className="block">
-          <span className="text-xs text-mist">Description</span>
-          <textarea
-            rows={5}
-            value={form.description}
-            onChange={(e) => setField('description', e.target.value)}
-            className="mt-1 w-full rounded-xl border border-white/10 bg-ink-2 px-3 py-2 text-sm outline-none focus:border-teal/50"
-          />
-        </label>
-
-        <div className="grid gap-4 sm:grid-cols-2">
           <label className="block">
-            <span className="text-xs text-mist">Type</span>
-            <select
-              value={form.type}
-              onChange={(e) => setField('type', e.target.value as '2D' | '3D')}
-              className="mt-1 w-full rounded-xl border border-white/10 bg-ink-2 px-3 py-2 text-sm outline-none focus:border-teal/50"
-            >
-              <option value="2D">2D</option>
-              <option value="3D">3D</option>
-            </select>
-          </label>
-          <label className="block">
-            <span className="text-xs text-mist">Sort order</span>
+            <span className={labelClass}>標題 *</span>
             <input
-              type="number"
-              value={form.sort_order}
-              onChange={(e) => setField('sort_order', Number(e.target.value))}
-              className="mt-1 w-full rounded-xl border border-white/10 bg-ink-2 px-3 py-2 text-sm outline-none focus:border-teal/50"
+              required
+              value={form.title}
+              onChange={(e) => {
+                const title = e.target.value
+                setForm((f) => ({
+                  ...f,
+                  title,
+                  slug: isNew && !f.slug ? slugify(title) : f.slug,
+                }))
+                setSavedOk(false)
+              }}
+              className={fieldClass}
+              placeholder="例如：霧港燈影"
             />
           </label>
-        </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
           <label className="block">
-            <span className="text-xs text-mist">Price (cents)</span>
+            <span className={labelClass}>網址代稱（Slug）*</span>
             <input
-              type="number"
-              min={0}
-              value={form.price_cents}
-              onChange={(e) => setField('price_cents', Number(e.target.value))}
-              className="mt-1 w-full rounded-xl border border-white/10 bg-ink-2 px-3 py-2 text-sm outline-none focus:border-teal/50"
+              required
+              value={form.slug}
+              onChange={(e) => setField('slug', e.target.value)}
+              className={`${fieldClass} font-en`}
+              placeholder="mist-harbor-lights"
             />
           </label>
+
           <label className="block">
-            <span className="text-xs text-mist">Currency</span>
+            <span className={labelClass}>標語</span>
             <input
-              value={form.currency}
-              onChange={(e) => setField('currency', e.target.value)}
-              className="mt-1 w-full rounded-xl border border-white/10 bg-ink-2 px-3 py-2 text-sm outline-none focus:border-teal/50"
+              value={form.tagline}
+              onChange={(e) => setField('tagline', e.target.value)}
+              className={fieldClass}
+              placeholder="一句吸引玩家的話"
             />
           </label>
-        </div>
 
-        <label className="block">
-          <span className="text-xs text-mist">Trailer URL</span>
-          <input
-            type="url"
-            value={form.trailer_url}
-            onChange={(e) => setField('trailer_url', e.target.value)}
-            className="mt-1 w-full rounded-xl border border-white/10 bg-ink-2 px-3 py-2 text-sm outline-none focus:border-teal/50"
-          />
-        </label>
-
-        <div className="grid gap-4 sm:grid-cols-2">
           <label className="block">
-            <span className="text-xs text-mist">Steam URL</span>
-            <input
-              type="url"
-              value={form.steam}
-              onChange={(e) => setField('steam', e.target.value)}
-              className="mt-1 w-full rounded-xl border border-white/10 bg-ink-2 px-3 py-2 text-sm outline-none focus:border-teal/50"
+            <span className={labelClass}>簡介</span>
+            <textarea
+              rows={6}
+              value={form.description}
+              onChange={(e) => setField('description', e.target.value)}
+              className={fieldClass}
+              placeholder="遊戲故事與賣點…"
             />
           </label>
+
+          <div className="grid gap-6 sm:grid-cols-2">
+            <label className="block">
+              <span className={labelClass}>類型</span>
+              <select
+                value={form.type}
+                onChange={(e) => setField('type', e.target.value as '2D' | '3D')}
+                className={fieldClass}
+              >
+                <option value="2D">2D</option>
+                <option value="3D">3D</option>
+              </select>
+            </label>
+            <label className="block">
+              <span className={labelClass}>排序（數字愈小愈前）</span>
+              <input
+                type="number"
+                value={form.sort_order}
+                onChange={(e) => setField('sort_order', Number(e.target.value))}
+                className={fieldClass}
+              />
+            </label>
+          </div>
+        </section>
+
+        <section className="space-y-6 rounded-2xl border border-white/10 bg-ink-2/40 p-5 sm:p-6">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-gold">價格與商店連結</h2>
+
+          <div className="grid gap-6 sm:grid-cols-2">
+            <label className="block">
+              <span className={labelClass}>價格（分／cents）</span>
+              <input
+                type="number"
+                min={0}
+                value={form.price_cents}
+                onChange={(e) => setField('price_cents', Number(e.target.value))}
+                className={fieldClass}
+              />
+            </label>
+            <label className="block">
+              <span className={labelClass}>貨幣</span>
+              <input
+                value={form.currency}
+                onChange={(e) => setField('currency', e.target.value)}
+                className={fieldClass}
+              />
+            </label>
+          </div>
+
           <label className="block">
-            <span className="text-xs text-mist">itch.io URL</span>
+            <span className={labelClass}>預告片網址</span>
             <input
               type="url"
-              value={form.itch}
-              onChange={(e) => setField('itch', e.target.value)}
-              className="mt-1 w-full rounded-xl border border-white/10 bg-ink-2 px-3 py-2 text-sm outline-none focus:border-teal/50"
+              value={form.trailer_url}
+              onChange={(e) => setField('trailer_url', e.target.value)}
+              className={fieldClass}
+              placeholder="https://"
             />
           </label>
-        </div>
 
-        <fieldset className="space-y-3 rounded-2xl border border-white/10 p-4">
-          <legend className="px-1 text-xs font-semibold text-gold">Uploads / Storage</legend>
-          <label className="block text-sm">
-            <span className="text-mist">Cover (covers bucket)</span>
+          <div className="grid gap-6 sm:grid-cols-2">
+            <label className="block">
+              <span className={labelClass}>Steam 網址</span>
+              <input
+                type="url"
+                value={form.steam}
+                onChange={(e) => setField('steam', e.target.value)}
+                className={fieldClass}
+                placeholder="https://"
+              />
+            </label>
+            <label className="block">
+              <span className={labelClass}>itch.io 網址</span>
+              <input
+                type="url"
+                value={form.itch}
+                onChange={(e) => setField('itch', e.target.value)}
+                className={fieldClass}
+                placeholder="https://"
+              />
+            </label>
+          </div>
+        </section>
+
+        <section className="space-y-6 rounded-2xl border border-white/10 bg-ink-2/40 p-5 sm:p-6">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-gold">上傳</h2>
+          <p className="text-sm text-mist">選擇檔案後按下方「儲存」才會上傳到 Storage。</p>
+
+          <label className="block">
+            <span className={labelClass}>封面圖片</span>
             {form.cover_path && (
-              <p className="font-en text-[11px] text-teal/80">{form.cover_path}</p>
+              <p className="mt-1 break-all font-en text-xs text-teal/80">{form.cover_path}</p>
             )}
             <input
               type="file"
               accept="image/*"
-              onChange={(e) => setCoverFile(e.target.files?.[0] ?? null)}
-              className="mt-1 block w-full text-xs text-fog"
+              onChange={(e) => {
+                setCoverFile(e.target.files?.[0] ?? null)
+                setSavedOk(false)
+              }}
+              className={fileInputClass}
             />
           </label>
-          <label className="block text-sm">
-            <span className="text-mist">Demo (demos bucket)</span>
-            {form.demo_path && (
-              <p className="font-en text-[11px] text-teal/80">{form.demo_path}</p>
-            )}
-            <input
-              type="file"
-              onChange={(e) => setDemoFile(e.target.files?.[0] ?? null)}
-              className="mt-1 block w-full text-xs text-fog"
-            />
-          </label>
-          <label className="block text-sm">
-            <span className="text-mist">Build (builds bucket)</span>
-            {form.build_path && (
-              <p className="font-en text-[11px] text-teal/80">{form.build_path}</p>
-            )}
-            <input
-              type="file"
-              onChange={(e) => setBuildFile(e.target.files?.[0] ?? null)}
-              className="mt-1 block w-full text-xs text-fog"
-            />
-          </label>
-        </fieldset>
 
-        <label className="flex items-center gap-2 text-sm">
+          <label className="block">
+            <span className={labelClass}>試玩檔</span>
+            {form.demo_path && (
+              <p className="mt-1 break-all font-en text-xs text-teal/80">{form.demo_path}</p>
+            )}
+            <input
+              type="file"
+              onChange={(e) => {
+                setDemoFile(e.target.files?.[0] ?? null)
+                setSavedOk(false)
+              }}
+              className={fileInputClass}
+            />
+          </label>
+
+          <label className="block">
+            <span className={labelClass}>建置檔（完整版）</span>
+            {form.build_path && (
+              <p className="mt-1 break-all font-en text-xs text-teal/80">{form.build_path}</p>
+            )}
+            <input
+              type="file"
+              onChange={(e) => {
+                setBuildFile(e.target.files?.[0] ?? null)
+                setSavedOk(false)
+              }}
+              className={fileInputClass}
+            />
+          </label>
+        </section>
+
+        <label className="flex min-h-14 cursor-pointer items-center gap-4 rounded-2xl border border-white/10 bg-ink-2/40 px-5 py-4">
           <input
             type="checkbox"
             checked={form.published}
             onChange={(e) => setField('published', e.target.checked)}
-            className="rounded border-white/20"
+            className="h-5 w-5 rounded border-white/20"
           />
-          Published（公開可見）
+          <span>
+            <span className="block text-base font-semibold text-paper">發佈到公開網站</span>
+            <span className="text-sm text-mist">勾選後訪客可於遊戲目錄看到此作品</span>
+          </span>
         </label>
 
         {error && (
-          <p className="rounded-lg border border-rose/40 bg-rose/10 px-3 py-2 text-sm text-rose">
+          <p className="rounded-xl border border-rose/40 bg-rose/10 px-4 py-3 text-sm text-rose">
             {error}
           </p>
         )}
+        {savedOk && (
+          <p className="rounded-xl border border-teal/40 bg-teal/10 px-4 py-3 text-sm text-teal">
+            已儲存。
+          </p>
+        )}
 
-        <div className="flex gap-3 pt-2">
-          <button
-            type="submit"
-            disabled={saving}
-            className="rounded-full bg-gold px-5 py-2.5 text-sm font-bold text-ink hover:bg-gold-dim disabled:opacity-60"
-          >
-            {saving ? '儲存中…' : '儲存 Save'}
+        <div className="flex flex-wrap gap-3 pt-2">
+          <button type="submit" disabled={saving} className={adminBtnPrimary}>
+            {saving ? '儲存中…' : '儲存'}
           </button>
-          <Link
-            to="/admin"
-            className="rounded-full border border-white/15 px-5 py-2.5 text-sm text-fog hover:bg-white/5"
-          >
+          <Link to="/admin" className={adminBtnSecondary}>
             取消
           </Link>
         </div>

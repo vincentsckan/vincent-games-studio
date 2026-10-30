@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getSupabase, type DbGame } from '../../lib/supabase'
+import {
+  adminBtnGhost,
+  adminBtnPrimary,
+  EmptyState,
+  LoadingBlock,
+} from '../../components/ui/States'
 
 export function AdminGamesPage() {
   const [rows, setRows] = useState<DbGame[]>([])
@@ -12,7 +18,7 @@ export function AdminGamesPage() {
     setError(null)
     const sb = getSupabase()
     if (!sb) {
-      setError('Supabase not configured')
+      setError('尚未設定 Supabase')
       setLoading(false)
       return
     }
@@ -62,68 +68,77 @@ export function AdminGamesPage() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-end justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold">遊戲 Games</h1>
-          <p className="mt-1 text-sm text-mist">建立、編輯、上傳封面／試玩／建置檔。</p>
+          <h1 className="font-display text-3xl font-bold">遊戲管理</h1>
+          <p className="mt-2 text-base text-mist">建立、編輯、上傳封面／試玩／建置檔，再發佈到公開站。</p>
         </div>
-        <Link
-          to="/admin/games/new"
-          className="rounded-full bg-gold px-4 py-2 text-sm font-bold text-ink hover:bg-gold-dim"
-        >
-          + 新增 New
+        <Link to="/admin/games/new" className={adminBtnPrimary}>
+          ＋ 新增遊戲
         </Link>
       </div>
 
       {error && (
-        <p className="mt-4 rounded-lg border border-rose/40 bg-rose/10 px-3 py-2 text-sm text-rose">
+        <p className="mt-6 rounded-xl border border-rose/40 bg-rose/10 px-4 py-3 text-sm text-rose">
           {error}
         </p>
       )}
 
       {loading ? (
-        <p className="mt-10 text-mist">載入中…</p>
+        <LoadingBlock label="載入遊戲列表…" />
       ) : rows.length === 0 ? (
-        <p className="mt-10 text-mist">尚無遊戲。點「新增」建立第一筆。</p>
+        <div className="mt-10">
+          <EmptyState
+            title="尚未有遊戲"
+            description="按「新增遊戲」建立第一筆，儲存後可再上傳檔案並發佈。"
+            actionLabel="新增遊戲"
+            actionTo="/admin/games/new"
+          />
+        </div>
       ) : (
-        <ul className="mt-8 divide-y divide-white/10 rounded-2xl border border-white/10">
+        <ul className="mt-10 space-y-4">
           {rows.map((row) => (
             <li
               key={row.id}
-              className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-5"
+              className="rounded-2xl border border-white/10 bg-ink-2/60 p-5"
             >
-              <div className="min-w-0">
-                <p className="font-semibold text-paper">{row.title}</p>
-                <p className="font-en text-xs text-mist">
-                  /{row.slug} · {row.type} · sort {row.sort_order} ·{' '}
-                  {row.published ? (
-                    <span className="text-teal">published</span>
-                  ) : (
-                    <span className="text-gold">draft</span>
-                  )}
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => void togglePublished(row)}
-                  className="rounded-full border border-white/15 px-3 py-1 text-xs hover:bg-white/5"
-                >
-                  {row.published ? '下架 Unpublish' : '上架 Publish'}
-                </button>
-                <Link
-                  to={`/admin/games/${row.id}`}
-                  className="rounded-full border border-teal/40 px-3 py-1 text-xs text-teal hover:bg-teal/10"
-                >
-                  編輯 Edit
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => void removeGame(row)}
-                  className="rounded-full border border-rose/40 px-3 py-1 text-xs text-rose hover:bg-rose/10"
-                >
-                  刪除
-                </button>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <p className="text-lg font-semibold text-paper">{row.title}</p>
+                  <p className="mt-1 font-en text-sm text-mist">
+                    /{row.slug} · {row.type} · 排序 {row.sort_order}
+                  </p>
+                  <p className="mt-2">
+                    {row.published ? (
+                      <span className="rounded-full bg-teal/15 px-3 py-1 text-sm font-semibold text-teal">
+                        已發佈
+                      </span>
+                    ) : (
+                      <span className="rounded-full bg-gold/15 px-3 py-1 text-sm font-semibold text-gold">
+                        草稿
+                      </span>
+                    )}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void togglePublished(row)}
+                    className={adminBtnGhost}
+                  >
+                    {row.published ? '下架' : '發佈'}
+                  </button>
+                  <Link to={`/admin/games/${row.id}`} className={adminBtnGhost}>
+                    編輯
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => void removeGame(row)}
+                    className="inline-flex min-h-11 items-center justify-center rounded-xl border border-rose/40 px-4 text-sm font-semibold text-rose hover:bg-rose/10"
+                  >
+                    刪除
+                  </button>
+                </div>
               </div>
             </li>
           ))}

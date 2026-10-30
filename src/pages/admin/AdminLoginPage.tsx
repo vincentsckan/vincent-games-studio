@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { getSupabase, isSupabaseConfigured } from '../../lib/supabase'
+import { adminBtnPrimary, fieldClass, labelClass } from '../../components/ui/States'
 
 export function AdminLoginPage() {
   const navigate = useNavigate()
@@ -34,12 +35,16 @@ export function AdminLoginPage() {
 
   if (!isSupabaseConfigured) {
     return (
-      <div className="mx-auto max-w-md px-4 py-24 text-center">
-        <h1 className="font-display text-2xl font-bold">Admin 登入</h1>
-        <p className="mt-4 text-sm text-mist">
-          尚未設定 Supabase。請見 README「Phase 1 · Supabase」步驟。
+      <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-4 py-16 text-center">
+        <h1 className="font-display text-3xl font-bold">管理登入</h1>
+        <p className="mt-4 text-base leading-relaxed text-mist">
+          尚未設定 Supabase。請見 README「Phase 1 · Supabase」步驟，填入{' '}
+          <code className="text-teal">VITE_SUPABASE_*</code>。
         </p>
-        <Link to="/" className="mt-8 inline-block text-teal hover:underline">
+        <Link
+          to="/"
+          className="mt-10 inline-flex min-h-12 items-center justify-center text-base text-teal hover:underline"
+        >
           ← 回首頁
         </Link>
       </div>
@@ -56,7 +61,7 @@ export function AdminLoginPage() {
     setLoading(true)
     const sb = getSupabase()
     if (!sb) {
-      setError('Supabase client unavailable')
+      setError('無法連接 Supabase')
       setLoading(false)
       return
     }
@@ -71,52 +76,50 @@ export function AdminLoginPage() {
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-4 py-16">
-      <p className="font-en text-xs font-semibold uppercase tracking-[0.2em] text-teal">
-        Admin
-      </p>
-      <h1 className="mt-2 font-display text-3xl font-bold text-paper">登入 Login</h1>
-      <p className="mt-2 text-sm text-mist">
-        使用 Supabase Auth（Email / Password）。請在 Dashboard 建立管理員帳號。
+      <p className="text-sm font-semibold text-teal">管理後台</p>
+      <h1 className="mt-2 font-display text-3xl font-bold text-paper">登入</h1>
+      <p className="mt-3 text-base text-mist">
+        使用 Supabase 電郵／密碼登入。請先在 Dashboard 建立管理員帳號。
       </p>
 
-      <form onSubmit={(e) => void onSubmit(e)} className="mt-8 space-y-4">
+      <form onSubmit={(e) => void onSubmit(e)} className="mt-10 space-y-6">
         <label className="block">
-          <span className="text-xs text-mist">Email</span>
+          <span className={labelClass}>電郵</span>
           <input
             type="email"
             required
             autoComplete="username"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-white/10 bg-ink-2 px-3 py-2.5 text-sm text-paper outline-none focus:border-teal/50"
+            placeholder="you@example.com"
+            className={fieldClass}
           />
         </label>
         <label className="block">
-          <span className="text-xs text-mist">Password</span>
+          <span className={labelClass}>密碼</span>
           <input
             type="password"
             required
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-white/10 bg-ink-2 px-3 py-2.5 text-sm text-paper outline-none focus:border-teal/50"
+            className={fieldClass}
           />
         </label>
         {error && (
-          <p className="rounded-lg border border-rose/40 bg-rose/10 px-3 py-2 text-sm text-rose">
+          <p className="rounded-xl border border-rose/40 bg-rose/10 px-4 py-3 text-sm text-rose">
             {error}
           </p>
         )}
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded-full bg-gold py-2.5 text-sm font-bold text-ink hover:bg-gold-dim disabled:opacity-60"
-        >
-          {loading ? '登入中…' : '登入 Sign in'}
+        <button type="submit" disabled={loading} className={`w-full ${adminBtnPrimary}`}>
+          {loading ? '登入中…' : '登入'}
         </button>
       </form>
 
-      <Link to="/" className="mt-8 text-center text-sm text-mist hover:text-gold">
+      <Link
+        to="/"
+        className="mt-10 text-center text-base text-mist hover:text-gold"
+      >
         ← 公開網站
       </Link>
     </div>
