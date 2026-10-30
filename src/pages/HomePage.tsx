@@ -3,9 +3,12 @@ import { Hero } from '../components/Hero'
 import { GameCard } from '../components/GameCard'
 import { Reveal, RevealGroup, RevealItem } from '../components/Reveal'
 import { CtaButton } from '../components/CtaButton'
-import { games, studio } from '../data/games'
+import { studio } from '../data/games'
+import { useCatalogGames } from '../hooks/useCatalogGames'
 
 export function HomePage() {
+  const { games, loading } = useCatalogGames()
+
   return (
     <>
       <Hero />
@@ -20,7 +23,7 @@ export function HomePage() {
               作品精選
             </h2>
             <p className="mt-2 max-w-lg text-sm text-mist">
-              2D 與 3D 交織的獨立作品。全部為 Demo 佔位內容，可替換成真實遊戲資料。
+              2D 與 3D 交織的獨立作品。有 Supabase 時從資料庫載入；否則使用本機 demo 資料。
             </p>
           </div>
           <CtaButton to="/games" variant="ghost">
@@ -28,13 +31,17 @@ export function HomePage() {
           </CtaButton>
         </Reveal>
 
-        <RevealGroup className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4" as="ul">
-          {games.map((g) => (
-            <RevealItem key={g.id} as="li">
-              <GameCard game={g} />
-            </RevealItem>
-          ))}
-        </RevealGroup>
+        {loading ? (
+          <p className="text-mist">載入作品中…</p>
+        ) : (
+          <RevealGroup className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4" as="ul">
+            {games.map((g) => (
+              <RevealItem key={g.id} as="li">
+                <GameCard game={g} />
+              </RevealItem>
+            ))}
+          </RevealGroup>
+        )}
       </section>
 
       <section className="border-y border-white/5 bg-ink-2/80">

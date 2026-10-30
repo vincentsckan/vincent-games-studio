@@ -1,8 +1,8 @@
 import { Link, useParams } from 'react-router-dom'
-import { getGameBySlug } from '../data/games'
 import { GameArt, GalleryFrame } from '../components/GameArt'
 import { GameCtaRow } from '../components/CtaButton'
 import { Reveal, RevealGroup, RevealItem } from '../components/Reveal'
+import { useCatalogGame } from '../hooks/useCatalogGames'
 
 const statusLabel: Record<string, string> = {
   demo: '可試玩 Demo',
@@ -13,7 +13,13 @@ const statusLabel: Record<string, string> = {
 
 export function GameDetailPage() {
   const { slug } = useParams<{ slug: string }>()
-  const game = slug ? getGameBySlug(slug) : undefined
+  const { game, loading } = useCatalogGame(slug)
+
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-24 text-center text-mist">載入中…</div>
+    )
+  }
 
   if (!game) {
     return (
@@ -36,7 +42,6 @@ export function GameDetailPage() {
 
   return (
     <article>
-      {/* Hook / Hero */}
       <header className="relative overflow-hidden border-b border-white/5">
         <div
           className="absolute inset-0 -z-10 opacity-80"
@@ -79,7 +84,6 @@ export function GameDetailPage() {
         </div>
       </header>
 
-      {/* Gameplay */}
       <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
         <Reveal>
           <p className="font-en text-xs font-semibold uppercase tracking-[0.2em] text-teal">
@@ -100,36 +104,36 @@ export function GameDetailPage() {
         </Reveal>
       </section>
 
-      {/* Features */}
-      <section className="border-y border-white/5 bg-ink-2/60">
-        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-          <Reveal>
-            <p className="font-en text-xs font-semibold uppercase tracking-[0.2em] text-gold">
-              Features
-            </p>
-            <h2 className="mt-2 font-display text-3xl font-bold text-paper">特色</h2>
-          </Reveal>
-          <RevealGroup className="mt-10 grid gap-6 md:grid-cols-3">
-            {game.features.map((f) => (
-              <RevealItem
-                key={f.titleEn}
-                className="rounded-2xl border border-white/10 bg-panel/40 p-6"
-              >
-                <div
-                  className="mb-4 h-1 w-12 rounded-full"
-                  style={{ background: game.palette.accent }}
-                />
-                <h3 className="font-display text-lg font-bold text-paper">{f.titleZh}</h3>
-                <p className="font-en text-xs text-mist">{f.titleEn}</p>
-                <p className="mt-3 text-sm text-fog leading-relaxed">{f.bodyZh}</p>
-                <p className="mt-2 font-en text-xs text-mist/80 leading-relaxed">{f.bodyEn}</p>
-              </RevealItem>
-            ))}
-          </RevealGroup>
-        </div>
-      </section>
+      {game.features.length > 0 && (
+        <section className="border-y border-white/5 bg-ink-2/60">
+          <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
+            <Reveal>
+              <p className="font-en text-xs font-semibold uppercase tracking-[0.2em] text-gold">
+                Features
+              </p>
+              <h2 className="mt-2 font-display text-3xl font-bold text-paper">特色</h2>
+            </Reveal>
+            <RevealGroup className="mt-10 grid gap-6 md:grid-cols-3">
+              {game.features.map((f) => (
+                <RevealItem
+                  key={f.titleEn}
+                  className="rounded-2xl border border-white/10 bg-panel/40 p-6"
+                >
+                  <div
+                    className="mb-4 h-1 w-12 rounded-full"
+                    style={{ background: game.palette.accent }}
+                  />
+                  <h3 className="font-display text-lg font-bold text-paper">{f.titleZh}</h3>
+                  <p className="font-en text-xs text-mist">{f.titleEn}</p>
+                  <p className="mt-3 text-sm text-fog leading-relaxed">{f.bodyZh}</p>
+                  <p className="mt-2 font-en text-xs text-mist/80 leading-relaxed">{f.bodyEn}</p>
+                </RevealItem>
+              ))}
+            </RevealGroup>
+          </div>
+        </section>
+      )}
 
-      {/* Gallery */}
       <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
         <Reveal>
           <p className="font-en text-xs font-semibold uppercase tracking-[0.2em] text-teal">
@@ -149,11 +153,10 @@ export function GameDetailPage() {
         </RevealGroup>
       </section>
 
-      {/* Bottom CTA repeat */}
       <section className="border-t border-white/5 bg-gradient-to-b from-ink-2 to-ink">
         <div className="mx-auto max-w-6xl px-4 py-16 text-center sm:px-6">
           <Reveal>
-            <h2 className="font-display text-3xl font-bold text-paper sm:text-4xl">
+            <h2 className="font-display text-3xl font-bold text-paper sm:text-5xl">
               準備好了嗎？
             </h2>
             <p className="mx-auto mt-3 max-w-md font-en text-mist">

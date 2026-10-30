@@ -3,12 +3,14 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { FilterChips, type FilterValue } from '../components/FilterChips'
 import { GameCard } from '../components/GameCard'
 import { Reveal } from '../components/Reveal'
-import { filterGames } from '../data/games'
+import { useCatalogGames } from '../hooks/useCatalogGames'
+import { filterCatalog } from '../lib/gamesCatalog'
 
 export function GamesPage() {
   const [filter, setFilter] = useState<FilterValue>('all')
   const reduced = useReducedMotion()
-  const list = useMemo(() => filterGames(filter), [filter])
+  const { games, loading } = useCatalogGames()
+  const list = useMemo(() => filterCatalog(games, filter), [games, filter])
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20">
@@ -29,28 +31,34 @@ export function GamesPage() {
         <FilterChips value={filter} onChange={setFilter} />
       </div>
 
-      <motion.ul
-        layout={!reduced}
-        className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
-      >
-        <AnimatePresence mode="popLayout">
-          {list.map((g) => (
-            <motion.li
-              key={g.id}
-              layout={!reduced}
-              initial={reduced ? false : { opacity: 0, scale: 0.96 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={reduced ? undefined : { opacity: 0, scale: 0.96 }}
-              transition={{ duration: reduced ? 0 : 0.3 }}
-            >
-              <GameCard game={g} />
-            </motion.li>
-          ))}
-        </AnimatePresence>
-      </motion.ul>
+      {loading ? (
+        <p className="mt-16 text-center text-mist">載入中…</p>
+      ) : (
+        <>
+          <motion.ul
+            layout={!reduced}
+            className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+          >
+            <AnimatePresence mode="popLayout">
+              {list.map((g) => (
+                <motion.li
+                  key={g.id}
+                  layout={!reduced}
+                  initial={reduced ? false : { opacity: 0, scale: 0.96 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={reduced ? undefined : { opacity: 0, scale: 0.96 }}
+                  transition={{ duration: reduced ? 0 : 0.3 }}
+                >
+                  <GameCard game={g} />
+                </motion.li>
+              ))}
+            </AnimatePresence>
+          </motion.ul>
 
-      {list.length === 0 && (
-        <p className="mt-16 text-center text-mist">此篩選下暫無作品。</p>
+          {list.length === 0 && (
+            <p className="mt-16 text-center text-mist">此篩選下暫無作品。</p>
+          )}
+        </>
       )}
     </div>
   )
