@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Syne", "Noto Sans TC", system-ui, sans-serif;
+  --font-body: "Noto Sans TC", "Space Grotesk", system-ui, sans-serif;
+  --font-en: "Space Grotesk", "Noto Sans TC", system-ui, sans-serif;
+
+  --color-ink: #07070c;
+  --color-ink-2: #0e0e16;
+  --color-ink-3: #161622;
+  --color-panel: #1a1a28;
+  --color-mist: #8b8ba3;
+  --color-fog: #c4c4d4;
+  --color-paper: #f4f0e6;
+  --color-gold: #f0c14a;
+  --color-gold-dim: #b8942e;
+  --color-teal: #5eead4;
+  --color-teal-dim: #2dd4bf;
+  --color-rose: #f472b6;
+  --color-violet: #a78bfa;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  body {
+    @apply bg-ink text-paper font-body antialiased;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(94, 234, 212, 0.08), transparent),
+      radial-gradient(ellipse 60% 40% at 100% 50%, rgba(240, 193, 74, 0.05), transparent),
+      radial-gradient(ellipse 50% 30% at 0% 80%, rgba(167, 139, 250, 0.06), transparent);
+    min-height: 100dvh;
+  }
+
+  ::selection {
+    background: rgba(94, 234, 212, 0.35);
+    color: #fff;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .grain {
+    position: relative;
+  }
+
+  .grain::after {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    opacity: 0.04;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    mix-blend-mode: overlay;
+  }
+}
