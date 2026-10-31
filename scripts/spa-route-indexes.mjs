@@ -3,7 +3,7 @@
  * GitHub Pages serves real files; SPA paths like /games must exist as
  * directories with index.html (not only 404.html fallback) so they return 200.
  */
-import { copyFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs'
+import { copyFileSync, mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -25,6 +25,8 @@ for (const m of gamesTs.matchAll(/slug:\s*'([^']+)'/g)) {
 }
 
 copyFileSync(indexHtml, join(dist, '404.html'))
+writeFileSync(join(dist, '.nojekyll'), '')
+
 
 for (const route of [...routes].sort()) {
   const dir = join(dist, route)
