@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# GitHub Pages site root
+Sitemap: https://vincentsckan.github.io/vincent-games-studio/
