@@ -23,7 +23,7 @@ button.play{margin-top:20px;min-height:48px;padding:0 28px;border:0;border-radiu
 button.play:active{transform:scale(.97)}
 #touch{position:fixed;left:0;right:0;bottom:0;height:32%;display:none;z-index:2}
 #touch.on{display:flex;pointer-events:auto}
-#touch button{flex:1;background:transparent;border:0;opacity:0}
+#touch button{flex:1;margin:6px;border-radius:14px;border:0;background:rgba(255,77,166,.35);color:#fff;font-weight:900;font-size:20px;opacity:1}
 #cross{position:fixed;left:50%;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border:1px solid #ff4da688;border-radius:50%;pointer-events:none;z-index:2;opacity:0}
 #cross.on{opacity:1}
 #vg-back-root{position:fixed;inset:0;z-index:2147483647;pointer-events:none}
@@ -44,11 +44,15 @@ button.play:active{transform:scale(.97)}
 <div id="overlay"><div class="card">
   <h1>後巷夜診</h1>
   <div class="sub">ALLEY CLINIC · 3D HORROR</div>
-  <p>霓虹照亮後巷診所，地磚上的血還沒乾。走廊盡頭傳來拖行聲——那些「病人」已經不再是病人。你要在手術燈下搶走<strong>三支血清</strong>，打開緊急出口逃出這間非法診所。</p>
-  <p style="margin-top:10px;font-size:13px;opacity:.85">電腦：WASD 移動 · 滑鼠環視 · E 拾取<br/>手機：虛擬方向鍵 · 拖曳畫面轉身</p>
+  <ol style="margin:14px 0 0;padding-left:1.2em;color:#e0c8d4;font-size:14px;line-height:1.65;text-align:left">
+    <li><strong>撳下面掣開始</strong></li>
+    <li>電腦 WASD／手機螢幕下方方向鍵行路；拖畫面轉頭</li>
+    <li>執齊 <strong style="color:#66ffcc">3 支發光血清</strong>，再開 <strong style="color:#40f0ff">青色出口</strong></li>
+    <li>避開走廊「病人」</li>
+  </ol>
   <button class="play" id="btnStart" disabled>載入 3D 場景中…</button>
 </div></div>
-<div id="touch"><button id="tL"></button><button id="tF"></button><button id="tR"></button><button id="tB"></button></div>
+<div id="touch"><button id="tL" type="button">←</button><button id="tF" type="button">↑</button><button id="tR" type="button">→</button><button id="tB" type="button">↓</button></div>
 <div id="vg-back-root" aria-label="catalog"><a id="vg-back-tr" class="vg-back-btn" href="/vincent-games-studio/games" title="← 返回遊戲目錄">← 返回遊戲目錄</a></div>
 <script>
 window.addEventListener('error',function(ev){
@@ -67,7 +71,12 @@ function showBootErr(msg){
   if(el){ el.style.display='block'; if(msg){ const p=el.querySelector('p'); if(p) p.textContent=msg; } }
   console.error(msg||'boot fail');
 }
-const THREE = await import('three').catch(err=>{ showBootErr('Three.js 載入失敗，請刷新或返目錄。'); throw err; });
+let THREE;
+try{ THREE=await import('../vendor/three.module.min.js'); }
+catch(e){
+  try{ THREE=await import('three'); }
+  catch(e2){ showBootErr('載入唔到遊戲。請檢查網絡後重新整理，或者撳右上角返回目錄。'); throw e2; }
+}
 try{
   const c=document.createElement('canvas');
   const gl=c.getContext('webgl2')||c.getContext('webgl');
@@ -88,30 +97,30 @@ const keys={}; const touchMove={f:0,b:0,l:0,r:0};
 let yaw=Math.PI, pitch=0;
 
 const scene=new THREE.Scene();
-scene.background=new THREE.Color(0x08040c);
-scene.fog=new THREE.FogExp2(0x1a1020,0.03);
+scene.background=new THREE.Color(0x2a1528);
+scene.fog=new THREE.Fog(0x2a1528, 10, 40);
 const camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,0.08,70);
 const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 renderer.setSize(innerWidth,innerHeight);
 document.body.appendChild(renderer.domElement);
 
-scene.add(new THREE.HemisphereLight(0xffaacc,0x201020,0.9));
-scene.add(new THREE.AmbientLight(0x4a2038,0.6));
+scene.add(new THREE.HemisphereLight(0xffcce0,0x402030,1.1));
+scene.add(new THREE.AmbientLight(0xffffff,0.65));
 
 const mats={
-  wall:new THREE.MeshStandardMaterial({color:0x1a1018,roughness:0.9}),
-  tile:new THREE.MeshStandardMaterial({color:0x2a2228,roughness:0.55,metalness:0.1}),
-  blood:new THREE.MeshStandardMaterial({color:0x6a0818,roughness:0.88}),
-  neonP:new THREE.MeshStandardMaterial({color:0xff2a8a,emissive:0xff1470,emissiveIntensity:1.4}),
-  neonC:new THREE.MeshStandardMaterial({color:0x20e8ff,emissive:0x14c8ff,emissiveIntensity:1.3}),
-  metal:new THREE.MeshStandardMaterial({color:0x555560,roughness:0.35,metalness:0.9}),
-  curtain:new THREE.MeshStandardMaterial({color:0x4a1028,roughness:0.85,transparent:true,opacity:0.85}),
-  serum:new THREE.MeshStandardMaterial({color:0x66ffcc,emissive:0x22ffaa,emissiveIntensity:1.5,transparent:true,opacity:0.9}),
-  patient:new THREE.MeshStandardMaterial({color:0xc8b8a8,roughness:0.8}),
-  gown:new THREE.MeshStandardMaterial({color:0xe8e0d0,roughness:0.75}),
-  stain:new THREE.MeshStandardMaterial({color:0x8a1020,roughness:0.9}),
-  exit:new THREE.MeshStandardMaterial({color:0x40f0ff,emissive:0x2088aa,emissiveIntensity:0.5}),
+  wall:new THREE.MeshLambertMaterial({color:0x1a1018}),
+  tile:new THREE.MeshLambertMaterial({color:0x2a2228}),
+  blood:new THREE.MeshLambertMaterial({color:0x6a0818}),
+  neonP:new THREE.MeshLambertMaterial({color:0xff2a8a,emissive:0xff1470,emissiveIntensity:1.4}),
+  neonC:new THREE.MeshLambertMaterial({color:0x20e8ff,emissive:0x14c8ff,emissiveIntensity:1.3}),
+  metal:new THREE.MeshLambertMaterial({color:0x555560}),
+  curtain:new THREE.MeshLambertMaterial({color:0x4a1028,transparent:true,opacity:0.85}),
+  serum:new THREE.MeshLambertMaterial({color:0x66ffcc,emissive:0x22ffaa,emissiveIntensity:1.5,transparent:true,opacity:0.9}),
+  patient:new THREE.MeshLambertMaterial({color:0xc8b8a8}),
+  gown:new THREE.MeshLambertMaterial({color:0xe8e0d0}),
+  stain:new THREE.MeshLambertMaterial({color:0x8a1020}),
+  exit:new THREE.MeshLambertMaterial({color:0x40f0ff,emissive:0x2088aa,emissiveIntensity:0.5}),
 };
 
 const colliders=[];
