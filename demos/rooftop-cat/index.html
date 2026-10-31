@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-HK">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
+<title>天台貓 · Rooftop Cat — Vincent Games Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:#1a1028;color:#fff;font-family:"Noto Sans TC",system-ui,sans-serif;overflow:hidden;touch-action:none;user-select:none}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+canvas{display:block;background:#1a1028}
+#hud{position:fixed;left:0;right:0;top:0;padding:calc(10px + env(safe-area-inset-top)) 16px 0;display:flex;justify-content:space-between;pointer-events:none;z-index:2;font-weight:700;text-shadow:0 2px 8px #000}
+#hud .l{color:#ffb070}#hud .r{color:#ffd36a;text-align:right}
+#hud small{display:block;font-family:Syne,sans-serif;font-size:11px;opacity:.7;letter-spacing:.06em}
+#overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(20,10,30,.78);z-index:3;padding:24px}
+#overlay.hidden{display:none}
+.card{max-width:420px;width:100%;background:linear-gradient(160deg,#3a2040,#1a1830);border:1px solid #ffb07066;border-radius:20px;padding:28px 24px;text-align:center;box-shadow:0 0 40px #ff7a4033}
+.card h1{font-family:Syne,sans-serif;font-size:2rem;font-weight:800;color:#ffb070}
+.card .sub{margin-top:6px;color:#ffd36a;font-size:13px;letter-spacing:.06em}
+.card p{margin-top:14px;color:#d8c8e0;font-size:14px;line-height:1.55}
+button.play{margin-top:20px;min-height:48px;padding:0 28px;border:0;border-radius:999px;background:linear-gradient(90deg,#ff7a40,#ffb070);color:#1a1028;font-weight:900;font-size:16px;cursor:pointer;font-family:inherit}
+#touch{position:fixed;left:0;right:0;bottom:0;height:26%;display:flex;z-index:2;pointer-events:none}
+#touch.play{pointer-events:auto}
+#touch button{flex:1;background:transparent;border:0;opacity:0}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="c"></canvas></div>
+<div id="hud">
+  <div class="l"><small>GOAL · 目標</small>抵達遠端天台</div>
+  <div class="r"><small>TIME · 時間</small><span id="time">0</span>s</div>
+</div>
+<div id="overlay">
+  <div class="card">
+    <h1>ROOFTOP CAT</h1>
+    <div class="sub">天台貓 · 跳到最遠那座屋頂</div>
+    <p id="msg">帶著紅領巾的小貓，要在日落前跳過水塔與晾衣架，抵達遠端天台。<br/>← → / A D 移動 · Space / ↑ / 點按跳躍（可短按輕跳）</p>
+    <button class="play" id="startBtn">開始 START</button>
+  </div>
+</div>
+<div id="touch"><button id="tL"></button><button id="tJ"></button><button id="tR"></button></div>
+<script>
+(() => {
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const VW = 480, VH = 720;
+let dpr=1, running=false, won=false, lost=false, t0=0, elapsed=0, jumpHeld=0;
+
+function resize(){
+  dpr=Math.min(devicePixelRatio||1,2);
+  const s=Math.min(innerWidth/VW, innerHeight/VH);
+  canvas.width=Math.floor(VW*dpr); canvas.height=Math.floor(VH*dpr);
+  canvas.style.width=(VW*s)+'px'; canvas.style.height=(VH*s)+'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+addEventListener('resize',resize); resize();
+
+// platforms: x,y,w,h  (world coords; camera follows)
+const platforms = [
+  {x:40,y:620,w:140,h:24, goal:false},
+  {x:220,y:560,w:100,h:20},
+  {x:360,y:500,w:90,h:20},
+  {x:500,y:540,w:110,h:22},
+  {x:650,y:470,w:100,h:20},
+  {x:800,y:420,w:120,h:22},
+  {x:960,y:480,w:90,h:20},
+  {x:1100,y:400,w:130,h:24},
+  {x:1280,y:350,w:100,h:20},
+  {x:1450,y:300,w:160,h:28, goal:true},
+];
+// decor props on platforms
+const props = [
+  {x:60,y:560,type:'tank'},
+  {x:390,y:440,type:'antenna'},
+  {x:670,y:410,type:'laundry'},
+  {x:820,y:360,type:'tank'},
+  {x:1120,y:340,type:'laundry'},
+];
+
+let cat, camX=0, keys={}, particles=[];
+
+function reset(){
+  cat={x:90,y:580,vx:0,vy:0,w:28,h:24,onGround:false,facing:1};
+  camX=0; elapsed=0; won=false; lost=false; particles=[]; jumpHeld=0;
+}
+
+const keyDown = e => {
+  keys[e.code]=true;
+  if(['Space','ArrowUp','ArrowLeft','ArrowRight'].includes(e.code)) e.preventDefault();
+  if(!running && (e.code==='Space'||e.code==='Enter')) start();
+};
+const keyUp = e => { keys[e.code]=false; if(e.code==='Space'||e.code==='ArrowUp'||e.code==='KeyW') jumpHeld=0; };
+addEventListener('keydown',keyDown); addEventListener('keyup',keyUp);
+
+['tL','tJ','tR'].forEach(id=>{
+  const el=document.getElementById(id);
+  const down=e=>{e.preventDefault(); if(id==='tL')keys.KeyA=true; if(id==='tR')keys.KeyD=true; if(id==='tJ'){keys.Space=true;}};
+  const up=()=>{ if(id==='tL')keys.KeyA=false; if(id==='tR')keys.KeyD=false; if(id==='tJ'){keys.Space=false; jumpHeld=0;} };
+  el.addEventListener('touchstart',down,{passive:false});
+  el.addEventListener('touchend',up);
+  el.addEventListener('mousedown',down);
+  el.addEventListener('mouseup',up);
+});
+
+function start(){
+  reset(); running=true;
+  document.getElementById('overlay').classList.add('hidden');
+  document.getElementById('touch').classList.add('play');
+  document.getElementById('startBtn').textContent='再玩 AGAIN';
+  t0=performance.now();
+  requestAnimationFrame(loop);
+}
+document.getElementById('startBtn').onclick=start;
+
+function end(ok){
+  running=false; won=ok; lost=!ok;
+  document.getElementById('touch').classList.remove('play');
+  document.getElementById('msg').innerHTML = ok
+    ? `成功！小貓到達遠端天台 🎉<br/>用時 ${elapsed.toFixed(1)} 秒`
+    : `掉下去了… 再試一次！<br/>用時 ${elapsed.toFixed(1)} 秒`;
+  document.getElementById('overlay').classList.remove('hidden');
+}
+
+function loop(now){
+  if(!running) return;
+  const dt=Math.min(0.033,(now-t0)/1000); t0=now;
+  update(dt); draw();
+  requestAnimationFrame(loop);
+}
+
+function update(dt){
+  elapsed+=dt;
+  document.getElementById('time').textContent=elapsed.toFixed(1);
+
+  const accel=2200, maxV=180, friction=0.82;
+  let move=0;
+  if(keys.ArrowLeft||keys.KeyA) move-=1;
+  if(keys.ArrowRight||keys.KeyD) move+=1;
+  if(move){ cat.vx += move*accel*dt; cat.facing=move; }
+  else cat.vx *= Math.pow(friction, dt*60);
+  if(cat.vx>maxV)cat.vx=maxV; if(cat.vx<-maxV)cat.vx=-maxV;
+
+  // variable jump
+  const wantJump=keys.Space||keys.ArrowUp||keys.KeyW;
+  if(wantJump && cat.onGround && jumpHeld===0){
+    cat.vy=-420; cat.onGround=false; jumpHeld=0.001;
+  }
+  if(jumpHeld>0 && jumpHeld<0.18 && wantJump){
+    cat.vy -= 900*dt; jumpHeld+=dt;
+  } else if(jumpHeld>0 && !wantJump){
+    if(cat.vy<0) cat.vy*=0.55;
+    jumpHeld=999;
+  }
+
+  cat.vy += 1400*dt;
+  // horizontal
+  cat.x += cat.vx*dt;
+  // resolve X against platforms (simple)
+  cat.onGround=false;
+  cat.y += cat.vy*dt;
+
+  for(const p of platforms){
+    if(cat.x+cat.w/2>p.x && cat.x-cat.w/2<p.x+p.w){
+      // land on top
+      if(cat.vy>=0 && cat.y+cat.h/2 >= p.y && cat.y+cat.h/2 <= p.y+p.h+8 && cat.y < p.y+4){
+        cat.y = p.y - cat.h/2; cat.vy=0; cat.onGround=true;
+        if(p.goal){ end(true); return; }
+      }
+    }
+  }
+
+  // camera
+  const target=cat.x - VW*0.35;
+  camX += (target-camX)*Math.min(1,dt*6);
+  if(camX<0)camX=0;
+
+  if(cat.y > VH+80){ end(false); return; }
+}
+
+function draw(){
+  // sky gradient sunset
+  const g=ctx.createLinearGradient(0,0,0,VH);
+  g.addColorStop(0,'#4a2060'); g.addColorStop(0.4,'#c05060'); g.addColorStop(0.7,'#f09050'); g.addColorStop(1,'#2a2038');
+  ctx.fillStyle=g; ctx.fillRect(0,0,VW,VH);
+
+  // distant skyline (parallax)
+  ctx.fillStyle='rgba(20,16,40,0.55)';
+  const base=VH*0.55;
+  for(let i=0;i<18;i++){
+    const bx=((i*70 - camX*0.2)%(VW+80))-40;
+    const bh=40+((i*37)%90);
+    ctx.fillRect(bx, base-bh, 50, bh+VH);
+  }
+  // sun
+  ctx.fillStyle='#ffd36a';
+  ctx.beginPath(); ctx.arc(VW*0.75 - camX*0.05, VH*0.22, 36, 0, 6.28); ctx.fill();
+  ctx.fillStyle='rgba(255,180,100,0.25)';
+  ctx.beginPath(); ctx.arc(VW*0.75 - camX*0.05, VH*0.22, 60, 0, 6.28); ctx.fill();
+
+  ctx.save(); ctx.translate(-camX,0);
+
+  // platforms
+  for(const p of platforms){
+    // building body below
+    ctx.fillStyle='#2a3548';
+    ctx.fillRect(p.x-4, p.y, p.w+8, VH);
+    // roof
+    ctx.fillStyle=p.goal?'#3a6050':'#3a4558';
+    ctx.fillRect(p.x, p.y, p.w, p.h);
+    ctx.fillStyle='#5a6a78';
+    ctx.fillRect(p.x, p.y, p.w, 5);
+    if(p.goal){
+      ctx.fillStyle='#ffd36a';
+      ctx.font='bold 12px "Noto Sans TC"';
+      ctx.fillText('🏁 終點', p.x+p.w/2-22, p.y-10);
+      // flag
+      ctx.fillStyle='#ff5a40';
+      ctx.fillRect(p.x+p.w-18, p.y-50, 3, 50);
+      ctx.beginPath(); ctx.moveTo(p.x+p.w-15,p.y-50); ctx.lineTo(p.x+p.w+8,p.y-40); ctx.lineTo(p.x+p.w-15,p.y-30); ctx.fill();
+    }
+  }
+
+  // props
+  for(const pr of props){
+    if(pr.type==='tank'){
+      ctx.fillStyle='#4a6870';
+      ctx.beginPath(); ctx.ellipse(pr.x+22, pr.y+50, 22, 10, 0, 0, 6.28); ctx.fill();
+      ctx.fillRect(pr.x, pr.y+20, 44, 30);
+      ctx.beginPath(); ctx.ellipse(pr.x+22, pr.y+20, 22, 10, 0, 0, 6.28); ctx.fill();
+      ctx.strokeStyle='#8ab'; ctx.lineWidth=2; ctx.stroke();
+    } else if(pr.type==='antenna'){
+      ctx.strokeStyle='#c8a060'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.moveTo(pr.x,pr.y+60); ctx.lineTo(pr.x,pr.y); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(pr.x-16,pr.y+16); ctx.lineTo(pr.x+16,pr.y+16); ctx.stroke();
+      ctx.fillStyle='#ffb070'; ctx.beginPath(); ctx.arc(pr.x,pr.y,4,0,6.28); ctx.fill();
+    } else {
+      ctx.strokeStyle='#c8a060'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.moveTo(pr.x,pr.y+40); ctx.lineTo(pr.x+70,pr.y+40); ctx.stroke();
+      const cols=['#f8f0e8','#ff8ab0','#80c8ff','#ffe080'];
+      for(let i=0;i<4;i++){ ctx.fillStyle=cols[i]; ctx.fillRect(pr.x+8+i*15, pr.y+42, 12, 22); }
+    }
+  }
+
+  // cat
+  drawCat(cat.x, cat.y, cat.facing, cat.onGround, elapsed);
+  ctx.restore();
+}
+
+function drawCat(x,y,facing,ground,t){
+  ctx.save(); ctx.translate(x,y); ctx.scale(facing,1);
+  // shadow
+  ctx.fillStyle='rgba(0,0,0,0.25)';
+  ctx.beginPath(); ctx.ellipse(0, 12, 14, 4, 0, 0, 6.28); ctx.fill();
+  // body
+  ctx.fillStyle='#e89040';
+  ctx.beginPath(); ctx.ellipse(0,0,14,10,0,0,6.28); ctx.fill();
+  // head
+  ctx.beginPath(); ctx.arc(12,-8,9,0,6.28); ctx.fill();
+  // ears
+  ctx.beginPath(); ctx.moveTo(6,-14); ctx.lineTo(8,-22); ctx.lineTo(12,-12); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(14,-12); ctx.lineTo(18,-22); ctx.lineTo(20,-12); ctx.fill();
+  ctx.fillStyle='#ffb0a0';
+  ctx.beginPath(); ctx.moveTo(8,-14); ctx.lineTo(9,-19); ctx.lineTo(11,-13); ctx.fill();
+  // eyes
+  ctx.fillStyle='#1a1020';
+  ctx.beginPath(); ctx.ellipse(14,-9,2.2,2.8,0,0,6.28); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(19,-9,2.2,2.8,0,0,6.28); ctx.fill();
+  // nose
+  ctx.fillStyle='#ff7090'; ctx.beginPath(); ctx.arc(17,-6,1.5,0,6.28); ctx.fill();
+  // bandana
+  ctx.fillStyle='#e03030';
+  ctx.beginPath(); ctx.ellipse(8,-2,7,4,0.2,0,6.28); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(2,0); ctx.lineTo(-2,6); ctx.lineTo(6,2); ctx.fill();
+  // bell
+  ctx.fillStyle='#ffd36a'; ctx.beginPath(); ctx.arc(8,2,2.5,0,6.28); ctx.fill();
+  // stripes
+  ctx.strokeStyle='#c07030'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(-6,-4); ctx.quadraticCurveTo(-2,-8,2,-4); ctx.stroke();
+  // legs
+  const swing = ground ? Math.sin(t*14)*3 : 2;
+  ctx.fillStyle='#e89040';
+  ctx.fillRect(-10,6,5,8+swing); ctx.fillRect(-2,6,5,8-swing);
+  ctx.fillRect(4,6,5,8+swing); ctx.fillRect(10,4,5,6);
+  // tail
+  ctx.strokeStyle='#e89040'; ctx.lineWidth=4; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(-12,0); ctx.quadraticCurveTo(-22,-14-Math.sin(t*6)*4,-16,-22); ctx.stroke();
+  ctx.restore();
+}
+
+reset(); draw();
+})();
+</script>
+</body>
+</html>
