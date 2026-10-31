@@ -8,138 +8,148 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;background:#020608;color:#e8f4ff;font-family:"Noto Sans TC",system-ui,sans-serif;overflow:hidden;touch-action:none;user-select:none}
-canvas{display:block;width:100%;height:100%}
+html,body{height:100%;background:#0a1520;color:#e8f4ff;font-family:"Noto Sans TC",system-ui,sans-serif;overflow:hidden;touch-action:none;user-select:none}
+canvas{display:block;width:100%;height:100%;background:#1a3040}
 #hud{position:fixed;left:0;right:0;top:0;padding:calc(10px + env(safe-area-inset-top)) 16px 0;padding-right:160px;display:flex;justify-content:space-between;pointer-events:none;z-index:2;font-weight:700;text-shadow:0 2px 10px #000}
-#hud .l{color:#7ec8ff}#hud .r{color:#ff4d5e;text-align:right}
-#hud small{display:block;font-family:Syne,sans-serif;font-size:11px;opacity:.7;letter-spacing:.06em}
-#overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(2,6,8,.86);z-index:3;padding:24px;overflow-y:auto}
+#hud .l{color:#9ad8ff}#hud .r{color:#ff6a7a;text-align:right}
+#hud small{display:block;font-family:Syne,sans-serif;font-size:11px;opacity:.75;letter-spacing:.06em}
+#hint{position:fixed;left:50%;bottom:calc(18% + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:4;max-width:92vw;padding:10px 14px;border-radius:12px;background:rgba(0,0,0,.72);border:1px solid #7ec8ff66;color:#e8f4ff;font-size:13px;font-weight:700;text-align:center;pointer-events:none;display:none;line-height:1.45}
+#hint.on{display:block}
+#overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(8,18,28,.92);z-index:5;padding:24px;overflow-y:auto}
 #overlay.hidden{display:none}
-.card{max-width:440px;width:100%;background:linear-gradient(165deg,#0a1a22,#061018);border:1px solid #7ec8ff55;border-radius:20px;padding:28px 24px;text-align:center;box-shadow:0 0 48px #7ec8ff22}
+.card{max-width:440px;width:100%;background:linear-gradient(165deg,#123040,#0a1824);border:1px solid #7ec8ff88;border-radius:20px;padding:26px 22px;text-align:center;box-shadow:0 0 48px #7ec8ff33}
 .card h1{font-family:Syne,sans-serif;font-size:1.85rem;font-weight:800;background:linear-gradient(90deg,#b8e4ff,#ff4d5e);-webkit-background-clip:text;background-clip:text;color:transparent}
 .card .sub{margin-top:6px;color:#9ad0ff;font-size:13px;letter-spacing:.08em}
-.card p{margin-top:14px;color:#a8c0d0;font-size:14px;line-height:1.55;text-align:left}
-button.play{margin-top:20px;min-height:48px;padding:0 28px;border:0;border-radius:999px;background:linear-gradient(90deg,#1a4a5c,#ff4d5e);color:#fff;font-weight:900;font-size:16px;cursor:pointer;font-family:inherit;box-shadow:0 8px 24px #ff4d5e44}
-button.play:active{transform:scale(.97)}
-#touch{position:fixed;left:0;right:0;bottom:0;height:32%;display:none;z-index:2;gap:0}
-#touch.on{display:flex;pointer-events:auto}
-#touch button{flex:1;background:transparent;border:0;opacity:0}
-#cross{position:fixed;left:50%;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border:1px solid #7ec8ff88;border-radius:50%;pointer-events:none;z-index:2;opacity:0}
+.card ol{margin:14px 0 0;padding-left:1.2em;color:#c8dce8;font-size:14px;line-height:1.65;text-align:left}
+.card p.note{margin-top:12px;color:#9ab0c0;font-size:12px;line-height:1.5;text-align:left}
+button.play{margin-top:18px;min-height:52px;padding:0 28px;border:0;border-radius:999px;background:linear-gradient(90deg,#2a7a9c,#ff4d5e);color:#fff;font-weight:900;font-size:17px;cursor:pointer;font-family:inherit;box-shadow:0 8px 24px #ff4d5e55}
+button.play:disabled{opacity:.55;cursor:wait}
+button.play:active:not(:disabled){transform:scale(.97)}
+#pad{position:fixed;left:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:4;display:none;grid-template-columns:48px 48px 48px;grid-template-rows:48px 48px 48px;gap:6px}
+#pad.on{display:grid}
+#pad button{border:0;border-radius:12px;background:rgba(126,200,255,.28);color:#e8f4ff;font-weight:900;font-size:18px;backdrop-filter:blur(4px)}
+#pad .empty{visibility:hidden}
+#looktip{position:fixed;right:12px;bottom:calc(20px + env(safe-area-inset-bottom));z-index:4;display:none;max-width:42vw;padding:8px 10px;border-radius:10px;background:rgba(0,0,0,.55);color:#9ad0ff;font-size:11px;font-weight:700;pointer-events:none}
+#looktip.on{display:block}
+#cross{position:fixed;left:50%;top:50%;width:16px;height:16px;margin:-8px 0 0 -8px;border:2px solid #9ad8ffcc;border-radius:50%;pointer-events:none;z-index:2;opacity:0}
 #cross.on{opacity:1}
+#booterr{display:none;position:fixed;inset:0;z-index:9;background:#0a1520;color:#e8f4ff;padding:28px;font:600 15px/1.5 "Noto Sans TC",system-ui,sans-serif;text-align:center}
+#booterr a{color:#7ec8ff}
 #vg-back-root{position:fixed;inset:0;z-index:2147483647;pointer-events:none}
-#vg-back-root a.vg-back-btn{pointer-events:auto;position:fixed;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:12px 18px;border-radius:14px;font:800 16px/1.2 "Noto Sans TC",system-ui,sans-serif;text-decoration:none;letter-spacing:.02em;border:2px solid #7ec8ff;background:#020608;color:#7ec8ff;box-shadow:0 6px 28px rgba(0,0,0,.65)}
-#vg-back-tr{right:max(12px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));left:auto;bottom:auto;font-size:15px!important;min-height:44px;padding:10px 14px;opacity:.95}
+#vg-back-root a.vg-back-btn{pointer-events:auto;position:fixed;display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 14px;border-radius:14px;font:800 15px/1.2 "Noto Sans TC",system-ui,sans-serif;text-decoration:none;border:2px solid #7ec8ff;background:#0a1520;color:#7ec8ff;box-shadow:0 6px 28px rgba(0,0,0,.65);right:max(12px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top))}
 </style>
 </head>
 <body>
-
-<div id="booterr" style="display:none;position:fixed;inset:0;z-index:9;background:#120810;color:#ffe8f0;padding:28px;font:600 15px/1.5 Noto Sans TC,system-ui,sans-serif;text-align:center">
+<div id="booterr">
   <p style="margin-top:20vh">載入唔到遊戲。請檢查網絡後重新整理，或者撳右上角返回目錄。</p>
-  <p style="opacity:.8;margin-top:12px;font-size:13px"></p>
-  <p style="margin-top:18px"><a href="/vincent-games-studio/games" style="color:#40f0ff">← 返回遊戲目錄</a></p>
+  <p style="margin-top:18px"><a href="/vincent-games-studio/games">← 返回遊戲目錄</a></p>
 </div>
-
-<div id="hud"><div class="l"><small>COLD HOLD</small><span id="msg">找冷藏室鑰匙 · 避開屠夫</span></div><div class="r"><small>STRESS</small><span id="stress">0%</span></div></div>
+<div id="hud"><div class="l"><small>COLD HOLD</small><span id="msg">目標：黃鑰匙 → 綠門逃走</span></div><div class="r"><small>STRESS</small><span id="stress">0%</span></div></div>
 <div id="cross"></div>
+<div id="hint">用左下角方向鍵行路 · 拖畫面轉頭 · 靠近黃鑰匙自動拾取</div>
+<div id="looktip">拖呢邊畫面<br/>轉視角</div>
 <div id="overlay"><div class="card">
   <h1>凍肉倉</h1>
-  <div class="sub">COLD HOLD · 3D HORROR</div>
-  <p>冷氣嘶嘶作響。掛鉤上的肉還在滴血。你必須在凍肉走廊裡找回<strong>冷藏室鑰匙</strong>，然後逃到出口——但屠夫正在巡視，聽到腳步就會追過來。</p>
-  <p style="margin-top:10px;font-size:13px;opacity:.85">電腦：WASD 移動 · 滑鼠環視 · E 拾取／開門<br/>手機：虛擬方向鍵 · 拖曳畫面轉身</p>
+  <div class="sub" id="sub">COLD HOLD · 載入中…</div>
+  <ol>
+    <li><strong>撳下面藍色掣開始</strong></li>
+    <li><strong>行路</strong>：電腦用 WASD；手機用左下角 ↑↓←→</li>
+    <li><strong>轉頭</strong>：電腦郁滑鼠；手機用手指拖畫面</li>
+    <li>走廊入面搵<strong style="color:#ffcc66">黃色鎖匙</strong>，再去<strong style="color:#5dff9a">綠色門</strong>逃出</li>
+    <li>避開紅色<strong>屠夫</strong>（靠近會輸）</li>
+  </ol>
+  <p class="note">若畫面太黑：硬刷新（Ctrl/Cmd+Shift+R）。玩唔掂可撳右上「返回遊戲目錄」。</p>
   <button class="play" id="btnStart" disabled>載入 3D 場景中…</button>
 </div></div>
-<div id="touch"><button id="tL"></button><button id="tF"></button><button id="tR"></button><button id="tB"></button></div>
+<div id="pad">
+  <button class="empty" tabindex="-1"></button><button id="tF" type="button">↑</button><button class="empty" tabindex="-1"></button>
+  <button id="tL" type="button">←</button><button id="tB" type="button">↓</button><button id="tR" type="button">→</button>
+  <span></span><span></span><span></span>
+</div>
 <div id="vg-back-root" aria-label="catalog"><a id="vg-back-tr" class="vg-back-btn" href="/vincent-games-studio/games" title="← 返回遊戲目錄">← 返回遊戲目錄</a></div>
-<script>
-window.addEventListener('error',function(ev){
-  var el=document.getElementById('booterr');
-  if(el){ el.style.display='block'; }
-},{once:false});
-window.addEventListener('unhandledrejection',function(){
-  var el=document.getElementById('booterr');
-  if(el){ el.style.display='block'; }
-});
-</script>
 <script type="importmap">{"imports":{"three":"../vendor/three.module.min.js"}}</script>
 <script type="module">
 function showBootErr(msg){
   const el=document.getElementById('booterr');
-  if(el){ el.style.display='block'; if(msg){ const p=el.querySelector('p'); if(p) p.textContent=msg; } }
-  console.error(msg||'boot fail');
+  el.style.display='block';
+  if(msg) el.querySelector('p').textContent=msg;
 }
-const THREE = await import('three').catch(err=>{ showBootErr('Three.js 載入失敗，請刷新或返目錄。'); throw err; });
+let THREE;
 try{
+  THREE=await import('../vendor/three.module.min.js');
+}catch(e){
+  try{ THREE=await import('three'); }
+  catch(e2){ showBootErr('載入唔到遊戲。請檢查網絡後重新整理，或者撳右上角返回目錄。'); throw e2; }
+}
+{
   const c=document.createElement('canvas');
-  const gl=c.getContext('webgl2')||c.getContext('webgl');
-  if(!gl) throw new Error('WebGL unavailable');
-}catch(e){ showBootErr('呢部裝置唔支援 WebGL，玩唔到 3D 試玩。'); throw e; }
-
+  if(!(c.getContext('webgl2')||c.getContext('webgl'))){ showBootErr('呢部裝置唔支援 WebGL。'); throw new Error('no webgl'); }
+}
 
 const overlay=document.getElementById('overlay');
 const btn=document.getElementById('btnStart');
 const msgEl=document.getElementById('msg');
 const stressEl=document.getElementById('stress');
 const cross=document.getElementById('cross');
-const touch=document.getElementById('touch');
+const pad=document.getElementById('pad');
+const hint=document.getElementById('hint');
+const looktip=document.getElementById('looktip');
+const sub=document.getElementById('sub');
 const isTouch=('ontouchstart' in window)||navigator.maxTouchPoints>0;
 
-let playing=false, hasKey=false, won=false, dead=false;
-let stress=0, footT=0;
-const keys={};
-const look={x:0,y:0};
-const touchMove={f:0,b:0,l:0,r:0};
-let yaw=0,pitch=0;
+let playing=false, hasKey=false, won=false, dead=false, stress=0;
+const keys={}; const touchMove={f:0,b:0,l:0,r:0};
+let yaw=0, pitch=0;
 
 const scene=new THREE.Scene();
-scene.background=new THREE.Color(0x020608);
-scene.fog=new THREE.FogExp2(0x0a1824,0.028);
-const camera=new THREE.PerspectiveCamera(70,innerWidth/innerHeight,0.08,80);
-const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
-renderer.setPixelRatio(Math.min(devicePixelRatio,2));
-renderer.setSize(innerWidth,innerHeight);
-renderer.shadowMap.enabled=false;
+scene.background=new THREE.Color(0x1a3548);
+scene.fog=new THREE.Fog(0x1a3548, 12, 42);
+
+const camera=new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 80);
+const renderer=new THREE.WebGLRenderer({antialias:true, alpha:false, powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.setClearColor(0x1a3548, 1);
 document.body.appendChild(renderer.domElement);
 
-const hemi=new THREE.HemisphereLight(0x8ab0c8,0x0a1520,0.85);
-scene.add(hemi);
-const amb=new THREE.AmbientLight(0x3a6080,0.55);
-scene.add(amb);
+// Bright, forgiving lighting (no shadows)
+scene.add(new THREE.AmbientLight(0xffffff, 0.75));
+scene.add(new THREE.HemisphereLight(0xb8e0ff, 0x3a5060, 0.9));
+const sun=new THREE.DirectionalLight(0xffffff, 0.85);
+sun.position.set(4, 10, 2); scene.add(sun);
 
 const mats={
-  wall:new THREE.MeshStandardMaterial({color:0x1a2e38,roughness:0.92,metalness:0.15}),
-  floor:new THREE.MeshStandardMaterial({color:0x0c1820,roughness:0.7,metalness:0.25}),
-  ice:new THREE.MeshStandardMaterial({color:0x6ab0c8,roughness:0.35,metalness:0.4,transparent:true,opacity:0.55}),
-  blood:new THREE.MeshStandardMaterial({color:0x5a0810,roughness:0.85,metalness:0.05}),
-  meat:new THREE.MeshStandardMaterial({color:0x6e2030,roughness:0.9}),
-  metal:new THREE.MeshStandardMaterial({color:0x3a4a55,roughness:0.4,metalness:0.85}),
-  exit:new THREE.MeshStandardMaterial({color:0x2a8a5a,emissive:0x114422,emissiveIntensity:0.4,roughness:0.5}),
-  keyGlow:new THREE.MeshStandardMaterial({color:0xffcc66,emissive:0xffaa33,emissiveIntensity:1.2,roughness:0.3}),
-  butcher:new THREE.MeshStandardMaterial({color:0x2a1018,roughness:0.8}),
-  apron:new THREE.MeshStandardMaterial({color:0x8a1020,roughness:0.75}),
+  wall:new THREE.MeshLambertMaterial({color:0x5a7a8c}),
+  floor:new THREE.MeshLambertMaterial({color:0x2a4050}),
+  ceil:new THREE.MeshLambertMaterial({color:0x3a5568}),
+  blood:new THREE.MeshLambertMaterial({color:0x8a2030}),
+  ice:new THREE.MeshLambertMaterial({color:0x9ad0e8, transparent:true, opacity:0.7}),
+  meat:new THREE.MeshLambertMaterial({color:0x8a3040}),
+  metal:new THREE.MeshLambertMaterial({color:0x8a9aaa}),
+  exit:new THREE.MeshLambertMaterial({color:0x2ecc71}),
+  key:new THREE.MeshLambertMaterial({color:0xffcc44}),
+  butcher:new THREE.MeshLambertMaterial({color:0x3a1018}),
+  apron:new THREE.MeshLambertMaterial({color:0xc02030}),
 };
 
 const colliders=[];
 function box(w,h,d,x,y,z,mat,solid=true){
-  const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
+  const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d), mat);
   m.position.set(x,y,z); scene.add(m);
-  if(solid) colliders.push({min:new THREE.Vector3(x-w/2,y-h/2,z-d/2),max:new THREE.Vector3(x+w/2,y+h/2,z+d/2)});
+  if(solid) colliders.push({min:new THREE.Vector3(x-w/2,y-h/2,z-d/2), max:new THREE.Vector3(x+w/2,y+h/2,z+d/2)});
   return m;
 }
-function addLight(x,y,z,c,i=1.2,d=12){
-  const L=new THREE.PointLight(c,i,d); L.position.set(x,y,z); scene.add(L);
-  const bulb=new THREE.Mesh(new THREE.SphereGeometry(0.08,8,8),new THREE.MeshBasicMaterial({color:c}));
-  bulb.position.copy(L.position); scene.add(bulb); return L;
+
+box(48,0.2,48, 0,-0.1,0, mats.floor, false);
+box(48,0.2,48, 0,3.2,0, mats.ceil, false);
+// floor stripes so motion is obvious
+for(let i=-20;i<=20;i+=4){
+  box(0.15,0.02,40, i, 0.02, 0, mats.ice, false);
+  box(40,0.02,0.15, 0, 0.02, i, mats.blood, false);
 }
 
-// Floor / ceiling
-box(48,0.2,48,0,-0.1,0,mats.floor,false);
-box(48,0.2,48,0,3.2,0,mats.wall,false);
-
-// Corridor maze walls
 const walls=[
-  // outer
   [48,3.2,0.4,0,1.5,-24],[48,3.2,0.4,0,1.5,24],[0.4,3.2,48,-24,1.5,0],[0.4,3.2,48,24,1.5,0],
-  // inner corridors
   [0.4,3.2,18,-8,1.5,-6],[0.4,3.2,14,8,1.5,4],[0.4,3.2,16,0,1.5,-10],
   [16,3.2,0.4,-8,1.5,8],[14,3.2,0.4,6,1.5,-4],[12,3.2,0.4,-4,1.5,16],
   [0.4,3.2,10,-16,1.5,8],[0.4,3.2,12,16,1.5,-8],[10,3.2,0.4,14,1.5,12],
@@ -147,217 +157,182 @@ const walls=[
 ];
 walls.forEach(([w,h,d,x,y,z])=>box(w,h,d,x,y,z,mats.wall));
 
-// Ice patches + blood
-for(let i=0;i<18;i++){
-  const x=(Math.random()-0.5)*40, z=(Math.random()-0.5)*40;
-  box(1.2+Math.random(),0.04,0.8+Math.random(),x,0.02,z,mats.ice,false);
-}
-for(let i=0;i<22;i++){
-  const x=(Math.random()-0.5)*38, z=(Math.random()-0.5)*38;
-  const s=0.3+Math.random()*0.7;
-  box(s,0.03,s*0.7,x,0.03,z,mats.blood,false);
+for(let i=0;i<8;i++){
+  const x=-16+i*4, z=-16;
+  box(0.06,1.0,0.06,x,2.5,z,mats.metal,false);
+  box(0.4,0.7,0.3,x,1.7,z,mats.meat,false);
 }
 
-// Meat hooks
-for(let i=0;i<10;i++){
-  const x=-18+i*4, z=-18+(i%3)*3;
-  box(0.05,1.2,0.05,x,2.4,z,mats.metal,false);
-  const meat=box(0.35,0.7,0.25,x,1.6,z,mats.meat,false);
-  meat.rotation.z=0.15;
-  box(0.15,0.04,0.15,x,1.25,z,mats.blood,false);
-}
+const keyLight=new THREE.PointLight(0xffcc44, 2.5, 10);
+keyLight.position.set(-18,1.2,18); scene.add(keyLight);
+const keyMesh=box(0.35,0.12,0.55, -18,0.5,18, mats.key, false);
 
-addLight(-10,2.6,-8,0x88ccee,2.4,18);
-addLight(10,2.6,6,0x88aacc,2.0,16);
-addLight(0,2.6,14,0xcc5566,1.6,14);
-addLight(-14,2.6,10,0x99ccee,2.0,16);
-const flicker=addLight(6,2.6,-14,0xffeeee,2.4,14);
-
-// Key
-const keyMesh=box(0.25,0.08,0.5, -18,0.4,18, mats.keyGlow, false);
-const keyLight=new THREE.PointLight(0xffaa44,1.5,6); keyLight.position.set(-18,0.8,18); scene.add(keyLight);
-
-// Exit door (locked until key)
-const exitDoor=box(1.6,2.4,0.25, 18,1.2,-18, mats.exit, true);
+const exitDoor=box(1.8,2.5,0.3, 18,1.25,-18, mats.exit, true);
 const exitPos=new THREE.Vector3(18,0,-18);
+const exitLight=new THREE.PointLight(0x2ecc71, 2.0, 12);
+exitLight.position.set(18,2,-18); scene.add(exitLight);
 
-// Butcher
 const butcher=new THREE.Group();
-const body=new THREE.Mesh(new THREE.BoxGeometry(0.7,1.4,0.45),mats.butcher); body.position.y=0.9; butcher.add(body);
-const apron=new THREE.Mesh(new THREE.BoxGeometry(0.75,0.9,0.2),mats.apron); apron.position.set(0,0.7,0.15); butcher.add(apron);
-const head=new THREE.Mesh(new THREE.BoxGeometry(0.4,0.4,0.4),mats.butcher); head.position.y=1.75; butcher.add(head);
-const cleaver=new THREE.Mesh(new THREE.BoxGeometry(0.08,0.55,0.35),mats.metal); cleaver.position.set(0.45,1.1,0.2); butcher.add(cleaver);
+butcher.add(Object.assign(new THREE.Mesh(new THREE.BoxGeometry(0.75,1.5,0.5), mats.butcher), {position:new THREE.Vector3(0,0.95,0)}));
+butcher.add(Object.assign(new THREE.Mesh(new THREE.BoxGeometry(0.8,0.95,0.22), mats.apron), {position:new THREE.Vector3(0,0.75,0.18)}));
+butcher.add(Object.assign(new THREE.Mesh(new THREE.BoxGeometry(0.42,0.42,0.42), mats.butcher), {position:new THREE.Vector3(0,1.85,0)}));
 butcher.position.set(12,0,12); scene.add(butcher);
-let butcherTarget=new THREE.Vector3(12,0,12), butcherAlert=0;
+let butcherTarget=new THREE.Vector3(-8,0,8);
 
-const player=new THREE.Vector3(0,1.55,0);
+const player=new THREE.Vector3(0,1.6,0);
 camera.position.copy(player);
-const spawnFill=new THREE.PointLight(0xaad4ff,2.2,16); spawnFill.position.set(0,2.4,0); scene.add(spawnFill);
+const spawnLight=new THREE.PointLight(0xffffff, 2.2, 14);
+spawnLight.position.set(0,2.5,0); scene.add(spawnLight);
 
 function blocked(nx,nz){
-  const r=0.28;
+  const r=0.3;
   for(const c of colliders){
-    if(nx+r>c.min.x && nx-r<c.max.x && nz+r>c.min.z && nz-r<c.max.z && c.max.y>0.4) return true;
+    if(nx+r>c.min.x && nx-r<c.max.x && nz+r>c.min.z && nz-r<c.max.z && c.max.y>0.5) return true;
   }
   return false;
 }
-
 function dist2(a,b){const dx=a.x-b.x,dz=a.z-b.z;return dx*dx+dz*dz;}
 
 function tryInteract(){
-  if(!hasKey && dist2(player,keyMesh.position)<2.2){
+  if(!hasKey && dist2(player,keyMesh.position)<3){
     hasKey=true; scene.remove(keyMesh); scene.remove(keyLight);
-    msgEl.textContent='拿到鑰匙！快跑去出口（綠色門）';
-    stress=Math.min(100,stress+8);
+    msgEl.textContent='已有鎖匙！去綠色門逃走';
+    hint.textContent='跟綠色光走 → 綠色門逃走';
   }
-  if(hasKey && dist2(player,exitPos)<3.5){
-    // unlock: remove exit collider solid by moving door
-    const idx=colliders.findIndex(c=>Math.abs(c.min.x+c.max.x)/2-18<0.01 && Math.abs(c.min.z+c.max.z)/2+18<0.01);
+  if(hasKey && dist2(player,exitPos)<4){
+    const idx=colliders.findIndex(c=>Math.abs((c.min.x+c.max.x)/2-18)<0.2 && Math.abs((c.min.z+c.max.z)/2+18)<0.2);
     if(idx>=0) colliders.splice(idx,1);
-    exitDoor.position.x=19.2;
-    won=true; playing=false;
-    showEnd(true);
+    exitDoor.position.x=19.4;
+    won=true; playing=false; showEnd(true);
   }
 }
 
 function showEnd(ok){
   overlay.classList.remove('hidden');
-  cross.classList.remove('on');
-  touch.classList.remove('on');
+  cross.classList.remove('on'); pad.classList.remove('on'); hint.classList.remove('on'); looktip.classList.remove('on');
   document.exitPointerLock?.();
-  const card=overlay.querySelector('.card');
-  card.innerHTML=ok
-    ?`<h1>逃出凍庫</h1><div class="sub">YOU MADE IT OUT</div><p>冷氣門在身後關上。你還帶著鑰匙上的血跡，但至少還活著。</p><button class="play" id="btnAgain">再試一次</button>`
-    :`<h1>被追上了</h1><div class="sub">THE BUTCHER FOUND YOU</div><p>鉤子聲越來越近……下一秒，世界只剩鐵與血的味道。</p><button class="play" id="btnAgain">再試一次</button>`;
+  overlay.querySelector('.card').innerHTML = ok
+    ? `<h1>逃出凍庫！</h1><div class="sub">YOU ESCAPED</div><ol><li>你搵到鎖匙並衝出綠色門。</li></ol><button class="play" id="btnAgain">再玩一次</button>`
+    : `<h1>被屠夫追上</h1><div class="sub">CAUGHT</div><ol><li>離紅色身影遠啲，行完先轉彎。</li></ol><button class="play" id="btnAgain">再試一次</button>`;
   document.getElementById('btnAgain').onclick=()=>location.reload();
 }
 
 function start(){
   overlay.classList.add('hidden');
-  playing=true; dead=false; won=false;
+  playing=true;
   cross.classList.add('on');
-  if(isTouch) touch.classList.add('on');
+  hint.classList.add('on');
+  if(isTouch){ pad.classList.add('on'); looktip.classList.add('on'); }
   else renderer.domElement.requestPointerLock?.();
-  msgEl.textContent='找冷藏室鑰匙 · 避開屠夫';
+  msgEl.textContent='搵黃色鎖匙 · 避開屠夫';
+  hint.textContent=isTouch
+    ? '左下角方向鍵行路 · 拖畫面轉頭 · 靠近黃鎖匙會自動拾取'
+    : 'WASD 行路 · 滑鼠轉頭 · 靠近黃鎖匙自動拾取 · E 亦可';
 }
-const sub=document.querySelector('.card .sub'); if(sub) sub.textContent='COLD HOLD · 3D READY';
-btn.disabled=false; btn.textContent='進入冷庫';
+
+btn.disabled=false;
+btn.textContent='開始遊玩';
+sub.textContent='COLD HOLD · 已就緒';
 btn.onclick=start;
+
+// first frame so canvas isn't empty behind overlay
+renderer.render(scene,camera);
 
 addEventListener('keydown',e=>{keys[e.code]=true; if(e.code==='KeyE') tryInteract();});
 addEventListener('keyup',e=>{keys[e.code]=false;});
 addEventListener('mousemove',e=>{
-  if(!playing||document.pointerLockElement!==renderer.domElement) return;
-  yaw-=e.movementX*0.0022; pitch-=e.movementY*0.0022;
-  pitch=Math.max(-1.2,Math.min(1.2,pitch));
+  if(!playing || document.pointerLockElement!==renderer.domElement) return;
+  yaw-=e.movementX*0.0025; pitch-=e.movementY*0.0025;
+  pitch=Math.max(-1.15,Math.min(1.15,pitch));
 });
-renderer.domElement.addEventListener('click',()=>{if(playing&&!isTouch) renderer.domElement.requestPointerLock?.();});
+renderer.domElement.addEventListener('click',()=>{ if(playing && !isTouch) renderer.domElement.requestPointerLock?.(); });
 
-// touch look
 let tx=-1,ty=-1;
 renderer.domElement.addEventListener('touchstart',e=>{
   if(!playing) return;
   const t=e.changedTouches[0];
-  if(t.clientY<innerHeight*0.62){tx=t.clientX;ty=t.clientY;}
+  // look only on right 55% of screen so left pad works
+  if(t.clientX>innerWidth*0.38){ tx=t.clientX; ty=t.clientY; }
 },{passive:true});
 renderer.domElement.addEventListener('touchmove',e=>{
   if(tx<0) return;
   const t=e.changedTouches[0];
-  yaw-=(t.clientX-tx)*0.004; pitch-=(t.clientY-ty)*0.004;
-  pitch=Math.max(-1.2,Math.min(1.2,pitch));
-  tx=t.clientX;ty=t.clientY;
+  yaw-=(t.clientX-tx)*0.005; pitch-=(t.clientY-ty)*0.005;
+  pitch=Math.max(-1.15,Math.min(1.15,pitch));
+  tx=t.clientX; ty=t.clientY;
 },{passive:true});
 renderer.domElement.addEventListener('touchend',()=>{tx=-1;},{passive:true});
 
 [['tF','f'],['tB','b'],['tL','l'],['tR','r']].forEach(([id,k])=>{
   const el=document.getElementById(id);
-  const on=()=>touchMove[k]=1, off=()=>touchMove[k]=0;
-  el.addEventListener('touchstart',e=>{e.preventDefault();on();},{passive:false});
+  const on=e=>{e.preventDefault(); touchMove[k]=1;};
+  const off=()=>{ touchMove[k]=0; };
+  el.addEventListener('touchstart',on,{passive:false});
   el.addEventListener('touchend',off); el.addEventListener('touchcancel',off);
+  el.addEventListener('mousedown',on); el.addEventListener('mouseup',off); el.addEventListener('mouseleave',off);
 });
 
 let last=performance.now();
 function tick(now){
   requestAnimationFrame(tick);
   const dt=Math.min(0.05,(now-last)/1000); last=now;
-  // flicker
-  flicker.intensity=1.2+Math.sin(now*0.012)*0.6+Math.random()*0.3;
-
   if(playing && !dead && !won){
     const forward=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw));
     const right=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw));
     let mx=0,mz=0;
-    if(keys['KeyW']||keys['ArrowUp']||touchMove.f){mx+=forward.x;mz+=forward.z;}
-    if(keys['KeyS']||keys['ArrowDown']||touchMove.b){mx-=forward.x;mz-=forward.z;}
-    if(keys['KeyA']||keys['ArrowLeft']||touchMove.l){mx-=right.x;mz-=right.z;}
-    if(keys['KeyD']||keys['ArrowRight']||touchMove.r){mx+=right.x;mz+=right.z;}
+    if(keys.KeyW||keys.ArrowUp||touchMove.f){mx+=forward.x;mz+=forward.z;}
+    if(keys.KeyS||keys.ArrowDown||touchMove.b){mx-=forward.x;mz-=forward.z;}
+    if(keys.KeyA||keys.ArrowLeft||touchMove.l){mx-=right.x;mz-=right.z;}
+    if(keys.KeyD||keys.ArrowRight||touchMove.r){mx+=right.x;mz+=right.z;}
     const len=Math.hypot(mx,mz)||1; mx/=len; mz/=len;
-    const speed=(keys['ShiftLeft']?5.2:3.4)*dt;
-    const nx=player.x+mx*speed, nz=player.z+mz*speed;
+    const sp=3.6*dt;
+    const nx=player.x+mx*sp, nz=player.z+mz*sp;
     if(!blocked(nx,player.z)) player.x=nx;
     if(!blocked(player.x,nz)) player.z=nz;
     player.x=THREE.MathUtils.clamp(player.x,-22.5,22.5);
     player.z=THREE.MathUtils.clamp(player.z,-22.5,22.5);
-    if(mx||mz){footT+=dt; if(footT>0.45){footT=0; butcherAlert=Math.min(1,butcherAlert+0.18); stress=Math.min(100,stress+1.2);}}
-    else butcherAlert=Math.max(0,butcherAlert-dt*0.15);
-
-    camera.position.set(player.x,1.55,player.z);
+    camera.position.set(player.x,1.6,player.z);
     camera.rotation.order='YXZ';
     camera.rotation.y=yaw; camera.rotation.x=pitch;
 
-    // butcher AI
-    const pDist=Math.sqrt(dist2(player,butcher.position));
-    if(pDist<14 || butcherAlert>0.35){
+    if(!hasKey && dist2(player,keyMesh.position)<3) tryInteract();
+    if(hasKey && dist2(player,exitPos)<3.5) tryInteract();
+
+    const pDist=Math.hypot(player.x-butcher.position.x, player.z-butcher.position.z);
+    if(pDist<13){
       const dir=new THREE.Vector3(player.x-butcher.position.x,0,player.z-butcher.position.z).normalize();
-      const bs=(pDist<8?4.2:3.2)*dt*(0.7+butcherAlert);
+      const bs=(pDist<7?4.0:3.0)*dt;
       const bx=butcher.position.x+dir.x*bs, bz=butcher.position.z+dir.z*bs;
       if(!blocked(bx,butcher.position.z)) butcher.position.x=bx;
       if(!blocked(butcher.position.x,bz)) butcher.position.z=bz;
       butcher.lookAt(player.x,1,player.z);
-      stress=Math.min(100,stress+dt*8);
-      if(pDist<1.15){dead=true;playing=false;showEnd(false);}
+      stress=Math.min(100,stress+dt*10);
+      if(pDist<1.2){ dead=true; playing=false; showEnd(false); }
     } else {
-      // patrol
-      if(butcher.position.distanceTo(butcherTarget)<1.2){
-        butcherTarget.set((Math.random()-0.5)*30,0,(Math.random()-0.5)*30);
-      }
+      if(butcher.position.distanceTo(butcherTarget)<1.5) butcherTarget.set((Math.random()-0.5)*28,0,(Math.random()-0.5)*28);
       const dir=butcherTarget.clone().sub(butcher.position).setY(0).normalize();
-      butcher.position.x+=dir.x*2.2*dt; butcher.position.z+=dir.z*2.2*dt;
-      butcher.lookAt(butcherTarget.x,1,butcherTarget.z);
-      stress=Math.max(0,stress-dt*3);
+      butcher.position.x+=dir.x*2.0*dt; butcher.position.z+=dir.z*2.0*dt;
+      stress=Math.max(0,stress-dt*4);
     }
-    if(!hasKey && dist2(player,keyMesh.position)<2.5) msgEl.textContent='按 E／靠近拾取鑰匙';
-    else if(hasKey) msgEl.textContent='帶鑰匙去綠色出口';
     stressEl.textContent=Math.round(stress)+'%';
+    if(!hasKey) msgEl.textContent='搵黃色鎖匙（角落有黃光）';
+    else msgEl.textContent='去綠色門逃走';
   }
   renderer.render(scene,camera);
 }
 requestAnimationFrame(tick);
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
 
-// vg-back ensure
 (function(){
   var HREF='/vincent-games-studio/games', LABEL='← 返回遊戲目錄';
-  var scheduled=null, locking=false;
-  function ensureFixed(){
-    var root=document.getElementById('vg-back-root');
-    if(!root){ root=document.createElement('div'); root.id='vg-back-root'; root.setAttribute('aria-label','catalog'); document.body.appendChild(root); }
-    var bl=document.getElementById('vg-back-bl'); if(bl&&bl.parentNode) bl.parentNode.removeChild(bl);
-    document.querySelectorAll('a.vg-catalog, a[data-vg-catalog]').forEach(function(a){ if(a.parentNode) a.parentNode.removeChild(a); });
+  function ensure(){
+    var root=document.getElementById('vg-back-root')||document.body.appendChild(Object.assign(document.createElement('div'),{id:'vg-back-root'}));
     var tr=document.getElementById('vg-back-tr');
     if(!tr){ tr=document.createElement('a'); tr.id='vg-back-tr'; tr.className='vg-back-btn'; root.appendChild(tr); }
-    else if(tr.parentNode!==root) root.appendChild(tr);
-    root.style.cssText='position:fixed;inset:0;z-index:2147483647;pointer-events:none;display:block;visibility:visible;opacity:1';
-    tr.href=HREF; tr.title=LABEL; tr.textContent=LABEL; tr.className='vg-back-btn';
-    tr.style.cssText='pointer-events:auto;position:fixed;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:12px 18px;border-radius:14px;font:800 16px/1.2 "Noto Sans TC",system-ui,sans-serif;text-decoration:none;letter-spacing:.02em;visibility:visible;opacity:1;z-index:2147483647;right:max(12px, env(safe-area-inset-right));top:max(12px, env(safe-area-inset-top));left:auto;bottom:auto;border:2px solid #7ec8ff;background:#020608;color:#7ec8ff;box-shadow:0 6px 28px rgba(0,0,0,.65)';
-    if(root.parentNode!==document.body) document.body.appendChild(root);
-    else if(document.body.lastElementChild!==root) document.body.appendChild(root);
+    tr.href=HREF; tr.textContent=LABEL; tr.title=LABEL;
+    tr.style.cssText='pointer-events:auto;position:fixed;right:max(12px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));z-index:2147483647;display:inline-flex;align-items:center;min-height:44px;padding:10px 14px;border-radius:14px;font:800 15px/1.2 "Noto Sans TC",system-ui,sans-serif;text-decoration:none;border:2px solid #7ec8ff;background:#0a1520;color:#7ec8ff';
   }
-  function ensure(){ if(locking) return; locking=true; try{ensureFixed();}catch(e){} locking=false; }
-  function schedule(){ if(scheduled) return; scheduled=setTimeout(function(){scheduled=null;ensure();},80); }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',ensure); else ensure();
-  setTimeout(ensure,0); setTimeout(ensure,500); setInterval(ensure,3000);
-  try{ new MutationObserver(schedule).observe(document.documentElement,{childList:true,subtree:true}); }catch(e){}
+  ensure(); setInterval(ensure,3000);
 })();
 </script>
 </body>
