@@ -74,19 +74,19 @@ export const games: Game[] = [
     year: 2026,
     genres: ['射擊', '競技'],
     hookZh:
-      'Frag Channel 開播——快一步，今晚先有糧。你加入 Channel 7；貨櫃、廟市、招牌街、公屋天台同茶餐廳後巷，打贏先有收視。',
+      'Frag Channel 開播——快一步，今晚先有糧。你加入 Channel 7；貨櫃、廟市、招牌街、電車街同啟德天台，打贏先有收視。',
     hookEn:
-      'Frag Channel is live—half a step faster and tonight you eat. You join Channel 7: cargo, temple, sign street, estate roof and cha chaan alley—win the fight, win the ratings.',
+      'Frag Channel is live—half a step faster and tonight you eat. You join Channel 7: cargo, temple, sign street, Tram Street and Kai Tak Roof—win the fight, win the ratings.',
     gameplayZh:
-      '瀏覽器第一人稱射擊試玩：四種角色（閃／隼／石／影）、五張地圖（貨櫃碼頭／霓虹廟市／招牌街／公屋天台／茶餐廳後巷）、對戰 AI、跳與蹲滑。約 2.5 分鐘或先到 20 殺。',
+      '瀏覽器第一人稱射擊試玩：四種角色（閃／隼／石／影）、五張地圖（貨櫃碼頭／霓虹廟市／招牌街／電車街／啟德天台）、對戰 AI、跳與蹲滑。約 2.5 分鐘或先到 20 殺。',
     gameplayEn:
-      'Browser FPS demo: four classes (Spark / Falcon / Rock / Shade), five maps (Cargo Pier / Neon Temple / Sign Street / Estate Roof / Cha Chaan Back), FFA vs AI, jump and crouch-slide. ~2.5 min or first to 20 kills.',
+      'Browser FPS demo: four classes (Spark / Falcon / Rock / Shade), five maps (Cargo Pier / Neon Temple / Sign Street / Tram Street / Kai Tak Roof), FFA vs AI, jump and crouch-slide. ~2.5 min or first to 20 kills.',
     features: [
       {
         titleZh: '港式霓虹競技場',
         titleEn: 'Neon harbour arenas',
-        bodyZh: '貨櫃碼頭、廟市、招牌街、公屋天台與茶餐廳後巷——洋紅／青／琥珀霓虹低模。',
-        bodyEn: 'Cargo, temple, neon sign street, estate roof & cha chaan alley—magenta/cyan/amber low-poly.',
+        bodyZh: '貨櫃碼頭、廟市、招牌街、電車街與啟德天台——洋紅／青／琥珀霓虹低模。',
+        bodyEn: 'Cargo, temple, neon sign street, Tram Street & Kai Tak Roof—magenta/cyan/amber low-poly.',
       },
       {
         titleZh: '四種港戰角色',

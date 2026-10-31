@@ -125,17 +125,23 @@ try {
   const t1 = await page.evaluate(() => window.__dbg());
   check('temple WASD move', Math.hypot(t1.x - t0.x, t1.z - t0.z) > 0.15, `${t0.x},${t0.z} -> ${t1.x},${t1.z}`);
 
-  // Nostalgic maps: signs / estate / teahouse — start + brief WASD
-  for (const mid of ['signs', 'estate', 'teahouse']) {
+  // Nostalgic maps: signs / tram / kaitak — start + brief WASD
+  // Try W/A/S/D so end-wall spawns (esp. signs) don't flake a single KeyW probe.
+  for (const mid of ['signs', 'tram', 'kaitak']) {
     await page.evaluate((id) => window.__startForTest(id, 'spark'), mid);
     await page.waitForFunction((id) => window.__dbg().map === id && window.__dbg().running, { timeout: 8000 }, mid);
     const m0 = await page.evaluate(() => window.__dbg());
     check(`${mid} map switch`, m0.map === mid, JSON.stringify(m0));
-    await page.evaluate(() => window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyW', bubbles: true })));
-    await new Promise((r) => setTimeout(r, 350));
-    await page.evaluate(() => window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyW', bubbles: true })));
-    const m1 = await page.evaluate(() => window.__dbg());
-    check(`${mid} WASD move`, Math.hypot(m1.x - m0.x, m1.z - m0.z) > 0.15, `${m0.x},${m0.z} -> ${m1.x},${m1.z}`);
+    let moved = false;
+    let m1 = m0;
+    for (const code of ['KeyW', 'KeyS', 'KeyA', 'KeyD']) {
+      await page.evaluate((c) => window.dispatchEvent(new KeyboardEvent('keydown', { code: c, bubbles: true })), code);
+      await new Promise((r) => setTimeout(r, 280));
+      await page.evaluate((c) => window.dispatchEvent(new KeyboardEvent('keyup', { code: c, bubbles: true })), code);
+      m1 = await page.evaluate(() => window.__dbg());
+      if (Math.hypot(m1.x - m0.x, m1.z - m0.z) > 0.15) { moved = true; break; }
+    }
+    check(`${mid} WASD move`, moved, `${m0.x},${m0.z} -> ${m1.x},${m1.z}`);
   }
 
   await page.click('#c').catch(() => {});
