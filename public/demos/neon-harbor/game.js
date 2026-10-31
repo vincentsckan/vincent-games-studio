@@ -1,6 +1,6 @@
 /**
  * 霓虹港戰 Neon Harbor Clash — Vincent Games Studio
- * Local Three.js FPS demo (arcade movement + multi-mode vs AI)
+ * Local Three.js TPP (third-person OTS) demo — arcade movement + multi-mode vs AI
  */
 import * as THREE from 'three';
 
@@ -239,6 +239,10 @@ let bots = [];
 let neonMats = [];
 let muzzleFlash = null;
 let gunMesh = null;
+let playerMesh = null; // visible TPP hero (simple humanoid; Multimedia refs/player/* can skin later)
+const CAM_BACK = 3.35;
+const CAM_RIGHT = 0.72;
+const CAM_UP = 0.55;
 let spawnPoints = [];
 let bulletTraces = [];
 let bloodBursts = [];
@@ -412,7 +416,9 @@ function makeZhTexture(text, opts = {}) {
     pad = 10,
     fontPx = 42,
   } = opts;
-  const chars = String(text).split('');
+  const raw = (text == null || text === 'undefined') ? '' : String(text).trim();
+  const safeText = raw || '·';
+  const chars = safeText.split('');
   const canvas = document.createElement('canvas');
   if (vertical) {
     canvas.width = 96;
@@ -434,7 +440,7 @@ function makeZhTexture(text, opts = {}) {
       ctx.fillText(ch, canvas.width / 2, pad + step * (i + 0.5));
     });
   } else {
-    ctx.fillText(String(text), canvas.width / 2, canvas.height / 2);
+    ctx.fillText(safeText, canvas.width / 2, canvas.height / 2);
   }
   const tex = new THREE.CanvasTexture(canvas);
   if (THREE.SRGBColorSpace) tex.colorSpace = THREE.SRGBColorSpace;
@@ -453,6 +459,7 @@ function addZhPanel(group, x, y, z, w, h, d, text, opts = {}) {
     rotY = 0,
     color = 0xffffff,
   } = opts;
+  if (text == null || text === 'undefined' || String(text).trim() === '') return null;
   const tex = makeZhTexture(text, { vertical, bg, fg });
   const mat = new THREE.MeshStandardMaterial({
     map: tex,
@@ -700,6 +707,7 @@ function addHangSign(group, x, y, z, w, h, text, opts = {}) {
     rotY = 0,
     depth = 0.12,
   } = opts;
+  if (text == null || text === 'undefined' || String(text).trim() === '') return null;
   addZhPanel(group, x, y, z, w, h, depth, text, {
     vertical: false, bg, fg, emissive, emitInt, rotY,
   });
@@ -1064,14 +1072,15 @@ function buildNeonSignStreet(root) {
   for (let side = 0; side < 2; side++) {
     const toward = side === 0 ? 1 : -1;
     const baseX = side === 0 ? -6.2 : 6.2;
-    for (let col = 0; col < 5; col++) {
-      const z = -14 + col * 7.0;
-      const y = 4.0 + (col % 3) * 0.55;
+    for (let col = 0; col < 2; col++) {
+      const z = -10 + col * 14;
+      const y = 4.2;
       const st = hangStyles[(col + side * 2) % hangStyles.length];
       const txt = hangTexts[(col + side * 3) % hangTexts.length];
+      if (!txt) continue;
       const x = baseX + toward * 0.35;
-      addHangSign(root, x, y, z, 1.6, 0.45, txt, {
-        bg: st.bg, fg: st.fg, emissive: st.em, emitInt: 1.1,
+      addHangSign(root, x, y, z, 1.5, 0.4, txt, {
+        bg: st.bg, fg: st.fg, emissive: st.em, emitInt: 0.9,
       });
     }
   }
@@ -1114,13 +1123,14 @@ function buildNeonSignStreet(root) {
   for (let side = 0; side < 2; side++) {
     const toward = side === 0 ? 1 : -1;
     const baseX = side === 0 ? -6.4 : 6.4;
-    for (let col = 0; col < 4; col++) {
-      const z = -12 + col * 8;
-      const y = 3.6 + (col % 2) * 0.8;
+    for (let col = 0; col < 2; col++) {
+      const z = -8 + col * 14;
+      const y = 3.8;
       const st = lbStyles[(col + side) % lbStyles.length];
       const txt = ZH_LIGHTBOX[(col + side * 4) % ZH_LIGHTBOX.length];
-      addHangSign(root, baseX + toward * 0.25, y, z, 1.8, 0.48, txt, {
-        bg: st.bg, fg: st.fg, emissive: st.em, emitInt: 1.2,
+      if (!txt) continue;
+      addHangSign(root, baseX + toward * 0.25, y, z, 1.6, 0.42, txt, {
+        bg: st.bg, fg: st.fg, emissive: st.em, emitInt: 1.0,
       });
     }
   }
@@ -1673,10 +1683,12 @@ function buildSignCanyon(root) {
       addBox(root, bx, 0, z, 3.5, h, 3.0, 0xe4ddd0, 0x000000, 0, true);
       const toward = bx > 0 ? -1 : 1;
       const faceX = bx + toward * 1.7;
-      for (let t = 0; t < 6; t++) {
-        const col = [0xff2d9b, 0x00e8ff, 0xffd36a, 0xff4dc8, 0x40f0ff, 0xffa040][(i + t) % 6];
-        addHangSign(root, faceX + toward * (0.3 + t * 0.15), 3 + t * 1.4, z + (t % 3) * 0.2, 1.6, 0.45,
-          ZH_BANNERS[(i + t) % ZH_BANNERS.length], { bg: '#111', fg: '#fff', emissive: col, emitInt: 1.8 });
+      for (let t = 0; t < 2; t++) {
+        const col = [0xff2d9b, 0x00e8ff, 0xffd36a, 0xff4dc8][(i + t) % 4];
+        const label = ZH_BANNERS[(i + t) % ZH_BANNERS.length];
+        if (!label) continue;
+        addHangSign(root, faceX + toward * (0.25 + t * 0.12), 3.2 + t * 1.6, z, 1.5, 0.4,
+          label, { bg: '#111', fg: '#fff', emissive: col, emitInt: 1.2 });
       }
     }
   });
@@ -1770,8 +1782,127 @@ function buildHarbourFinal(root) {
   addPerimeter(root, 34, 5, 0x00e8ff, 0xff2d9b);
 }
 
+
+/** Photoreal TPP hero billboard from Multimedia refs/player/* (NOT low-poly chars.jpg).
+ *  player-back-full = follow-cam skin; gun-pose / melee-pose swap on combat; ots is framing ref. */
+const PLAYER_TEX = {
+  back: './refs/player/player-back-full.jpg',
+  gun: './refs/player/player-gun-pose.jpg',
+  melee: './refs/player/player-melee-pose.jpg',
+};
+const playerTexCache = new Map(); // url -> THREE.Texture (alpha-keyed)
+
+function chromaKeyPlayerTexture(img) {
+  const c = document.createElement('canvas');
+  c.width = img.naturalWidth || img.width;
+  c.height = img.naturalHeight || img.height;
+  const ctx = c.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(img, 0, 0);
+  const data = ctx.getImageData(0, 0, c.width, c.height);
+  const px = data.data;
+  for (let i = 0; i < px.length; i += 4) {
+    const r = px[i], g = px[i + 1], b = px[i + 2];
+    // key near-black studio backdrop → alpha
+    const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    if (lum < 18) px[i + 3] = 0;
+    else if (lum < 36) px[i + 3] = Math.min(px[i + 3], ((lum - 18) / 18) * 255);
+  }
+  ctx.putImageData(data, 0, 0);
+  const tex = new THREE.CanvasTexture(c);
+  if ('colorSpace' in tex && THREE.SRGBColorSpace) tex.colorSpace = THREE.SRGBColorSpace;
+  tex.needsUpdate = true;
+  return tex;
+}
+
+function loadPlayerPoseTex(url) {
+  return new Promise((resolve) => {
+    if (playerTexCache.has(url)) {
+      resolve(playerTexCache.get(url));
+      return;
+    }
+    const loader = getEnvLoader();
+    loader.load(
+      url,
+      (tex) => {
+        const img = tex.image;
+        const keyed = chromaKeyPlayerTexture(img);
+        tex.dispose?.();
+        playerTexCache.set(url, keyed);
+        resolve(keyed);
+      },
+      undefined,
+      () => resolve(null)
+    );
+  });
+}
+
+function makePlayerMesh() {
+  const g = new THREE.Group();
+  g.name = 'playerHero';
+
+  // Soft placeholder until textures resolve — thin dark capsule, never a teal cube head
+  const stub = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.22, 0.26, 1.6, 8),
+    new THREE.MeshStandardMaterial({ color: 0x1a2030, roughness: 0.8, transparent: true, opacity: 0.3 })
+  );
+  stub.position.y = 0.95;
+  stub.name = 'heroStub';
+  g.add(stub);
+
+  const mat = new THREE.SpriteMaterial({
+    color: 0xffffff,
+    transparent: true,
+    depthWrite: false,
+    alphaTest: 0.12,
+    fog: true,
+  });
+  const sprite = new THREE.Sprite(mat);
+  sprite.name = 'heroBillboard';
+  // 864×1152 portrait → ~0.95m × 1.85m human silhouette
+  sprite.scale.set(0.95, 1.85, 1);
+  sprite.position.y = 0.95;
+  sprite.visible = false;
+  g.add(sprite);
+  g.userData.billboard = sprite;
+  g.userData.stub = stub;
+  g.userData.pose = 'back';
+
+  // Kick off Multimedia pose loads
+  loadPlayerPoseTex(PLAYER_TEX.back).then((tex) => {
+    if (!tex || !g.userData.billboard) return;
+    g.userData.billboard.material.map = tex;
+    g.userData.billboard.material.needsUpdate = true;
+    g.userData.billboard.visible = true;
+    if (g.userData.stub) g.userData.stub.visible = false;
+  });
+  // warm gun/melee caches
+  loadPlayerPoseTex(PLAYER_TEX.gun);
+  loadPlayerPoseTex(PLAYER_TEX.melee);
+
+  return g;
+}
+
+function syncPlayerPoseBillboard() {
+  if (!playerMesh || !playerMesh.userData.billboard) return;
+  const gun = activeGunStats();
+  const want = gun && gun.melee ? 'melee' : ((keys.Mouse0 || keys.shoot) ? 'gun' : 'back');
+  if (playerMesh.userData.pose === want) return;
+  const url = want === 'melee' ? PLAYER_TEX.melee : want === 'gun' ? PLAYER_TEX.gun : PLAYER_TEX.back;
+  const apply = (tex) => {
+    if (!tex || !playerMesh?.userData?.billboard) return;
+    playerMesh.userData.billboard.material.map = tex;
+    playerMesh.userData.billboard.material.needsUpdate = true;
+    playerMesh.userData.billboard.visible = true;
+    if (playerMesh.userData.stub) playerMesh.userData.stub.visible = false;
+    playerMesh.userData.pose = want;
+  };
+  if (playerTexCache.has(url)) apply(playerTexCache.get(url));
+  else loadPlayerPoseTex(url).then(apply);
+}
+
 function makeBotMesh(color) {
   const g = new THREE.Group();
+  g.name = 'botActor';
   const body = new THREE.Mesh(
     new THREE.BoxGeometry(0.7, 1.1, 0.45),
     new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.25, roughness: 0.6 })
@@ -1915,7 +2046,7 @@ function disposeEnvGroup(root) {
   });
 }
 
-/** Apply photographic plate as sky/backdrop. Plate must dominate — no near cyclorama slabs. */
+/** Apply photographic plate onto sky + ground + near side walls. Plate must dominate — no teal slabs. */
 function applyCinematicEnv(root, mapId, tex) {
   if (!root || !tex || !scene) return false;
   disposeEnvGroup(root);
@@ -1923,7 +2054,7 @@ function applyCinematicEnv(root, mapId, tex) {
   const envGroup = new THREE.Group();
   envGroup.name = 'cinematicEnv';
 
-  // Photographic sky cylinder only (no ±42 cyclorama wall quads — those read as teal slabs)
+  // Photographic sky cylinder (far)
   const skyMat = new THREE.MeshBasicMaterial({
     map: tex,
     side: THREE.BackSide,
@@ -1935,7 +2066,7 @@ function applyCinematicEnv(root, mapId, tex) {
   sky.renderOrder = -2;
   envGroup.add(sky);
 
-  // One distant flat backdrop behind play (far Z−) — plate readable, not clipping FOV
+  // Distant backdrop
   const backdrop = new THREE.Mesh(
     new THREE.PlaneGeometry(120, 48),
     new THREE.MeshBasicMaterial({ map: tex, fog: false, depthWrite: false })
@@ -1944,49 +2075,117 @@ function applyCinematicEnv(root, mapId, tex) {
   backdrop.renderOrder = -3;
   envGroup.add(backdrop);
 
-  // Dark asphalt lane — solid dark, NOT tiled env plate (tiled plate looked broken/noisy)
-  const roadMat = new THREE.MeshStandardMaterial({
-    color: 0x141820,
-    roughness: 0.88,
-    metalness: 0.12,
-    emissive: 0x000000,
-    emissiveIntensity: 0,
-  });
-  const road = new THREE.Mesh(new THREE.PlaneGeometry(12, 64), roadMat);
-  road.rotation.x = -Math.PI / 2;
-  road.position.set(0, 0.02, 0);
-  envGroup.add(road);
-  for (let i = -6; i <= 6; i++) {
+  // Ground / road plate — env photo owns the floor (not skybox-only)
+  const groundPlate = new THREE.Mesh(
+    new THREE.PlaneGeometry(78, 78),
+    new THREE.MeshBasicMaterial({ map: tex, fog: true })
+  );
+  groundPlate.rotation.x = -Math.PI / 2;
+  groundPlate.position.y = 0.01;
+  groundPlate.name = 'envGroundPlate';
+  groundPlate.renderOrder = -1;
+  envGroup.add(groundPlate);
+
+  // Near side wall plates — walking-in-photo city, not procedural boxes
+  const wallMatL = new THREE.MeshBasicMaterial({ map: tex, fog: true, side: THREE.DoubleSide });
+  const wallMatR = new THREE.MeshBasicMaterial({ map: tex, fog: true, side: THREE.DoubleSide });
+  const wallMatF = new THREE.MeshBasicMaterial({ map: tex, fog: true, side: THREE.DoubleSide });
+  const wallMatB = new THREE.MeshBasicMaterial({ map: tex, fog: true, side: THREE.DoubleSide });
+  const sideL = new THREE.Mesh(new THREE.PlaneGeometry(70, 30), wallMatL);
+  sideL.position.set(-8.8, 13, 0);
+  sideL.rotation.y = Math.PI / 2;
+  sideL.name = 'envWallL';
+  envGroup.add(sideL);
+  const sideR = new THREE.Mesh(new THREE.PlaneGeometry(70, 30), wallMatR);
+  sideR.position.set(8.8, 13, 0);
+  sideR.rotation.y = -Math.PI / 2;
+  sideR.name = 'envWallR';
+  envGroup.add(sideR);
+  const endN = new THREE.Mesh(new THREE.PlaneGeometry(40, 28), wallMatF);
+  endN.position.set(0, 12, -26);
+  endN.name = 'envWallN';
+  envGroup.add(endN);
+  const endS = new THREE.Mesh(new THREE.PlaneGeometry(40, 28), wallMatB);
+  endS.position.set(0, 12, 26);
+  endS.rotation.y = Math.PI;
+  endS.name = 'envWallS';
+  envGroup.add(endS);
+
+  // Thin lane marks only (do not bury the plate under asphalt slabs)
+  for (let i = -5; i <= 5; i++) {
     const dash = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.28, 1.8),
-      new THREE.MeshBasicMaterial({ color: 0xc8b060 })
+      new THREE.PlaneGeometry(0.22, 1.5),
+      new THREE.MeshBasicMaterial({ color: 0xc8b060, transparent: true, opacity: 0.55 })
     );
     dash.rotation.x = -Math.PI / 2;
     dash.position.set(0, 0.03, i * 4.5);
     envGroup.add(dash);
   }
 
-  // Sparse curb silhouettes + soft neon props (plate stays the hero)
+  // Sparse curb silhouettes (plate stays the hero)
   densifyCinematicCitySlice(envGroup, root, mapId);
 
-  // Soft cinematic fill — keep intensity modest so plate reads
-  const neonPink = new THREE.PointLight(0xff4dc8, 0.85, 48, 2);
+  // Soft cinematic fill
+  const neonPink = new THREE.PointLight(0xff4dc8, 0.7, 48, 2);
   neonPink.position.set(-12, 9, 8);
   envGroup.add(neonPink);
-  const neonCyan = new THREE.PointLight(0x40f0ff, 0.75, 48, 2);
+  const neonCyan = new THREE.PointLight(0x40f0ff, 0.6, 48, 2);
   neonCyan.position.set(14, 8, -10);
   envGroup.add(neonCyan);
-  const amberFill = new THREE.PointLight(0xffd36a, 0.55, 36, 2);
+  const amberFill = new THREE.PointLight(0xffd36a, 0.45, 36, 2);
   amberFill.position.set(0, 6, 12);
   envGroup.add(amberFill);
-  const rim = new THREE.DirectionalLight(0xff80c8, 0.35);
+  const rim = new THREE.DirectionalLight(0xff80c8, 0.28);
   rim.position.set(-8, 22, -14);
   envGroup.add(rim);
 
   scene.background = tex;
-  scene.fog = new THREE.FogExp2(0x080e1a, 0.0055);
+  scene.fog = new THREE.FogExp2(0x080e1a, 0.0048);
   root.add(envGroup);
+
+  // Hide untextured building boxes / cyclorama leftovers so plates dominate
+  stripBlockyArena(root);
   return true;
+}
+
+/** Hide large untextured procedural slabs / neon lightbox forests; keep collision + curb props + hero/bots. */
+function stripBlockyArena(root) {
+  if (!root) return;
+  root.traverse((obj) => {
+    if (!obj.isMesh || !obj.geometry) return;
+    let p = obj;
+    while (p) {
+      if (p.name === 'cinematicEnv' || p.name === 'playerHero' || p.name === 'botActor') return;
+      p = p.parent;
+    }
+    const g = obj.geometry;
+    const params = g.parameters || {};
+    if (g.type === 'PlaneGeometry') {
+      const w = params.width || 0;
+      const h = params.height || 0;
+      // builder ground planes (large flat grey/teal floors)
+      if (w >= 20 && h >= 20) obj.visible = false;
+      return;
+    }
+    if (g.type === 'BoxGeometry') {
+      const w = params.width || 0;
+      const h = params.height || 0;
+      const d = params.depth || 0;
+      // tall/wide building masses, perimeter cyclorama walls, container stacks
+      const isBuilding = (h >= 2.35 && (w >= 2.8 || d >= 2.8));
+      const isPerimeter = (h >= 3.2 && ((w >= 16 && d <= 2.2) || (d >= 16 && w <= 2.2)));
+      const isTower = (h >= 8 && w <= 6 && d <= 6);
+      // floating neon lightbox boards / hang canopies that bury the plate
+      const isNeonBoard = (h <= 1.35 && h >= 0.28 && w >= 1.1 && d <= 0.35);
+      if (isBuilding || isPerimeter || isTower || isNeonBoard) {
+        obj.visible = false;
+      }
+    }
+    // hide canvas-textured hang panels that somehow still say undefined
+    if (obj.material && obj.material.map && obj.material.map.isCanvasTexture) {
+      // already guarded at create; leave small valid lexicon signs that survived size filter
+    }
+  });
 }
 
 /** Sparse HK curb silhouettes when env plate is live — plate stays the main visual. */
@@ -2011,22 +2210,22 @@ function densifyCinematicCitySlice(envGroup, root, mapId) {
     } catch (_) { /* soft */ }
   });
 
-  // 5 neon signs only — far on sides (x ±14+), never center FOV
-  const billboardCols = [0xff2d9b, 0x00e8ff, 0xffd36a, 0xff4dc8, 0x40f0ff];
-  for (let i = 0; i < 5; i++) {
+  // 3 soft neon accents only — far curb, never center FOV / never bury plate
+  const billboardCols = [0xff2d9b, 0x00e8ff, 0xffd36a];
+  for (let i = 0; i < 3; i++) {
     const side = i % 2 === 0 ? -1 : 1;
-    const x = side * (14.5 + rnd(i + 41) * 2.0);
-    const z = -18 + i * 8.5 + rnd(i + 42) * 1.5;
-    const y = 3.8 + rnd(i + 43) * 2.5;
+    const x = side * (15.5 + rnd(i + 41) * 1.5);
+    const z = -12 + i * 11 + rnd(i + 42) * 1.2;
+    const y = 3.5 + rnd(i + 43) * 1.8;
     const col = billboardCols[i % billboardCols.length];
-    addNeonSign(root, x, y, z, 1.8 + rnd(i + 44) * 1.0, 0.55 + rnd(i + 45) * 0.35, col);
+    addNeonSign(root, x, y, z, 1.4 + rnd(i + 44) * 0.6, 0.4 + rnd(i + 45) * 0.2, col);
   }
 
   // Light curb clutter
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 4; i++) {
     const side = rnd(i + 80) > 0.5 ? 1 : -1;
     const x = side * (8.5 + rnd(i + 81) * 1.2);
-    const z = -20 + i * 9;
+    const z = -18 + i * 10;
     const kind = Math.floor(rnd(i + 82) * 3);
     if (kind === 0) addTrashBin(root, x, z, i % 2);
     else if (kind === 1) addRedStool(root, x, z, false);
@@ -2036,14 +2235,7 @@ function densifyCinematicCitySlice(envGroup, root, mapId) {
   try {
     addZebraCrossing(root, 0, 0, true);
   } catch (_) {}
-
-  // Distant dark facade frames only (no emissive neon slabs) — keep plate readable
-  for (let i = -2; i <= 2; i++) {
-    if (i === 0) continue;
-    const h = 12 + Math.abs(i) * 2 + rnd(i + 100) * 3;
-    addBox(envGroup, -34, 0, i * 14, 5, h, 7, 0x0c1018, 0x000000, 0, false);
-    addBox(envGroup, 34, 0, i * 14, 5, h * 0.92, 7, 0x0e0c14, 0x000000, 0, false);
-  }
+  // no distant untextured façade frames — those read as teal/grey slabs against the plate
 }
 
 function beginEnvPlateLoad(root, mapId) {
@@ -2077,7 +2269,7 @@ function buildWorld(mapId) {
   scene.background = new THREE.Color(0x050818);
   scene.fog = new THREE.FogExp2(0x050818, 0.012);
 
-  camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.08, 200);
+  camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.12, 220);
   camera.position.set(0, PLAYER_HEIGHT, 0);
 
   const hemi = new THREE.HemisphereLight(0x80a0ff, 0x201030, 1.45);
@@ -2136,31 +2328,39 @@ function buildWorld(mapId) {
   spawnPickups(root);
   setupHoldZone(root, mapId);
 
-  // viewmodel gun
+  // Third-person hero (visible body) + world gun on right hand
+  if (playerMesh && playerMesh.parent) playerMesh.parent.remove(playerMesh);
+  playerMesh = makePlayerMesh();
+  root.add(playerMesh);
+
   gunMesh = new THREE.Group();
+  gunMesh.name = 'heroGun';
   const barrel = new THREE.Mesh(
     new THREE.BoxGeometry(0.08, 0.08, 0.55),
     new THREE.MeshStandardMaterial({ color: 0x1a2030, metalness: 0.7, roughness: 0.35 })
   );
-  barrel.position.set(0.22, -0.18, -0.45);
+  barrel.position.set(0, 0, -0.28);
   gunMesh.add(barrel);
   const body = new THREE.Mesh(
     new THREE.BoxGeometry(0.14, 0.16, 0.28),
     new THREE.MeshStandardMaterial({ color: 0x2a3040, emissive: 0x40f0ff, emissiveIntensity: 0.35 })
   );
-  body.position.set(0.22, -0.2, -0.22);
+  body.position.set(0, 0, 0);
   gunMesh.add(body);
   muzzleFlash = new THREE.Mesh(
     new THREE.SphereGeometry(0.06, 8, 8),
     new THREE.MeshBasicMaterial({ color: 0xffe080 })
   );
-  muzzleFlash.position.set(0.22, -0.18, -0.75);
+  muzzleFlash.position.set(0, 0, -0.55);
   muzzleFlash.visible = false;
   gunMesh.add(muzzleFlash);
-  camera.add(gunMesh);
+  gunMesh.position.set(0.38, 1.15, -0.28);
+  playerMesh.add(gunMesh);
+
   scene.add(camera);
 
   spawnBots(root);
+  updateCamera();
 }
 
 function resize() {
@@ -2323,14 +2523,41 @@ function applyPlayerPhysics(dt) {
 
 function updateCamera() {
   const eyeH = state.crouching || state.sliding ? CROUCH_HEIGHT : PLAYER_HEIGHT;
-  // keep y as eye height already
-  camera.position.set(state.x, state.y, state.z);
-  camera.rotation.order = 'YXZ';
-  camera.rotation.y = yaw;
-  camera.rotation.x = pitch;
+  const feetY = state.y - eyeH;
+
+  // Photoreal billboard hero at feet — Sprite auto-faces camera (OTS sees back-full)
+  if (playerMesh) {
+    playerMesh.visible = true;
+    playerMesh.position.set(state.x, feetY, state.z);
+    const crouch = state.crouching || state.sliding;
+    playerMesh.scale.set(crouch ? 0.92 : 1, crouch ? 0.78 : 1, 1);
+    syncPlayerPoseBillboard();
+  }
+
+  // GTA-like OTS chase: behind + slightly above + right of player
+  const sy = Math.sin(yaw);
+  const cy = Math.cos(yaw);
+  const back = CAM_BACK;
+  const right = CAM_RIGHT;
+  const up = CAM_UP + (state.crouching || state.sliding ? -0.25 : 0);
+  const camX = state.x + sy * back + cy * right;
+  const camY = state.y + up;
+  const camZ = state.z + cy * back + (-sy) * right;
+  camera.position.set(camX, camY, camZ);
+  // look along aim (yaw/pitch) through a point ahead of the hero
+  const { dx, dy, dz } = dirFromAngles(yaw, pitch);
+  const lookDist = 22;
+  camera.lookAt(
+    state.x + dx * lookDist,
+    state.y + dy * lookDist,
+    state.z + dz * lookDist
+  );
+
+  // Muzzle flash anchor only — photoreal poses already include the weapon; hide blocky gun mesh
   if (gunMesh) {
-    const bob = running ? Math.sin(performance.now() * 0.012) * (state.sliding ? 0.01 : 0.012) : 0;
-    gunMesh.position.set(0, bob, 0);
+    gunMesh.visible = false;
+    const bob = running ? Math.sin(performance.now() * 0.012) * 0.01 : 0;
+    gunMesh.position.set(0.25, 1.25 + bob, -0.45);
   }
 }
 
@@ -3309,6 +3536,10 @@ window.__dbg = () => ({
   className: classById(state.classId).nameEn,
   map: state.mapId,
   running,
+  cameraMode: 'tpp',
+  playerVisible: !!(playerMesh && playerMesh.visible),
+  playerBillboard: !!(playerMesh && playerMesh.userData && playerMesh.userData.billboard && playerMesh.userData.billboard.visible),
+  playerPose: playerMesh?.userData?.pose || null,
   ammo: state.ammo,
   sliding: state.sliding,
   gameMode: state.gameMode,
