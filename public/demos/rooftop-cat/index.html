@@ -27,17 +27,18 @@ button.play{margin-top:20px;min-height:48px;padding:0 28px;border:0;border-radiu
 #touch button{flex:1;background:transparent;border:0;opacity:0}
 
 
-#vg-back{position:fixed;left:12px;top:calc(10px + env(safe-area-inset-top));z-index:9999;pointer-events:auto;display:inline-flex;align-items:center;gap:6px;padding:10px 14px;border-radius:999px;font:700 13px "Noto Sans TC",system-ui,sans-serif;text-decoration:none;letter-spacing:.02em;border:1px solid #ffd36a55;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:0 4px 20px rgba(0,0,0,.45);transition:transform .15s ease,filter .15s;background:#1a1028cc;color:#ffd36a}
-#vg-back:hover{filter:brightness(1.15)}
-#vg-back:active{transform:scale(.96)}
-a.vg-catalog{display:inline-block;margin-top:14px;color:#ffd36a;font-weight:700;font-size:14px;text-decoration:none;opacity:.9}
-a.vg-catalog:hover{text-decoration:underline;opacity:1}
+
+/* Vincent Games Studio — always-on catalog exit (high visibility) */
+#vg-back-root{position:fixed;left:0;right:0;bottom:0;top:0;z-index:2147483647;pointer-events:none}
+#vg-back-root a.vg-back-btn{pointer-events:auto;position:fixed;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;min-width:48px;padding:12px 18px;border-radius:14px;font:800 16px/1.2 "Noto Sans TC",system-ui,sans-serif;text-decoration:none;letter-spacing:.02em;border:2px solid #ffd36a;background:#1a1028;color:#ffd36a;box-shadow:0 6px 28px rgba(0,0,0,.65),0 0 0 1px rgba(255,255,255,.08);-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+#vg-back-root a.vg-back-btn:active{transform:scale(.97)}
+#vg-back-bl{left:max(12px,env(safe-area-inset-left));bottom:max(14px,env(safe-area-inset-bottom))}
+#vg-back-tr{right:max(12px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));left:auto;bottom:auto;font-size:15px!important;min-height:44px;padding:10px 14px;opacity:.95}
+a.vg-catalog{display:inline-flex!important;align-items:center;justify-content:center;margin-top:16px;min-height:48px;padding:12px 22px;border-radius:999px;font:800 16px/1.2 "Noto Sans TC",system-ui,sans-serif;text-decoration:none!important;border:2px solid #ffd36a;background:#1a1028;color:#ffd36a!important;box-shadow:0 6px 20px rgba(0,0,0,.4);opacity:1!important;width:100%;max-width:320px;box-sizing:border-box}
+a.vg-catalog:hover{filter:brightness(1.12);text-decoration:none!important}
 </style>
 </head>
 <body>
-<a id="vg-back" href="/vincent-games-studio/games" title="返回遊戲目錄">← 返回遊戲目錄</a>
-
-
 <div id="wrap"><canvas id="c"></canvas></div>
 <div id="hud">
   <div class="l"><small>GOAL · 目標</small>抵達遠端天台</div>
@@ -302,6 +303,34 @@ function drawCat(x,y,facing,ground,t){
 }
 
 reset(); draw();
+})();
+</script>
+<div id="vg-back-root" aria-label="catalog"><a id="vg-back-bl" class="vg-back-btn" href="/vincent-games-studio/games" title="← 返回遊戲目錄">← 返回遊戲目錄</a><a id="vg-back-tr" class="vg-back-btn" href="/vincent-games-studio/games" title="← 返回遊戲目錄">← 返回遊戲目錄</a></div>
+<script>
+(function(){
+  var HREF='/vincent-games-studio/games', LABEL='← 返回遊戲目錄';
+  function ensure(){
+    var root=document.getElementById('vg-back-root');
+    if(!root){
+      root=document.createElement('div');
+      root.id='vg-back-root';
+      root.setAttribute('aria-hidden','false');
+      var mk=function(id,title){
+        var a=document.createElement('a');
+        a.id=id; a.className='vg-back-btn'; a.href=HREF; a.title=LABEL; a.textContent=LABEL;
+        return a;
+      };
+      root.appendChild(mk('vg-back-bl','bottom'));
+      root.appendChild(mk('vg-back-tr','top'));
+    }
+    if(root.parentNode!==document.body) document.body.appendChild(root);
+    else if(document.body.lastElementChild!==root) document.body.appendChild(root);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',ensure);
+  else ensure();
+  setTimeout(ensure,0);
+  setTimeout(ensure,500);
+  setTimeout(ensure,2000);
 })();
 </script>
 </body>
