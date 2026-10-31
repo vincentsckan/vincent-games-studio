@@ -33,7 +33,7 @@ Without those secrets, the site still builds and falls back to `src/data/games.t
 
 ```bash
 npm run build:pages
-npx gh-pages -d dist -b gh-pages
+npx gh-pages -d dist -b gh-pages --dotfiles
 ```
 
 ## After deploy · 部署後
