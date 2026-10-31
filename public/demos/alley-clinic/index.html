@@ -32,6 +32,13 @@ button.play:active{transform:scale(.97)}
 </style>
 </head>
 <body>
+
+<div id="booterr" style="display:none;position:fixed;inset:0;z-index:9;background:#120810;color:#ffe8f0;padding:28px;font:600 15px/1.5 Noto Sans TC,system-ui,sans-serif;text-align:center">
+  <p style="margin-top:20vh">載入唔到遊戲。請檢查網絡後重新整理，或者撳右上角返回目錄。</p>
+  <p style="opacity:.8;margin-top:12px;font-size:13px"></p>
+  <p style="margin-top:18px"><a href="/vincent-games-studio/games" style="color:#40f0ff">← 返回遊戲目錄</a></p>
+</div>
+
 <div id="hud"><div class="l"><small>ALLEY CLINIC</small><span id="msg">收集 3 支血清 · 避開「病人」</span></div><div class="r"><small>SERUM</small><span id="serum">0 / 3</span></div></div>
 <div id="cross"></div>
 <div id="overlay"><div class="card">
@@ -39,13 +46,34 @@ button.play:active{transform:scale(.97)}
   <div class="sub">ALLEY CLINIC · 3D HORROR</div>
   <p>霓虹照亮後巷診所，地磚上的血還沒乾。走廊盡頭傳來拖行聲——那些「病人」已經不再是病人。你要在手術燈下搶走<strong>三支血清</strong>，打開緊急出口逃出這間非法診所。</p>
   <p style="margin-top:10px;font-size:13px;opacity:.85">電腦：WASD 移動 · 滑鼠環視 · E 拾取<br/>手機：虛擬方向鍵 · 拖曳畫面轉身</p>
-  <button class="play" id="btnStart">推門進去</button>
+  <button class="play" id="btnStart" disabled>載入 3D 場景中…</button>
 </div></div>
 <div id="touch"><button id="tL"></button><button id="tF"></button><button id="tR"></button><button id="tB"></button></div>
 <div id="vg-back-root" aria-label="catalog"><a id="vg-back-tr" class="vg-back-btn" href="/vincent-games-studio/games" title="← 返回遊戲目錄">← 返回遊戲目錄</a></div>
-<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js"}}</script>
+<script>
+window.addEventListener('error',function(ev){
+  var el=document.getElementById('booterr');
+  if(el){ el.style.display='block'; }
+},{once:false});
+window.addEventListener('unhandledrejection',function(){
+  var el=document.getElementById('booterr');
+  if(el){ el.style.display='block'; }
+});
+</script>
+<script type="importmap">{"imports":{"three":"../vendor/three.module.min.js"}}</script>
 <script type="module">
-import * as THREE from 'three';
+function showBootErr(msg){
+  const el=document.getElementById('booterr');
+  if(el){ el.style.display='block'; if(msg){ const p=el.querySelector('p'); if(p) p.textContent=msg; } }
+  console.error(msg||'boot fail');
+}
+const THREE = await import('three').catch(err=>{ showBootErr('Three.js 載入失敗，請刷新或返目錄。'); throw err; });
+try{
+  const c=document.createElement('canvas');
+  const gl=c.getContext('webgl2')||c.getContext('webgl');
+  if(!gl) throw new Error('WebGL unavailable');
+}catch(e){ showBootErr('呢部裝置唔支援 WebGL，玩唔到 3D 試玩。'); throw e; }
+
 
 const overlay=document.getElementById('overlay');
 const btn=document.getElementById('btnStart');
@@ -61,15 +89,15 @@ let yaw=Math.PI, pitch=0;
 
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x08040c);
-scene.fog=new THREE.FogExp2(0x120818,0.06);
+scene.fog=new THREE.FogExp2(0x1a1020,0.03);
 const camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,0.08,70);
 const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 renderer.setSize(innerWidth,innerHeight);
 document.body.appendChild(renderer.domElement);
 
-scene.add(new THREE.HemisphereLight(0xff88aa,0x100818,0.4));
-scene.add(new THREE.AmbientLight(0x2a1020,0.3));
+scene.add(new THREE.HemisphereLight(0xffaacc,0x201020,0.9));
+scene.add(new THREE.AmbientLight(0x4a2038,0.6));
 
 const mats={
   wall:new THREE.MeshStandardMaterial({color:0x1a1018,roughness:0.9}),
@@ -118,8 +146,8 @@ for(let i=0;i<8;i++){
   const z=-18+i*5;
   box(0.08,0.12,2.5,-5.7,2.6,z,mats.neonP,false);
   box(0.08,0.12,2.5,5.7,2.6,z+1,mats.neonC,false);
-  light(-5.5,2.5,z,0xff2a8a,1.1,9);
-  light(5.5,2.5,z+1,0x20e8ff,1.0,9);
+  light(-5.5,2.5,z,0xff2a8a,2.0,12);
+  light(5.5,2.5,z+1,0x20e8ff,1.8,12);
 }
 
 // gurneys / tools
@@ -131,8 +159,8 @@ for(let i=0;i<8;i++){
   if(i%2===0) box(0.9,2.2,0.05,x+1.2,1.2,z,mats.curtain,false);
 });
 
-light(0,2.7,0,0xff6688,0.8,14);
-const surg=light(-10,2.8,10,0xffffff,1.8,8);
+light(0,2.7,0,0xff6688,1.8,18);
+const surg=light(-10,2.8,10,0xffffff,2.6,12);
 
 // serums
 const serumMeshes=[];
@@ -160,6 +188,7 @@ const patients=[makePatient(10,10), makePatient(-8,-10)];
 
 const player=new THREE.Vector3(0,1.55,-18);
 camera.position.copy(player);
+const spawnFill=new THREE.PointLight(0xff88cc,2.4,16); spawnFill.position.set(0,2.4,-18); scene.add(spawnFill);
 
 function blocked(nx,nz){
   const r=0.28;
@@ -206,6 +235,8 @@ function start(){
   if(isTouch) touch.classList.add('on');
   else renderer.domElement.requestPointerLock?.();
 }
+const sub=document.querySelector('.card .sub'); if(sub) sub.textContent='ALLEY CLINIC · 3D READY';
+btn.disabled=false; btn.textContent='推門進去';
 btn.onclick=start;
 
 addEventListener('keydown',e=>{keys[e.code]=true; if(e.code==='KeyE') tryInteract();});

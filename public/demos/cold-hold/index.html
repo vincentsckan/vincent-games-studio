@@ -32,6 +32,13 @@ button.play:active{transform:scale(.97)}
 </style>
 </head>
 <body>
+
+<div id="booterr" style="display:none;position:fixed;inset:0;z-index:9;background:#120810;color:#ffe8f0;padding:28px;font:600 15px/1.5 Noto Sans TC,system-ui,sans-serif;text-align:center">
+  <p style="margin-top:20vh">載入唔到遊戲。請檢查網絡後重新整理，或者撳右上角返回目錄。</p>
+  <p style="opacity:.8;margin-top:12px;font-size:13px"></p>
+  <p style="margin-top:18px"><a href="/vincent-games-studio/games" style="color:#40f0ff">← 返回遊戲目錄</a></p>
+</div>
+
 <div id="hud"><div class="l"><small>COLD HOLD</small><span id="msg">找冷藏室鑰匙 · 避開屠夫</span></div><div class="r"><small>STRESS</small><span id="stress">0%</span></div></div>
 <div id="cross"></div>
 <div id="overlay"><div class="card">
@@ -39,13 +46,34 @@ button.play:active{transform:scale(.97)}
   <div class="sub">COLD HOLD · 3D HORROR</div>
   <p>冷氣嘶嘶作響。掛鉤上的肉還在滴血。你必須在凍肉走廊裡找回<strong>冷藏室鑰匙</strong>，然後逃到出口——但屠夫正在巡視，聽到腳步就會追過來。</p>
   <p style="margin-top:10px;font-size:13px;opacity:.85">電腦：WASD 移動 · 滑鼠環視 · E 拾取／開門<br/>手機：虛擬方向鍵 · 拖曳畫面轉身</p>
-  <button class="play" id="btnStart">進入冷庫</button>
+  <button class="play" id="btnStart" disabled>載入 3D 場景中…</button>
 </div></div>
 <div id="touch"><button id="tL"></button><button id="tF"></button><button id="tR"></button><button id="tB"></button></div>
 <div id="vg-back-root" aria-label="catalog"><a id="vg-back-tr" class="vg-back-btn" href="/vincent-games-studio/games" title="← 返回遊戲目錄">← 返回遊戲目錄</a></div>
-<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js"}}</script>
+<script>
+window.addEventListener('error',function(ev){
+  var el=document.getElementById('booterr');
+  if(el){ el.style.display='block'; }
+},{once:false});
+window.addEventListener('unhandledrejection',function(){
+  var el=document.getElementById('booterr');
+  if(el){ el.style.display='block'; }
+});
+</script>
+<script type="importmap">{"imports":{"three":"../vendor/three.module.min.js"}}</script>
 <script type="module">
-import * as THREE from 'three';
+function showBootErr(msg){
+  const el=document.getElementById('booterr');
+  if(el){ el.style.display='block'; if(msg){ const p=el.querySelector('p'); if(p) p.textContent=msg; } }
+  console.error(msg||'boot fail');
+}
+const THREE = await import('three').catch(err=>{ showBootErr('Three.js 載入失敗，請刷新或返目錄。'); throw err; });
+try{
+  const c=document.createElement('canvas');
+  const gl=c.getContext('webgl2')||c.getContext('webgl');
+  if(!gl) throw new Error('WebGL unavailable');
+}catch(e){ showBootErr('呢部裝置唔支援 WebGL，玩唔到 3D 試玩。'); throw e; }
+
 
 const overlay=document.getElementById('overlay');
 const btn=document.getElementById('btnStart');
@@ -64,17 +92,17 @@ let yaw=0,pitch=0;
 
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x020608);
-scene.fog=new THREE.FogExp2(0x061018,0.055);
+scene.fog=new THREE.FogExp2(0x0a1824,0.028);
 const camera=new THREE.PerspectiveCamera(70,innerWidth/innerHeight,0.08,80);
 const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 renderer.setSize(innerWidth,innerHeight);
-renderer.shadowMap.enabled=true;
+renderer.shadowMap.enabled=false;
 document.body.appendChild(renderer.domElement);
 
-const hemi=new THREE.HemisphereLight(0x4a7080,0x050810,0.35);
+const hemi=new THREE.HemisphereLight(0x8ab0c8,0x0a1520,0.85);
 scene.add(hemi);
-const amb=new THREE.AmbientLight(0x1a3040,0.25);
+const amb=new THREE.AmbientLight(0x3a6080,0.55);
 scene.add(amb);
 
 const mats={
@@ -93,12 +121,12 @@ const mats={
 const colliders=[];
 function box(w,h,d,x,y,z,mat,solid=true){
   const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
-  m.position.set(x,y,z); m.castShadow=true; m.receiveShadow=true; scene.add(m);
+  m.position.set(x,y,z); scene.add(m);
   if(solid) colliders.push({min:new THREE.Vector3(x-w/2,y-h/2,z-d/2),max:new THREE.Vector3(x+w/2,y+h/2,z+d/2)});
   return m;
 }
 function addLight(x,y,z,c,i=1.2,d=12){
-  const L=new THREE.PointLight(c,i,d); L.position.set(x,y,z); L.castShadow=true; scene.add(L);
+  const L=new THREE.PointLight(c,i,d); L.position.set(x,y,z); scene.add(L);
   const bulb=new THREE.Mesh(new THREE.SphereGeometry(0.08,8,8),new THREE.MeshBasicMaterial({color:c}));
   bulb.position.copy(L.position); scene.add(bulb); return L;
 }
@@ -139,11 +167,11 @@ for(let i=0;i<10;i++){
   box(0.15,0.04,0.15,x,1.25,z,mats.blood,false);
 }
 
-addLight(-10,2.6,-8,0x88ccee,1.4,14);
-addLight(10,2.6,6,0x6688aa,1.0,12);
-addLight(0,2.6,14,0xaa3344,0.9,10);
-addLight(-14,2.6,10,0x77aacc,1.1,12);
-const flicker=addLight(6,2.6,-14,0xffeeee,1.6,11);
+addLight(-10,2.6,-8,0x88ccee,2.4,18);
+addLight(10,2.6,6,0x88aacc,2.0,16);
+addLight(0,2.6,14,0xcc5566,1.6,14);
+addLight(-14,2.6,10,0x99ccee,2.0,16);
+const flicker=addLight(6,2.6,-14,0xffeeee,2.4,14);
 
 // Key
 const keyMesh=box(0.25,0.08,0.5, -18,0.4,18, mats.keyGlow, false);
@@ -164,6 +192,7 @@ let butcherTarget=new THREE.Vector3(12,0,12), butcherAlert=0;
 
 const player=new THREE.Vector3(0,1.55,0);
 camera.position.copy(player);
+const spawnFill=new THREE.PointLight(0xaad4ff,2.2,16); spawnFill.position.set(0,2.4,0); scene.add(spawnFill);
 
 function blocked(nx,nz){
   const r=0.28;
@@ -211,6 +240,8 @@ function start(){
   else renderer.domElement.requestPointerLock?.();
   msgEl.textContent='找冷藏室鑰匙 · 避開屠夫';
 }
+const sub=document.querySelector('.card .sub'); if(sub) sub.textContent='COLD HOLD · 3D READY';
+btn.disabled=false; btn.textContent='進入冷庫';
 btn.onclick=start;
 
 addEventListener('keydown',e=>{keys[e.code]=true; if(e.code==='KeyE') tryInteract();});
