@@ -131,7 +131,32 @@ try {
   check('no leftover blocky boxes', audit && audit.box === 0, JSON.stringify(audit));
   check('no leftover blocky planes', audit && audit.plane === 0, JSON.stringify(audit));
   check('no leftover canvas signs', audit && audit.canvas === 0, JSON.stringify(audit));
+  check('no solid-color box slabs', audit && (audit.solidColorBoxes|0) === 0, JSON.stringify(audit));
   check('collision solids kept', audit && audit.solids > 8, JSON.stringify(audit));
+
+  // signs map — Vincent FAIL screenshot map; near FOV must stay plate-only
+  await page.evaluate(() => window.__startForTest('signs', 'spark'));
+  await page.waitForFunction(() => {
+    const d = window.__dbg && window.__dbg();
+    const s = window.__envPlateStatus && window.__envPlateStatus('signs');
+    return d && d.map === 'signs' && d.running && s && (s.status === 'ready' || s.status === 'missing');
+  }, { timeout: 10000 });
+  const signsAudit = await page.evaluate(() => window.__arenaVisualAudit && window.__arenaVisualAudit());
+  check('signs no blocky boxes', signsAudit && signsAudit.box === 0, JSON.stringify(signsAudit));
+  check('signs no solid-color slabs', signsAudit && (signsAudit.solidColorBoxes|0) === 0, JSON.stringify(signsAudit));
+  check('signs no canvas lightboxes', signsAudit && signsAudit.canvas === 0, JSON.stringify(signsAudit));
+
+  // NPC must walk/chase — standing still is a bug (Vincent)
+  const botMotion = await page.evaluate(() => {
+    if (typeof window.__botMotionProbe !== 'function') return { ok: false, reason: 'no-probe' };
+    return window.__botMotionProbe(0.9);
+  });
+  check('bots move/chase', botMotion && botMotion.ok === true, JSON.stringify(botMotion));
+  const botVis = await page.evaluate(() => {
+    const d = window.__dbg && window.__dbg();
+    return { bots: d && d.bots, enemy: d && d.enemyBots, alive: (window.__botMotionProbe && true) };
+  });
+  check('bots spawned', botVis && botVis.bots >= 4, JSON.stringify(botVis));
 
   const meleeHud = await page.$eval('#meleeHud', (el) => el.textContent.trim()).catch(() => '');
   check('melee HUD 身肉搏 · 拳頭', /^身肉搏 · (拳頭|膝撞|霓虹刀)$/.test(meleeHud), meleeHud);
