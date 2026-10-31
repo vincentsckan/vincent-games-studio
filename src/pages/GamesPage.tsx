@@ -21,7 +21,7 @@ export function GamesPage() {
       <PageHeading
         eyebrow="遊戲目錄"
         title="嚟玩吓"
-        subtitle="以 2D／3D 篩選。揀一款入詳情，或者直接試玩——瀏覽器即開，唔使安裝。"
+        subtitle="用 2D／3D 篩選。入詳情睇介紹，或者直接試玩——瀏覽器開到就玩。"
       />
 
       <div className="mt-8">

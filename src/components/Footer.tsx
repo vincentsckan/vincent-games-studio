@@ -23,7 +23,7 @@ export function Footer() {
               關於
             </Link>
             <Link to="/contact" className="inline-flex min-h-11 items-center text-fog hover:text-gold">
-              聯絡／媒體
+              聯絡
             </Link>
           </div>
           <div className="flex flex-col gap-3">

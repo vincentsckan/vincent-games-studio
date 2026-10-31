@@ -49,11 +49,11 @@ export const studio = {
   nameEn: 'Vincent Games Studio',
   studioZh: 'Vincent Games Studio',
   studioEn: 'Vincent Games Studio',
-  taglineZh: '歡迎嚟玩——氣氛、手感、再玩一次。香港獨立遊戲工作室。',
+  taglineZh: '歡迎嚟玩。氣氛、手感、再玩一次——香港獨立遊戲工作室。',
   taglineEn: 'Crafting memorable indie experiences through light, shadow, and story.',
-  aboutZh: `Vincent Games Studio 係香港獨立遊戲工作室，專注氣氛敘事同手感打磨。作品橫跨 2D 同 3D，靈感常來自城市肌理、港口霧氣，以及那些「差一點就說出口」嘅情感。
+  aboutZh: `Vincent Games Studio 係香港獨立遊戲工作室，專心打磨氣氛同手感。作品有 2D 亦有 3D，靈感好多時嚟自城市街景、港口霧氣，同埋差啲講出口嘅感覺。
 
-我哋目標好簡單：等你願意停低，再撳一次「再玩一次」。`,
+我哋只想一件事：等你願意停低，再撳一次「再玩一次」。`,
   aboutEn: `Vincent Games Studio is focused on atmospheric storytelling and tactile feel. The work spans 2D and 3D, often inspired by Hong Kong's urban grain, harbour fog, and emotions that almost get said out loud.
 
 The studio's aim is simple: make players stop—and hit "play again."`,

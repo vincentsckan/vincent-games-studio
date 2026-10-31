@@ -18,26 +18,23 @@ export function Hero() {
 
       <div className="mx-auto grid w-full max-w-6xl gap-10 px-4 py-14 sm:gap-12 sm:px-6 sm:py-20 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:gap-16 lg:py-24">
         <div>
-          <p className="mb-3 text-sm font-semibold tracking-wide text-teal">香港獨立遊戲 · 即開試玩</p>
+          <p className="mb-3 text-sm font-semibold tracking-wide text-teal">香港獨立遊戲 · 撳一下就玩</p>
           <h1 className="font-display text-4xl font-extrabold leading-[1.15] tracking-tight text-paper text-balance sm:text-5xl lg:text-[3.25rem]">
-            {studio.studioZh}
+            {studio.taglineZh}
             <span className="mt-2 block font-en text-xl font-semibold text-mist/90 sm:text-2xl">
               {studio.studioEn}
             </span>
           </h1>
-          <p className="mt-6 max-w-xl text-lg leading-relaxed text-fog/95">
-            {studio.taglineZh}
-          </p>
-          <p className="mt-3 max-w-xl text-base leading-relaxed text-mist">
-            屋邨走廊、天台夜色、霓虹巷仔、茶餐廳節奏——揀一款，撳下去就玩。
+          <p className="mt-6 max-w-xl text-base leading-relaxed text-mist">
+            屋邨走廊、天台夜色、霓虹巷仔、茶餐廳節奏——揀一款，即刻開波。
           </p>
 
           <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <CtaButton to="/games" variant="primary" className="w-full sm:w-auto">
-              瀏覽遊戲 · 開始試玩
+              即刻試玩
             </CtaButton>
             <CtaButton to="/about" variant="ghost" className="w-full sm:w-auto">
-              認識工作室
+              認識我哋
             </CtaButton>
           </div>
         </div>

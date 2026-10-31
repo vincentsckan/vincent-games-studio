@@ -10,7 +10,7 @@ export function HomePage() {
   usePageMeta({
     title: 'Vincent Games Studio｜香港獨立遊戲',
     description:
-      '歡迎嚟玩——氣氛、手感、再玩一次。瀏覽遊戲目錄，即開試玩 2D 與 3D 作品。',
+      '歡迎嚟玩。氣氛、手感、再玩一次——香港獨立遊戲工作室。免費試玩，唔使安裝。',
     image: 'og-default.jpg',
   })
   const { games, loading, error } = useCatalogGames()
@@ -28,7 +28,7 @@ export function HomePage() {
               精選遊戲
             </h2>
             <p className="mt-3 text-base leading-relaxed text-mist">
-              想即刻玩？撳卡片入詳情，或者直接「試玩」。2D 同 3D 都有。
+              想即刻玩？撳卡片入去，或者直接「試玩」。免費、唔使安裝。
             </p>
           </div>
           <CtaButton to="/games" variant="ghost" className="self-start sm:self-auto">
@@ -76,7 +76,7 @@ export function HomePage() {
             </p>
             <div className="mt-8">
               <CtaButton to="/about" variant="secondary">
-                認識工作室
+                認識我哋
               </CtaButton>
             </div>
           </div>
@@ -88,7 +88,7 @@ export function HomePage() {
               — {studio.studioZh} · {studio.location}
             </p>
             <CtaButton to="/contact" variant="ghost" className="mt-8">
-              媒體／合作洽詢
+              想合作／採訪？聯絡我哋
             </CtaButton>
           </div>
         </div>

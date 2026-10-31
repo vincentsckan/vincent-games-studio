@@ -60,10 +60,10 @@ export function AboutPage() {
 
       <div className="mt-12 flex flex-wrap gap-3">
         <CtaButton to="/games" variant="primary">
-          瀏覽遊戲 · 試玩
+          即刻試玩
         </CtaButton>
         <CtaButton to="/contact" variant="ghost">
-          聯絡／Press Kit
+          想合作／採訪？聯絡我哋
         </CtaButton>
       </div>
     </div>

@@ -13,9 +13,9 @@ const pressAssets = [
 export function ContactPage() {
   usePageMeta({
     image: 'og-default.jpg',
-    title: '聯絡／媒體｜Vincent Games Studio',
+    title: '聯絡｜Vincent Games Studio',
     description:
-      '媒體採訪、實況合作、發行洽談——歡迎聯絡 Vincent Games Studio（香港）。',
+      '想合作／採訪？歡迎聯絡 Vincent Games Studio（香港）。',
   })
 
   return (
@@ -23,7 +23,7 @@ export function ContactPage() {
       <PageHeading
         eyebrow="聯絡"
         title="有嘢想傾？歡迎嚟信"
-        subtitle="媒體採訪、實況合作、發行洽談——我哋好樂意聽吓你嘅想法。"
+        subtitle="想合作／採訪？寫信過嚟——我哋好樂意聽吓你嘅想法。"
       />
 
       <div className="mt-10 grid gap-5 sm:grid-cols-2">
@@ -45,9 +45,9 @@ export function ContactPage() {
       </div>
 
       <div className="mt-14">
-        <h2 className="font-display text-2xl font-bold text-paper">媒體素材</h2>
+        <h2 className="font-display text-2xl font-bold text-paper">媒體／合作素材</h2>
         <p className="mt-2 text-sm leading-relaxed text-fog">
-          以下係準備中嘅清單。需要 Press Kit 可以先電郵我哋，會盡快提供。
+          以下係準備中嘅清單。想合作／採訪？電郵我哋，會盡快提供標誌同截圖。
         </p>
         <ul className="mt-6 divide-y divide-white/10 overflow-hidden rounded-2xl border border-white/10">
           {pressAssets.map((a) => (
@@ -62,10 +62,10 @@ export function ContactPage() {
         </ul>
         <div className="mt-8 flex flex-wrap gap-3">
           <CtaButton
-            href={`mailto:${studio.email}?subject=Press%20Kit%20Request`}
+            href={`mailto:${studio.email}?subject=%E5%90%88%E4%BD%9C%EF%BC%8F%E6%8E%A1%E8%A8%AA`}
             variant="secondary"
           >
-            索取 Press Kit
+            想合作／採訪？聯絡我哋
           </CtaButton>
           <CtaButton to="/games" variant="ghost">
             先睇遊戲
