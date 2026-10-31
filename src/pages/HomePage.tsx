@@ -1,6 +1,8 @@
 import { GameCard } from '../components/GameCard'
 import { CtaButton } from '../components/CtaButton'
 import { Hero } from '../components/Hero'
+import { StreetMap } from '../components/StreetMap'
+import { TonightPick } from '../components/TonightPick'
 import { EmptyState, LoadingGrid } from '../components/ui/States'
 import { studio } from '../data/games'
 import { useCatalogGames } from '../hooks/useCatalogGames'
@@ -19,6 +21,10 @@ export function HomePage() {
   return (
     <>
       <Hero />
+
+      <TonightPick games={games} loading={loading} />
+
+      {!loading && !error && games.length > 0 ? <StreetMap games={games} /> : null}
 
       <section className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20">
         <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">

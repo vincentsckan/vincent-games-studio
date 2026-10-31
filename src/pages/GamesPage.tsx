@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { FilterChips, type FilterValue } from '../components/FilterChips'
 import { GameCard } from '../components/GameCard'
 import { EmptyState, LoadingGrid, PageHeading } from '../components/ui/States'
@@ -23,6 +24,21 @@ export function GamesPage() {
         title="嚟玩吓"
         subtitle="用 2D／3D 篩選。入詳情睇介紹，或者直接試玩——瀏覽器開到就玩。"
       />
+
+      <div className="mt-6 rounded-2xl border border-white/10 bg-panel/40 px-5 py-4 sm:flex sm:items-center sm:justify-between sm:gap-6">
+        <div className="max-w-xl">
+          <p className="text-sm font-semibold text-rose">香港街景地圖</p>
+          <p className="mt-1 text-sm leading-relaxed text-mist">
+            舊邨走廊、天台夜色、旺角霓虹、茶餐廳節奏——喺首頁地圖撳一下區域就入去。
+          </p>
+        </div>
+        <Link
+          to="/#street-map"
+          className="mt-4 inline-flex min-h-11 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/5 px-5 text-sm font-semibold text-paper hover:bg-white/10 sm:mt-0"
+        >
+          去睇街景地圖
+        </Link>
+      </div>
 
       <div className="mt-8">
         <FilterChips value={filter} onChange={setFilter} />
