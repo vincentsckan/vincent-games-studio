@@ -118,14 +118,14 @@ export const games: Game[] = [
     slug: 'cold-hold',
     titleZh: '凍肉倉',
     titleEn: 'Cold Hold',
-    taglineZh: '冷氣嘶嘶，鉤上還在滴血。',
+    taglineZh: '冷氣嘶嘶，鉤上仲滴緊血。',
     taglineEn: 'Freezer hiss. Hooks still drip.',
     dimension: '3D',
     status: 'demo',
     year: 2026,
     genres: ['恐怖', '生存', '第一人稱'],
     hookZh:
-      '工業凍庫停電後只剩緊急燈。掛鉤上的肉還溫熱，走廊盡頭傳來剁骨聲。你要在屠夫巡視前找回冷藏室鑰匙，推開出口逃進夜雨。',
+      '工業凍庫停電，淨返緊急燈。掛鉤上啲肉仲暖，走廊尾有剁骨聲。搵凍庫鎖匙，喺屠夫嚟到之前推門逃入夜雨。',
     hookEn:
       'After the blackout, only emergency lights remain. Meat on the hooks is still warm; a cleaver echoes down the corridor. Find the cold-room key before the butcher finds you.',
     gameplayZh:
@@ -169,14 +169,14 @@ export const games: Game[] = [
     slug: 'alley-clinic',
     titleZh: '後巷夜診',
     titleEn: 'Alley Clinic',
-    taglineZh: '霓虹診所，血還沒乾。',
+    taglineZh: '霓虹診所，血仲未乾。',
     taglineEn: 'Neon clinic. Blood still wet.',
     dimension: '3D',
     status: 'demo',
     year: 2026,
     genres: ['恐怖', '潛行', '第一人稱'],
     hookZh:
-      '後巷霓虹照亮非法診所。地磚上的血沒乾，那些「病人」已經起來走路。你要搶走三支血清，打開緊急出口——別被拖上病床。',
+      '後巷霓虹照住非法診所。地磚血未乾，「病人」已經企起行。搶走三支血清、開緊急出口——唔好俾人拖上床。',
     hookEn:
       'Neon lights an illegal back-alley clinic. Blood on the tiles hasn’t dried; the “patients” are walking again. Steal three serums and hit the emergency exit—before they admit you.',
     gameplayZh:

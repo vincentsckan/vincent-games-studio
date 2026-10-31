@@ -36,13 +36,13 @@ const ZONES: ZoneDef[] = [
   },
   {
     zoneTitle: '凍肉冷庫',
-    blurb: '鉤上滴血，找鑰匙逃命。',
+    blurb: '冷氣嘶嘶，鉤上仲滴緊血。',
     match: (g) => g.id === 'cold-hold' || g.slug === 'cold-hold',
     fallbackSlug: 'cold-hold',
   },
   {
     zoneTitle: '後巷夜診',
-    blurb: '霓虹診所，血清換命。',
+    blurb: '霓虹診所，血仲未乾。',
     match: (g) => g.id === 'alley-clinic' || g.slug === 'alley-clinic',
     fallbackSlug: 'alley-clinic',
   },
