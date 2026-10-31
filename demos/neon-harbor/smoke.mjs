@@ -57,7 +57,7 @@ try {
 
   const splashPrimary = await page.$eval('#splashPrimary', (el) => el.textContent.trim()).catch(() => '');
   const splashSecondary = await page.$eval('#splashSecondary', (el) => el.textContent.trim()).catch(() => '');
-  check('splash primary Translation', splashPrimary === '霓虹未熄，港灣已開打——鏡頭一開就係戰場。', splashPrimary);
+  check('splash primary Translation', splashPrimary === '鏡頭跟住你，港灣開打。', splashPrimary);
   check('splash secondary Translation', splashSecondary === 'Channel 7 開波，今晚收視你話事。', splashSecondary);
   const heroA1 = await page.$eval('#splashHeroA1', (img) => ({ src: img.getAttribute('src'), ok: img.complete && img.naturalWidth > 0 })).catch(() => null);
   const heroB2 = await page.$eval('#splashHeroB2', (img) => ({ src: img.getAttribute('src'), ok: img.complete && img.naturalWidth > 0 })).catch(() => null);
@@ -70,7 +70,7 @@ try {
   await page.waitForSelector('#panelMode.on');
   const modeSplashP = await page.$eval('#modeSplashPrimary', (el) => el.textContent.trim()).catch(() => '');
   const modeSplashS = await page.$eval('#modeSplashSecondary', (el) => el.textContent.trim()).catch(() => '');
-  check('mode splash primary', modeSplashP === '霓虹未熄，港灣已開打——鏡頭一開就係戰場。', modeSplashP);
+  check('mode splash primary', modeSplashP === '鏡頭跟住你，港灣開打。', modeSplashP);
   check('mode splash secondary', modeSplashS === 'Channel 7 開波，今晚收視你話事。', modeSplashS);
   const modeCount = await page.$$eval('#modeGrid .pick', (els) => els.length);
   check('6 game modes', modeCount === 6, String(modeCount));
@@ -208,7 +208,7 @@ try {
 
   // lexicon locked names
   const lex = await page.evaluate(() => window.__lexicon());
-  check('lexicon splash primary', lex.splash && lex.splash.primary === '霓虹未熄，港灣已開打——鏡頭一開就係戰場。', JSON.stringify(lex.splash));
+  check('lexicon splash primary', lex.splash && lex.splash.primary === '鏡頭跟住你，港灣開打。', JSON.stringify(lex.splash));
   check('lexicon splash secondary', lex.splash && lex.splash.secondary === 'Channel 7 開波，今晚收視你話事。', JSON.stringify(lex.splash));
   check('lexicon modes 5+campaign', lex.modes.length === 6, JSON.stringify(lex.modes));
   check('lexicon ladder 8 guns', lex.ladder.length === 8, lex.ladder.join('|'));

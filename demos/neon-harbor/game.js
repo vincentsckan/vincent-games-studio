@@ -552,6 +552,8 @@ function addTrashBin(group, x, z, kind = 0) {
 /** 黃的 — yellow HK taxi as cover prop WITH collision box. */
 function addYellowTaxi(group, x, z, rotY = 0) {
   const g = new THREE.Group();
+  g.userData.keepVisual = true;
+  g.name = 'curbProp';
   g.position.set(x, 0, z);
   g.rotation.y = rotY;
   const bodyMat = new THREE.MeshStandardMaterial({ color: 0xf5c400, roughness: 0.55, metalness: 0.25 });
@@ -594,6 +596,8 @@ function addYellowTaxi(group, x, z, rotY = 0) {
 /** 理髮旋轉燈 — red/white/blue barber pole (soft prop). */
 function addBarberPole(group, x, z, h = 2.4) {
   const g = new THREE.Group();
+  g.userData.keepVisual = true;
+  g.name = 'curbProp';
   g.position.set(x, 0, z);
   const pole = new THREE.Mesh(
     new THREE.CylinderGeometry(0.12, 0.12, h, 12),
@@ -626,6 +630,8 @@ function addBarberPole(group, x, z, h = 2.4) {
 /** 紅色手推車 / goods tricycle — curb clutter (soft or light collision). */
 function addRedHandcart(group, x, z, rotY = 0, solid = false) {
   const g = new THREE.Group();
+  g.userData.keepVisual = true;
+  g.name = 'curbProp';
   g.position.set(x, 0, z);
   g.rotation.y = rotY;
   const bed = new THREE.Mesh(
@@ -662,6 +668,8 @@ function addRedHandcart(group, x, z, rotY = 0, solid = false) {
 /** Vintage white + yellow sedan scale prop (soft cover companion to 黃的). */
 function addVintageSedan(group, x, z, rotY = 0, color = 0xf2f0ea) {
   const g = new THREE.Group();
+  g.userData.keepVisual = true;
+  g.name = 'curbProp';
   g.position.set(x, 0, z);
   g.rotation.y = rotY;
   const bodyMat = new THREE.MeshStandardMaterial({ color, roughness: 0.55, metalness: 0.25 });
@@ -718,6 +726,8 @@ function addHangSign(group, x, y, z, w, h, text, opts = {}) {
 /** HK minibus — red-roof or green-roof cover with collision. */
 function addMinibus(group, x, z, roof = 'red', rotY = 0) {
   const g = new THREE.Group();
+  g.userData.keepVisual = true;
+  g.name = 'curbProp';
   g.position.set(x, 0, z);
   g.rotation.y = rotY;
   const bodyCol = 0xf2f0ea;
@@ -758,6 +768,8 @@ function addMinibus(group, x, z, roof = 'red', rotY = 0) {
 /** Small delivery truck at alley far end. */
 function addSmallTruck(group, x, z, rotY = 0) {
   const g = new THREE.Group();
+  g.userData.keepVisual = true;
+  g.name = 'curbProp';
   g.position.set(x, 0, z);
   g.rotation.y = rotY;
   const cab = new THREE.Mesh(
@@ -2148,42 +2160,32 @@ function applyCinematicEnv(root, mapId, tex) {
   return true;
 }
 
-/** Hide large untextured procedural slabs / neon lightbox forests; keep collision + curb props + hero/bots. */
+/** Remove ALL procedural arena façades / teal·magenta·grey slabs / neon lightbox forests / ZH shop boards from render.
+ *  Keep collision AABBs. Whitelist: cinematicEnv plates, TPP hero, bots, curb vehicles/props, pickups, gun. */
 function stripBlockyArena(root) {
   if (!root) return;
+  const keepName = new Set(['cinematicEnv', 'playerHero', 'botActor', 'heroGun', 'curbProp', 'pickupOrb', 'holdZone']);
   root.traverse((obj) => {
     if (!obj.isMesh || !obj.geometry) return;
     let p = obj;
     while (p) {
-      if (p.name === 'cinematicEnv' || p.name === 'playerHero' || p.name === 'botActor') return;
+      if (keepName.has(p.name) || (p.userData && p.userData.keepVisual)) return;
       p = p.parent;
     }
     const g = obj.geometry;
-    const params = g.parameters || {};
-    if (g.type === 'PlaneGeometry') {
-      const w = params.width || 0;
-      const h = params.height || 0;
-      // builder ground planes (large flat grey/teal floors)
-      if (w >= 20 && h >= 20) obj.visible = false;
+    const t = g.type;
+    const mat = obj.material;
+    const mats = Array.isArray(mat) ? mat : (mat ? [mat] : []);
+    const hasCanvas = mats.some((m) => m && m.map && m.map.isCanvasTexture);
+    const neonEmit = mats.some((m) => m && (m.emissiveIntensity || 0) >= 0.8);
+    // Nuclear plate-first: any builder Box/Plane not whitelisted is a solid-color façade/floor
+    if (t === 'PlaneGeometry' || t === 'BoxGeometry') {
+      obj.visible = false;
       return;
     }
-    if (g.type === 'BoxGeometry') {
-      const w = params.width || 0;
-      const h = params.height || 0;
-      const d = params.depth || 0;
-      // tall/wide building masses, perimeter cyclorama walls, container stacks
-      const isBuilding = (h >= 2.35 && (w >= 2.8 || d >= 2.8));
-      const isPerimeter = (h >= 3.2 && ((w >= 16 && d <= 2.2) || (d >= 16 && w <= 2.2)));
-      const isTower = (h >= 8 && w <= 6 && d <= 6);
-      // floating neon lightbox boards / hang canopies that bury the plate
-      const isNeonBoard = (h <= 1.35 && h >= 0.28 && w >= 1.1 && d <= 0.35);
-      if (isBuilding || isPerimeter || isTower || isNeonBoard) {
-        obj.visible = false;
-      }
-    }
-    // hide canvas-textured hang panels that somehow still say undefined
-    if (obj.material && obj.material.map && obj.material.map.isCanvasTexture) {
-      // already guarded at create; leave small valid lexicon signs that survived size filter
+    // Chinese shop discs / hanging neon cylinders / canvas sign boards
+    if (hasCanvas || (t === 'CylinderGeometry' && neonEmit)) {
+      obj.visible = false;
     }
   });
 }
@@ -2210,16 +2212,7 @@ function densifyCinematicCitySlice(envGroup, root, mapId) {
     } catch (_) { /* soft */ }
   });
 
-  // 3 soft neon accents only — far curb, never center FOV / never bury plate
-  const billboardCols = [0xff2d9b, 0x00e8ff, 0xffd36a];
-  for (let i = 0; i < 3; i++) {
-    const side = i % 2 === 0 ? -1 : 1;
-    const x = side * (15.5 + rnd(i + 41) * 1.5);
-    const z = -12 + i * 11 + rnd(i + 42) * 1.2;
-    const y = 3.5 + rnd(i + 43) * 1.8;
-    const col = billboardCols[i % billboardCols.length];
-    addNeonSign(root, x, y, z, 1.4 + rnd(i + 44) * 0.6, 0.4 + rnd(i + 45) * 0.2, col);
-  }
+  // no floating neon lightbox accents — plate + curb props only (Vincent: 唔好大色塊)
 
   // Light curb clutter
   for (let i = 0; i < 4; i++) {
@@ -2321,12 +2314,16 @@ function buildWorld(mapId) {
   const builder = builders[mapId] || buildCargoPier;
   builder(root);
 
+  // Immediate strip so splash/boot FOV never shows teal/magenta/grey façade slabs
+  stripBlockyArena(root);
+
   // Cinematic env plate (4K) — soft-fallback if Multimedia plate not on disk yet
   beginEnvPlateLoad(root, mapId);
 
   // pickups + hold zone after geometry
   spawnPickups(root);
   setupHoldZone(root, mapId);
+  stripBlockyArena(root);
 
   // Third-person hero (visible body) + world gun on right hand
   if (playerMesh && playerMesh.parent) playerMesh.parent.remove(playerMesh);
@@ -2674,6 +2671,8 @@ function spawnPickups(root) {
       new THREE.BoxGeometry(0.7, 0.7, 0.7),
       new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 1.4, roughness: 0.4 })
     );
+    mesh.name = 'pickupOrb';
+    mesh.userData.keepVisual = true;
     const x = (sp[0] || 0) + (i % 2 ? 3 : -3);
     const z = (sp[2] || 0) + (i % 3 === 0 ? 2 : -2);
     mesh.position.set(x, 0.55, z);
@@ -2699,6 +2698,8 @@ function setupHoldZone(root, mapId) {
     new THREE.RingGeometry(holdZone.r - 0.15, holdZone.r + 0.15, 32),
     new THREE.MeshBasicMaterial({ color: 0x40f0ff, transparent: true, opacity: 0.55, side: THREE.DoubleSide })
   );
+  ring.name = 'holdZone';
+  ring.userData.keepVisual = true;
   ring.rotation.x = -Math.PI / 2;
   ring.position.set(holdZone.x, 0.08, holdZone.z);
   root.add(ring);
@@ -2706,6 +2707,8 @@ function setupHoldZone(root, mapId) {
     new THREE.CircleGeometry(holdZone.r - 0.2, 24),
     new THREE.MeshBasicMaterial({ color: 0x2080ff, transparent: true, opacity: 0.18, side: THREE.DoubleSide })
   );
+  pad.name = 'holdZone';
+  pad.userData.keepVisual = true;
   pad.rotation.x = -Math.PI / 2;
   pad.position.set(holdZone.x, 0.06, holdZone.z);
   root.add(pad);
@@ -3667,7 +3670,7 @@ window.__startBossHuntTest = (mapId, classId, bossId) => {
 
 window.__lexicon = () => ({
   splash: {
-    primary: '霓虹未熄，港灣已開打——鏡頭一開就係戰場。',
+    primary: '鏡頭跟住你，港灣開打。',
     secondary: 'Channel 7 開波，今晚收視你話事。',
   },
   modes: GAME_MODES.map((m) => m.nameZh),
