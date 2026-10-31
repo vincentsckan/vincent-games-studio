@@ -1,338 +1,330 @@
 <!DOCTYPE html>
 <html lang="zh-Hant-HK">
 <head>
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/><meta http-equiv="Pragma" content="no-cache"/><meta http-equiv="Expires" content="0"/>
 <meta charset="utf-8"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
 <title>凍肉倉 · Cold Hold — Vincent Games Studio</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;background:#0a1520;color:#e8f4ff;font-family:"Noto Sans TC",system-ui,sans-serif;overflow:hidden;touch-action:none;user-select:none}
-canvas{display:block;width:100%;height:100%;background:#1a3040}
-#hud{position:fixed;left:0;right:0;top:0;padding:calc(10px + env(safe-area-inset-top)) 16px 0;padding-right:160px;display:flex;justify-content:space-between;pointer-events:none;z-index:2;font-weight:700;text-shadow:0 2px 10px #000}
+html,body{height:100%;background:#0d1c28;color:#e8f4ff;font-family:"Noto Sans TC",system-ui,sans-serif;overflow:hidden;touch-action:none;user-select:none}
+#wrap{position:fixed;inset:0}
+canvas#view{display:block;width:100%;height:100%;background:#1a3548;image-rendering:pixelated}
+#hud{position:fixed;left:0;right:0;top:0;z-index:3;padding:calc(10px + env(safe-area-inset-top)) 16px 0;padding-right:160px;display:flex;justify-content:space-between;pointer-events:none;font-weight:800;text-shadow:0 2px 8px #000}
 #hud .l{color:#9ad8ff}#hud .r{color:#ff6a7a;text-align:right}
-#hud small{display:block;font-family:Syne,sans-serif;font-size:11px;opacity:.75;letter-spacing:.06em}
-#hint{position:fixed;left:50%;bottom:calc(18% + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:4;max-width:92vw;padding:10px 14px;border-radius:12px;background:rgba(0,0,0,.72);border:1px solid #7ec8ff66;color:#e8f4ff;font-size:13px;font-weight:700;text-align:center;pointer-events:none;display:none;line-height:1.45}
+#hud small{display:block;font:700 11px Syne,sans-serif;opacity:.75;letter-spacing:.06em}
+#hint{position:fixed;left:50%;bottom:calc(22% + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:4;max-width:92vw;padding:10px 14px;border-radius:12px;background:rgba(0,0,0,.75);border:1px solid #7ec8ff66;font-size:13px;font-weight:700;text-align:center;display:none}
 #hint.on{display:block}
-#overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(8,18,28,.92);z-index:5;padding:24px;overflow-y:auto}
+#overlay{position:fixed;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;background:rgba(8,20,32,.94);padding:22px;overflow-y:auto}
 #overlay.hidden{display:none}
-.card{max-width:440px;width:100%;background:linear-gradient(165deg,#123040,#0a1824);border:1px solid #7ec8ff88;border-radius:20px;padding:26px 22px;text-align:center;box-shadow:0 0 48px #7ec8ff33}
-.card h1{font-family:Syne,sans-serif;font-size:1.85rem;font-weight:800;background:linear-gradient(90deg,#b8e4ff,#ff4d5e);-webkit-background-clip:text;background-clip:text;color:transparent}
-.card .sub{margin-top:6px;color:#9ad0ff;font-size:13px;letter-spacing:.08em}
-.card ol{margin:14px 0 0;padding-left:1.2em;color:#c8dce8;font-size:14px;line-height:1.65;text-align:left}
-.card p.note{margin-top:12px;color:#9ab0c0;font-size:12px;line-height:1.5;text-align:left}
-button.play{margin-top:18px;min-height:52px;padding:0 28px;border:0;border-radius:999px;background:linear-gradient(90deg,#2a7a9c,#ff4d5e);color:#fff;font-weight:900;font-size:17px;cursor:pointer;font-family:inherit;box-shadow:0 8px 24px #ff4d5e55}
-button.play:disabled{opacity:.55;cursor:wait}
-button.play:active:not(:disabled){transform:scale(.97)}
-#pad{position:fixed;left:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:4;display:none;grid-template-columns:48px 48px 48px;grid-template-rows:48px 48px 48px;gap:6px}
+.card{max-width:440px;width:100%;background:linear-gradient(165deg,#153448,#0c2030);border:1px solid #7ec8ff88;border-radius:20px;padding:24px 20px;text-align:center}
+.card h1{font-family:Syne,sans-serif;font-size:1.8rem;font-weight:800;background:linear-gradient(90deg,#b8e4ff,#ff4d5e);-webkit-background-clip:text;background-clip:text;color:transparent}
+.card .sub{margin-top:6px;color:#9ad0ff;font-size:13px}
+.card ol{margin:14px 0 0;padding-left:1.2em;color:#d0e4f0;font-size:14px;line-height:1.65;text-align:left}
+button.play{margin-top:18px;min-height:52px;padding:0 28px;border:0;border-radius:999px;background:linear-gradient(90deg,#2a7a9c,#ff4d5e);color:#fff;font-weight:900;font-size:17px;cursor:pointer;font-family:inherit}
+#pad{position:fixed;left:10px;bottom:calc(10px + env(safe-area-inset-bottom));z-index:5;display:none;grid-template-columns:52px 52px 52px;grid-template-rows:52px 52px;gap:6px}
 #pad.on{display:grid}
-#pad button{border:0;border-radius:12px;background:rgba(126,200,255,.28);color:#e8f4ff;font-weight:900;font-size:18px;backdrop-filter:blur(4px)}
-#pad .empty{visibility:hidden}
-#looktip{position:fixed;right:12px;bottom:calc(20px + env(safe-area-inset-bottom));z-index:4;display:none;max-width:42vw;padding:8px 10px;border-radius:10px;background:rgba(0,0,0,.55);color:#9ad0ff;font-size:11px;font-weight:700;pointer-events:none}
+#pad button{border:0;border-radius:14px;background:rgba(126,200,255,.4);color:#fff;font-weight:900;font-size:20px}
+#pad .x{visibility:hidden}
+#looktip{position:fixed;right:12px;bottom:calc(18px + env(safe-area-inset-bottom));z-index:5;display:none;padding:8px 10px;border-radius:10px;background:rgba(0,0,0,.6);color:#9ad0ff;font-size:11px;font-weight:700}
 #looktip.on{display:block}
-#cross{position:fixed;left:50%;top:50%;width:16px;height:16px;margin:-8px 0 0 -8px;border:2px solid #9ad8ffcc;border-radius:50%;pointer-events:none;z-index:2;opacity:0}
-#cross.on{opacity:1}
-#booterr{display:none;position:fixed;inset:0;z-index:9;background:#0a1520;color:#e8f4ff;padding:28px;font:600 15px/1.5 "Noto Sans TC",system-ui,sans-serif;text-align:center}
-#booterr a{color:#7ec8ff}
 #vg-back-root{position:fixed;inset:0;z-index:2147483647;pointer-events:none}
-#vg-back-root a.vg-back-btn{pointer-events:auto;position:fixed;display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 14px;border-radius:14px;font:800 15px/1.2 "Noto Sans TC",system-ui,sans-serif;text-decoration:none;border:2px solid #7ec8ff;background:#0a1520;color:#7ec8ff;box-shadow:0 6px 28px rgba(0,0,0,.65);right:max(12px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top))}
+#vg-back-root a{pointer-events:auto;position:fixed;right:max(12px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));min-height:44px;padding:10px 14px;border-radius:14px;font:800 15px/1.2 "Noto Sans TC",system-ui,sans-serif;text-decoration:none;border:2px solid #7ec8ff;background:#0d1c28;color:#7ec8ff}
 </style>
 </head>
 <body>
-<div id="booterr">
-  <p style="margin-top:20vh">載入唔到遊戲。請檢查網絡後重新整理，或者撳右上角返回目錄。</p>
-  <p style="margin-top:18px"><a href="/vincent-games-studio/games">← 返回遊戲目錄</a></p>
-</div>
-<div id="hud"><div class="l"><small>COLD HOLD</small><span id="msg">目標：黃鑰匙 → 綠門逃走</span></div><div class="r"><small>STRESS</small><span id="stress">0%</span></div></div>
-<div id="cross"></div>
-<div id="hint">用左下角方向鍵行路 · 拖畫面轉頭 · 靠近黃鑰匙自動拾取</div>
-<div id="looktip">拖呢邊畫面<br/>轉視角</div>
+<div id="wrap"><canvas id="view"></canvas></div>
+<div id="hud"><div class="l"><small>COLD HOLD</small><span id="msg">目標：黃鎖匙 → 綠門</span></div><div class="r"><small>STRESS</small><span id="stress">0%</span></div></div>
+<div id="hint">左下方向鍵行路 · 拖畫面轉頭 · 靠近黃鎖匙自動拾取</div>
+<div id="looktip">拖畫面轉頭</div>
 <div id="overlay"><div class="card">
   <h1>凍肉倉</h1>
-  <div class="sub" id="sub">COLD HOLD · 載入中…</div>
+  <div class="sub">COLD HOLD · 即開輕量版</div>
   <ol>
-    <li><strong>撳下面藍色掣開始</strong></li>
-    <li><strong>行路</strong>：電腦用 WASD；手機用左下角 ↑↓←→</li>
-    <li><strong>轉頭</strong>：電腦郁滑鼠；手機用手指拖畫面</li>
-    <li>走廊入面搵<strong style="color:#ffcc66">黃色鎖匙</strong>，再去<strong style="color:#5dff9a">綠色門</strong>逃出</li>
-    <li>避開紅色<strong>屠夫</strong>（靠近會輸）</li>
+    <li><strong>撳「進入遊戲」開始</strong></li>
+    <li>電腦：<strong>WASD</strong> 行、<strong>滑鼠</strong>轉頭</li>
+    <li>手機：<strong>左下方向掣</strong>行、<strong>拖畫面</strong>轉頭</li>
+    <li>跟<strong style="color:#ffcc66">黃光</strong>執鎖匙，再去<strong style="color:#5dff9a">綠門</strong>逃出</li>
+    <li>避開紅色<strong>屠夫</strong></li>
   </ol>
-  <p class="note">若畫面太黑：硬刷新（Ctrl/Cmd+Shift+R）。玩唔掂可撳右上「返回遊戲目錄」。</p>
-  <button class="play" id="btnStart" disabled>載入 3D 場景中…</button>
+  <button class="play" id="btn">進入遊戲</button>
 </div></div>
 <div id="pad">
-  <button class="empty" tabindex="-1"></button><button id="tF" type="button">↑</button><button class="empty" tabindex="-1"></button>
+  <button class="x" tabindex="-1"></button><button id="tF" type="button">↑</button><button class="x" tabindex="-1"></button>
   <button id="tL" type="button">←</button><button id="tB" type="button">↓</button><button id="tR" type="button">→</button>
-  <span></span><span></span><span></span>
 </div>
-<div id="vg-back-root" aria-label="catalog"><a id="vg-back-tr" class="vg-back-btn" href="/vincent-games-studio/games" title="← 返回遊戲目錄">← 返回遊戲目錄</a></div>
-<script type="importmap">{"imports":{"three":"../vendor/three.module.min.js"}}</script>
-<script type="module">
-function showBootErr(msg){
-  const el=document.getElementById('booterr');
-  el.style.display='block';
-  if(msg) el.querySelector('p').textContent=msg;
-}
-let THREE;
-try{
-  THREE=await import('../vendor/three.module.min.js');
-}catch(e){
-  try{ THREE=await import('three'); }
-  catch(e2){ showBootErr('載入唔到遊戲。請檢查網絡後重新整理，或者撳右上角返回目錄。'); throw e2; }
-}
-{
-  const c=document.createElement('canvas');
-  if(!(c.getContext('webgl2')||c.getContext('webgl'))){ showBootErr('呢部裝置唔支援 WebGL。'); throw new Error('no webgl'); }
-}
-
-const overlay=document.getElementById('overlay');
-const btn=document.getElementById('btnStart');
-const msgEl=document.getElementById('msg');
-const stressEl=document.getElementById('stress');
-const cross=document.getElementById('cross');
-const pad=document.getElementById('pad');
-const hint=document.getElementById('hint');
-const looktip=document.getElementById('looktip');
-const sub=document.getElementById('sub');
-const isTouch=('ontouchstart' in window)||navigator.maxTouchPoints>0;
-
-let playing=false, hasKey=false, won=false, dead=false, stress=0;
-const keys={}; const touchMove={f:0,b:0,l:0,r:0};
-let yaw=0, pitch=0;
-
-const scene=new THREE.Scene();
-scene.background=new THREE.Color(0x1a3548);
-scene.fog=new THREE.Fog(0x1a3548, 12, 42);
-
-const camera=new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 80);
-const renderer=new THREE.WebGLRenderer({antialias:true, alpha:false, powerPreference:'high-performance'});
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-renderer.setSize(innerWidth, innerHeight);
-renderer.setClearColor(0x1a3548, 1);
-document.body.appendChild(renderer.domElement);
-
-// Bright, forgiving lighting (no shadows)
-scene.add(new THREE.AmbientLight(0xffffff, 0.75));
-scene.add(new THREE.HemisphereLight(0xb8e0ff, 0x3a5060, 0.9));
-const sun=new THREE.DirectionalLight(0xffffff, 0.85);
-sun.position.set(4, 10, 2); scene.add(sun);
-
-const mats={
-  wall:new THREE.MeshLambertMaterial({color:0x5a7a8c}),
-  floor:new THREE.MeshLambertMaterial({color:0x2a4050}),
-  ceil:new THREE.MeshLambertMaterial({color:0x3a5568}),
-  blood:new THREE.MeshLambertMaterial({color:0x8a2030}),
-  ice:new THREE.MeshLambertMaterial({color:0x9ad0e8, transparent:true, opacity:0.7}),
-  meat:new THREE.MeshLambertMaterial({color:0x8a3040}),
-  metal:new THREE.MeshLambertMaterial({color:0x8a9aaa}),
-  exit:new THREE.MeshLambertMaterial({color:0x2ecc71}),
-  key:new THREE.MeshLambertMaterial({color:0xffcc44}),
-  butcher:new THREE.MeshLambertMaterial({color:0x3a1018}),
-  apron:new THREE.MeshLambertMaterial({color:0xc02030}),
-};
-
-const colliders=[];
-function box(w,h,d,x,y,z,mat,solid=true){
-  const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d), mat);
-  m.position.set(x,y,z); scene.add(m);
-  if(solid) colliders.push({min:new THREE.Vector3(x-w/2,y-h/2,z-d/2), max:new THREE.Vector3(x+w/2,y+h/2,z+d/2)});
-  return m;
-}
-
-box(48,0.2,48, 0,-0.1,0, mats.floor, false);
-box(48,0.2,48, 0,3.2,0, mats.ceil, false);
-// floor stripes so motion is obvious
-for(let i=-20;i<=20;i+=4){
-  box(0.15,0.02,40, i, 0.02, 0, mats.ice, false);
-  box(40,0.02,0.15, 0, 0.02, i, mats.blood, false);
-}
-
-const walls=[
-  [48,3.2,0.4,0,1.5,-24],[48,3.2,0.4,0,1.5,24],[0.4,3.2,48,-24,1.5,0],[0.4,3.2,48,24,1.5,0],
-  [0.4,3.2,18,-8,1.5,-6],[0.4,3.2,14,8,1.5,4],[0.4,3.2,16,0,1.5,-10],
-  [16,3.2,0.4,-8,1.5,8],[14,3.2,0.4,6,1.5,-4],[12,3.2,0.4,-4,1.5,16],
-  [0.4,3.2,10,-16,1.5,8],[0.4,3.2,12,16,1.5,-8],[10,3.2,0.4,14,1.5,12],
-  [8,3.2,0.4,-14,1.5,-14],[0.4,3.2,8,4,1.5,18],
-];
-walls.forEach(([w,h,d,x,y,z])=>box(w,h,d,x,y,z,mats.wall));
-
-for(let i=0;i<8;i++){
-  const x=-16+i*4, z=-16;
-  box(0.06,1.0,0.06,x,2.5,z,mats.metal,false);
-  box(0.4,0.7,0.3,x,1.7,z,mats.meat,false);
-}
-
-const keyLight=new THREE.PointLight(0xffcc44, 2.5, 10);
-keyLight.position.set(-18,1.2,18); scene.add(keyLight);
-const keyMesh=box(0.35,0.12,0.55, -18,0.5,18, mats.key, false);
-
-const exitDoor=box(1.8,2.5,0.3, 18,1.25,-18, mats.exit, true);
-const exitPos=new THREE.Vector3(18,0,-18);
-const exitLight=new THREE.PointLight(0x2ecc71, 2.0, 12);
-exitLight.position.set(18,2,-18); scene.add(exitLight);
-
-const butcher=new THREE.Group();
-butcher.add(Object.assign(new THREE.Mesh(new THREE.BoxGeometry(0.75,1.5,0.5), mats.butcher), {position:new THREE.Vector3(0,0.95,0)}));
-butcher.add(Object.assign(new THREE.Mesh(new THREE.BoxGeometry(0.8,0.95,0.22), mats.apron), {position:new THREE.Vector3(0,0.75,0.18)}));
-butcher.add(Object.assign(new THREE.Mesh(new THREE.BoxGeometry(0.42,0.42,0.42), mats.butcher), {position:new THREE.Vector3(0,1.85,0)}));
-butcher.position.set(12,0,12); scene.add(butcher);
-let butcherTarget=new THREE.Vector3(-8,0,8);
-
-const player=new THREE.Vector3(0,1.6,0);
-camera.position.copy(player);
-const spawnLight=new THREE.PointLight(0xffffff, 2.2, 14);
-spawnLight.position.set(0,2.5,0); scene.add(spawnLight);
-
-function blocked(nx,nz){
-  const r=0.3;
-  for(const c of colliders){
-    if(nx+r>c.min.x && nx-r<c.max.x && nz+r>c.min.z && nz-r<c.max.z && c.max.y>0.5) return true;
-  }
-  return false;
-}
-function dist2(a,b){const dx=a.x-b.x,dz=a.z-b.z;return dx*dx+dz*dz;}
-
-function tryInteract(){
-  if(!hasKey && dist2(player,keyMesh.position)<3){
-    hasKey=true; scene.remove(keyMesh); scene.remove(keyLight);
-    msgEl.textContent='已有鎖匙！去綠色門逃走';
-    hint.textContent='跟綠色光走 → 綠色門逃走';
-  }
-  if(hasKey && dist2(player,exitPos)<4){
-    const idx=colliders.findIndex(c=>Math.abs((c.min.x+c.max.x)/2-18)<0.2 && Math.abs((c.min.z+c.max.z)/2+18)<0.2);
-    if(idx>=0) colliders.splice(idx,1);
-    exitDoor.position.x=19.4;
-    won=true; playing=false; showEnd(true);
-  }
-}
-
-function showEnd(ok){
-  overlay.classList.remove('hidden');
-  cross.classList.remove('on'); pad.classList.remove('on'); hint.classList.remove('on'); looktip.classList.remove('on');
-  document.exitPointerLock?.();
-  overlay.querySelector('.card').innerHTML = ok
-    ? `<h1>逃出凍庫！</h1><div class="sub">YOU ESCAPED</div><ol><li>你搵到鎖匙並衝出綠色門。</li></ol><button class="play" id="btnAgain">再玩一次</button>`
-    : `<h1>被屠夫追上</h1><div class="sub">CAUGHT</div><ol><li>離紅色身影遠啲，行完先轉彎。</li></ol><button class="play" id="btnAgain">再試一次</button>`;
-  document.getElementById('btnAgain').onclick=()=>location.reload();
-}
-
-function start(){
-  overlay.classList.add('hidden');
-  playing=true;
-  cross.classList.add('on');
-  hint.classList.add('on');
-  if(isTouch){ pad.classList.add('on'); looktip.classList.add('on'); }
-  else renderer.domElement.requestPointerLock?.();
-  msgEl.textContent='搵黃色鎖匙 · 避開屠夫';
-  hint.textContent=isTouch
-    ? '左下角方向鍵行路 · 拖畫面轉頭 · 靠近黃鎖匙會自動拾取'
-    : 'WASD 行路 · 滑鼠轉頭 · 靠近黃鎖匙自動拾取 · E 亦可';
-}
-
-btn.disabled=false;
-btn.textContent='開始遊玩';
-sub.textContent='COLD HOLD · 已就緒';
-btn.onclick=start;
-
-// first frame so canvas isn't empty behind overlay
-renderer.render(scene,camera);
-
-addEventListener('keydown',e=>{keys[e.code]=true; if(e.code==='KeyE') tryInteract();});
-addEventListener('keyup',e=>{keys[e.code]=false;});
-addEventListener('mousemove',e=>{
-  if(!playing || document.pointerLockElement!==renderer.domElement) return;
-  yaw-=e.movementX*0.0025; pitch-=e.movementY*0.0025;
-  pitch=Math.max(-1.15,Math.min(1.15,pitch));
-});
-renderer.domElement.addEventListener('click',()=>{ if(playing && !isTouch) renderer.domElement.requestPointerLock?.(); });
-
-let tx=-1,ty=-1;
-renderer.domElement.addEventListener('touchstart',e=>{
-  if(!playing) return;
-  const t=e.changedTouches[0];
-  // look only on right 55% of screen so left pad works
-  if(t.clientX>innerWidth*0.38){ tx=t.clientX; ty=t.clientY; }
-},{passive:true});
-renderer.domElement.addEventListener('touchmove',e=>{
-  if(tx<0) return;
-  const t=e.changedTouches[0];
-  yaw-=(t.clientX-tx)*0.005; pitch-=(t.clientY-ty)*0.005;
-  pitch=Math.max(-1.15,Math.min(1.15,pitch));
-  tx=t.clientX; ty=t.clientY;
-},{passive:true});
-renderer.domElement.addEventListener('touchend',()=>{tx=-1;},{passive:true});
-
-[['tF','f'],['tB','b'],['tL','l'],['tR','r']].forEach(([id,k])=>{
-  const el=document.getElementById(id);
-  const on=e=>{e.preventDefault(); touchMove[k]=1;};
-  const off=()=>{ touchMove[k]=0; };
-  el.addEventListener('touchstart',on,{passive:false});
-  el.addEventListener('touchend',off); el.addEventListener('touchcancel',off);
-  el.addEventListener('mousedown',on); el.addEventListener('mouseup',off); el.addEventListener('mouseleave',off);
-});
-
-let last=performance.now();
-function tick(now){
-  requestAnimationFrame(tick);
-  const dt=Math.min(0.05,(now-last)/1000); last=now;
-  if(playing && !dead && !won){
-    const forward=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw));
-    const right=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw));
-    let mx=0,mz=0;
-    if(keys.KeyW||keys.ArrowUp||touchMove.f){mx+=forward.x;mz+=forward.z;}
-    if(keys.KeyS||keys.ArrowDown||touchMove.b){mx-=forward.x;mz-=forward.z;}
-    if(keys.KeyA||keys.ArrowLeft||touchMove.l){mx-=right.x;mz-=right.z;}
-    if(keys.KeyD||keys.ArrowRight||touchMove.r){mx+=right.x;mz+=right.z;}
-    const len=Math.hypot(mx,mz)||1; mx/=len; mz/=len;
-    const sp=3.6*dt;
-    const nx=player.x+mx*sp, nz=player.z+mz*sp;
-    if(!blocked(nx,player.z)) player.x=nx;
-    if(!blocked(player.x,nz)) player.z=nz;
-    player.x=THREE.MathUtils.clamp(player.x,-22.5,22.5);
-    player.z=THREE.MathUtils.clamp(player.z,-22.5,22.5);
-    camera.position.set(player.x,1.6,player.z);
-    camera.rotation.order='YXZ';
-    camera.rotation.y=yaw; camera.rotation.x=pitch;
-
-    if(!hasKey && dist2(player,keyMesh.position)<3) tryInteract();
-    if(hasKey && dist2(player,exitPos)<3.5) tryInteract();
-
-    const pDist=Math.hypot(player.x-butcher.position.x, player.z-butcher.position.z);
-    if(pDist<13){
-      const dir=new THREE.Vector3(player.x-butcher.position.x,0,player.z-butcher.position.z).normalize();
-      const bs=(pDist<7?4.0:3.0)*dt;
-      const bx=butcher.position.x+dir.x*bs, bz=butcher.position.z+dir.z*bs;
-      if(!blocked(bx,butcher.position.z)) butcher.position.x=bx;
-      if(!blocked(butcher.position.x,bz)) butcher.position.z=bz;
-      butcher.lookAt(player.x,1,player.z);
-      stress=Math.min(100,stress+dt*10);
-      if(pDist<1.2){ dead=true; playing=false; showEnd(false); }
-    } else {
-      if(butcher.position.distanceTo(butcherTarget)<1.5) butcherTarget.set((Math.random()-0.5)*28,0,(Math.random()-0.5)*28);
-      const dir=butcherTarget.clone().sub(butcher.position).setY(0).normalize();
-      butcher.position.x+=dir.x*2.0*dt; butcher.position.z+=dir.z*2.0*dt;
-      stress=Math.max(0,stress-dt*4);
-    }
-    stressEl.textContent=Math.round(stress)+'%';
-    if(!hasKey) msgEl.textContent='搵黃色鎖匙（角落有黃光）';
-    else msgEl.textContent='去綠色門逃走';
-  }
-  renderer.render(scene,camera);
-}
-requestAnimationFrame(tick);
-addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
-
+<div id="vg-back-root"><a href="/vincent-games-studio/games" title="← 返回遊戲目錄">← 返回遊戲目錄</a></div>
+<script>
 (function(){
-  var HREF='/vincent-games-studio/games', LABEL='← 返回遊戲目錄';
-  function ensure(){
-    var root=document.getElementById('vg-back-root')||document.body.appendChild(Object.assign(document.createElement('div'),{id:'vg-back-root'}));
-    var tr=document.getElementById('vg-back-tr');
-    if(!tr){ tr=document.createElement('a'); tr.id='vg-back-tr'; tr.className='vg-back-btn'; root.appendChild(tr); }
-    tr.href=HREF; tr.textContent=LABEL; tr.title=LABEL;
-    tr.style.cssText='pointer-events:auto;position:fixed;right:max(12px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));z-index:2147483647;display:inline-flex;align-items:center;min-height:44px;padding:10px 14px;border-radius:14px;font:800 15px/1.2 "Noto Sans TC",system-ui,sans-serif;text-decoration:none;border:2px solid #7ec8ff;background:#0a1520;color:#7ec8ff';
+  // Lightweight raycaster — no Three.js (instant load)
+  const W=24,H=24;
+  // 0 empty, 1 wall, 2 exit, 3 key cell marker (empty walkable)
+  const map=[];
+  for(let y=0;y<H;y++){
+    map[y]=[];
+    for(let x=0;x<W;x++){
+      map[y][x]=(x===0||y===0||x===W-1||y===H-1)?1:0;
+    }
   }
-  ensure(); setInterval(ensure,3000);
+  // inner walls — corridors
+  const wallRects=[[3,3,3,10],[3,3,12,3],[8,6,8,14],[12,2,12,9],[15,10,20,10],[6,16,14,16],[18,14,18,20],[10,18,10,22]];
+  wallRects.forEach(([x0,y0,x1,y1])=>{
+    for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++) if(x>0&&y>0&&x<W-1&&y<H-1) map[y][x]=1;
+  });
+  // carve door gaps
+  [[8,9],[12,5],[15,10],[10,16],[18,17]].forEach(([x,y])=>{ if(map[y]) map[y][x]=0; });
+
+  const KEY={x:4.5,y:4.5};
+  const EXIT={x:20.5,y:20.5};
+  map[20][20]=2; map[20][21]=2; map[21][20]=2;
+
+  let px=12.5, py=12.5, dir=0; // radians, 0 = +x
+  let hasKey=false, playing=false, dead=false, won=false, stress=0;
+  let butcher={x:18.5,y:6.5, alive:true};
+
+  const canvas=document.getElementById('view');
+  const ctx=canvas.getContext('2d',{alpha:false});
+  const msg=document.getElementById('msg');
+  const stressEl=document.getElementById('stress');
+  const overlay=document.getElementById('overlay');
+  const hint=document.getElementById('hint');
+  const pad=document.getElementById('pad');
+  const looktip=document.getElementById('looktip');
+  const isTouch=('ontouchstart'in window)||navigator.maxTouchPoints>0;
+  const keys={}; const move={f:0,b:0,l:0,r:0};
+
+  function resize(){
+    const dpr=Math.min(devicePixelRatio||1, 2);
+    canvas.width=Math.floor(innerWidth*dpr);
+    canvas.height=Math.floor(innerHeight*dpr);
+  }
+  resize(); addEventListener('resize',resize);
+
+  function cell(x,y){
+    const cx=x|0, cy=y|0;
+    if(cx<0||cy<0||cx>=W||cy>=H) return 1;
+    return map[cy][cx];
+  }
+  function solid(x,y){
+    const t=cell(x,y);
+    if(t===1) return true;
+    if(t===2 && !hasKey) return true;
+    return false;
+  }
+
+  function cast(rayAng){
+    const sin=Math.sin(rayAng), cos=Math.cos(rayAng);
+    let dist=0, hit=0, side=0;
+    const step=0.02;
+    let x=px, y=py;
+    for(let i=0;i<500;i++){
+      x+=cos*step; y+=sin*step; dist+=step;
+      const t=cell(x,y);
+      if(t===1||(t===2&&!hasKey)||t===2){
+        hit=t===2?2:1;
+        // side approx
+        const fx=x-(x|0), fy=y-(y|0);
+        side=(fx<0.02||fx>0.98)?0:1;
+        break;
+      }
+    }
+    return {dist:Math.max(dist,0.0001), hit, side};
+  }
+
+  function draw(){
+    const w=canvas.width, h=canvas.height;
+    // ceiling / floor
+    const g=ctx.createLinearGradient(0,0,0,h);
+    g.addColorStop(0,'#3a5a70'); g.addColorStop(0.5,'#1a3040'); g.addColorStop(1,'#0a1820');
+    ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
+    // floor brighter band
+    ctx.fillStyle='#243848';
+    ctx.fillRect(0,h*0.5,w,h*0.5);
+
+    const fov=Math.PI/3;
+    const cols=Math.min(240, Math.floor(w/3));
+    const colW=w/cols;
+    for(let i=0;i<cols;i++){
+      const ang=dir - fov/2 + (i/cols)*fov;
+      const {dist, hit, side}=cast(ang);
+      const corr=dist*Math.cos(ang-dir);
+      let wallH=Math.min(h*1.4, (h*0.9)/corr);
+      const x0=i*colW;
+      let shade=1-Math.min(0.85, corr/14);
+      if(side) shade*=0.82;
+      let r,g2,b;
+      if(hit===2){
+        // green exit
+        r=40*shade+20; g2=200*shade+30; b=90*shade;
+      } else {
+        // cold wall blue-grey
+        r=70*shade+30; g2=100*shade+40; b=120*shade+50;
+      }
+      ctx.fillStyle=`rgb(${r|0},${g2|0},${b|0})`;
+      ctx.fillRect(x0|0, ((h-wallH)/2)|0, (colW+1)|0, wallH|0);
+      // blood stain stripe occasionally
+      if(hit===1 && ((i*13)|0)%17===0){
+        ctx.fillStyle=`rgba(140,30,40,${0.35*shade})`;
+        ctx.fillRect(x0|0, (h*0.55)|0, (colW+1)|0, (wallH*0.2)|0);
+      }
+    }
+
+    // sprites: key, butcher (billboard by angle/dist)
+    drawSprite(KEY.x, KEY.y, hasKey?null:'key');
+    if(butcher.alive) drawSprite(butcher.x, butcher.y, 'butcher');
+
+    // crosshair
+    ctx.strokeStyle='rgba(180,220,255,0.7)';
+    ctx.lineWidth=2;
+    const cx=w/2, cy=h/2;
+    ctx.beginPath(); ctx.arc(cx,cy,8,0,Math.PI*2); ctx.stroke();
+  }
+
+  function drawSprite(sx,sy,kind){
+    if(!kind) return;
+    const dx=sx-px, dy=sy-py;
+    const dist=Math.hypot(dx,dy);
+    if(dist<0.2||dist>16) return;
+    let ang=Math.atan2(dy,dx)-dir;
+    while(ang>Math.PI) ang-=Math.PI*2;
+    while(ang<-Math.PI) ang+=Math.PI*2;
+    if(Math.abs(ang)>Math.PI/3+0.15) return;
+    // occlusion rough
+    const hit=cast(dir+ang);
+    if(hit.dist+0.15<dist && hit.hit) return;
+    const w=canvas.width, h=canvas.height;
+    const fov=Math.PI/3;
+    const screenX=w/2 + (ang/(fov/2))*(w/2);
+    const size=Math.min(h*0.9, (h*0.55)/dist);
+    const x=screenX-size/2, y=(h-size)/2;
+    if(kind==='key'){
+      ctx.fillStyle='#ffcc44';
+      ctx.beginPath(); ctx.arc(screenX, y+size*0.45, size*0.18, 0, Math.PI*2); ctx.fill();
+      ctx.fillRect(screenX-size*0.04, y+size*0.45, size*0.08, size*0.35);
+      // glow
+      ctx.fillStyle='rgba(255,200,60,0.25)';
+      ctx.beginPath(); ctx.arc(screenX, y+size*0.45, size*0.45, 0, Math.PI*2); ctx.fill();
+    } else {
+      // butcher
+      ctx.fillStyle='#5a1018';
+      ctx.fillRect(x+size*0.25, y+size*0.2, size*0.5, size*0.7);
+      ctx.fillStyle='#e02030';
+      ctx.fillRect(x+size*0.28, y+size*0.35, size*0.44, size*0.35);
+      ctx.fillStyle='#3a1010';
+      ctx.beginPath(); ctx.arc(screenX, y+size*0.22, size*0.16, 0, Math.PI*2); ctx.fill();
+    }
+  }
+
+  function tryPickup(){
+    if(!hasKey && Math.hypot(px-KEY.x, py-KEY.y)<1.1){
+      hasKey=true;
+      msg.textContent='鎖匙到手 · 去綠門';
+      hint.textContent='跟綠牆／綠門方向逃走';
+    }
+    if(hasKey && Math.hypot(px-EXIT.x, py-EXIT.y)<1.4){
+      won=true; playing=false; end(true);
+    }
+  }
+
+  function end(ok){
+    overlay.classList.remove('hidden');
+    pad.classList.remove('on'); hint.classList.remove('on'); looktip.classList.remove('on');
+    overlay.querySelector('.card').innerHTML = ok
+      ? '<h1>逃出凍肉倉！</h1><div class="sub">YOU ESCAPED</div><ol><li>鎖匙到手，衝出綠門。</li></ol><button class="play" id="again">再玩一次</button>'
+      : '<h1>俾人捉到……</h1><div class="sub">CAUGHT</div><ol><li>離紅影遠啲再試。</li></ol><button class="play" id="again">再試一次</button>';
+    document.getElementById('again').onclick=()=>location.reload();
+  }
+
+  function start(){
+    overlay.classList.add('hidden');
+    playing=true;
+    hint.classList.add('on');
+    if(isTouch){ pad.classList.add('on'); looktip.classList.add('on'); }
+    msg.textContent='跟黃光執鎖匙 → 綠門逃出';
+    hint.textContent=isTouch?'左下方向鍵行 · 拖畫面轉頭 · 靠近黃鎖匙自動拾':'WASD 行 · 滑鼠轉頭 · 靠近黃鎖匙自動拾';
+  }
+  document.getElementById('btn').onclick=start;
+
+  addEventListener('keydown',e=>{keys[e.code]=true;});
+  addEventListener('keyup',e=>{keys[e.code]=false;});
+  addEventListener('mousemove',e=>{
+    if(!playing||isTouch) return;
+    if(document.pointerLockElement===canvas || e.buttons===1){
+      dir+=e.movementX*0.003;
+    }
+  });
+  canvas.addEventListener('click',()=>{ if(playing&&!isTouch) canvas.requestPointerLock?.(); });
+
+  let tx=-1;
+  canvas.addEventListener('touchstart',e=>{
+    if(!playing) return;
+    const t=e.changedTouches[0];
+    if(t.clientX>innerWidth*0.36) tx=t.clientX;
+  },{passive:true});
+  canvas.addEventListener('touchmove',e=>{
+    if(tx<0) return;
+    const t=e.changedTouches[0];
+    dir+=(t.clientX-tx)*0.006;
+    tx=t.clientX;
+  },{passive:true});
+  canvas.addEventListener('touchend',()=>{tx=-1;},{passive:true});
+
+  [['tF','f'],['tB','b'],['tL','l'],['tR','r']].forEach(([id,k])=>{
+    const el=document.getElementById(id);
+    const on=e=>{e.preventDefault(); move[k]=1;};
+    const off=()=>move[k]=0;
+    el.addEventListener('touchstart',on,{passive:false});
+    el.addEventListener('touchend',off); el.addEventListener('touchcancel',off);
+  });
+
+  let last=performance.now();
+  function tick(now){
+    requestAnimationFrame(tick);
+    const dt=Math.min(0.05,(now-last)/1000); last=now;
+    if(playing && !dead && !won){
+      let f=0,s=0;
+      if(keys.KeyW||keys.ArrowUp||move.f) f+=1;
+      if(keys.KeyS||keys.ArrowDown||move.b) f-=1;
+      if(keys.KeyA||keys.ArrowLeft||move.l) s-=1;
+      if(keys.KeyD||keys.ArrowRight||move.r) s+=1;
+      if(keys.KeyQ) dir-=1.8*dt;
+      if(keys.KeyE) dir+=1.8*dt;
+      const sp=2.8*dt;
+      const nx=px+Math.cos(dir)*f*sp + Math.cos(dir+Math.PI/2)*s*sp;
+      const ny=py+Math.sin(dir)*f*sp + Math.sin(dir+Math.PI/2)*s*sp;
+      if(!solid(nx,py)) px=nx;
+      if(!solid(px,ny)) py=ny;
+      tryPickup();
+
+      // butcher AI
+      const bd=Math.hypot(butcher.x-px, butcher.y-py);
+      if(bd<10){
+        const ang=Math.atan2(py-butcher.y, px-butcher.x);
+        const bsp=(bd<5?2.4:1.6)*dt;
+        const bx=butcher.x+Math.cos(ang)*bsp;
+        const by=butcher.y+Math.sin(ang)*bsp;
+        if(!solid(bx,butcher.y)) butcher.x=bx;
+        if(!solid(butcher.x,by)) butcher.y=by;
+        stress=Math.min(100,stress+dt*12);
+        if(bd<0.7){ dead=true; playing=false; end(false); }
+        if(bd<4) msg.textContent='小心！屠夫喺附近';
+      } else {
+        stress=Math.max(0,stress-dt*5);
+        if(!hasKey) msg.textContent='跟黃光執鎖匙';
+        else msg.textContent='鎖匙到手 · 去綠門';
+      }
+      stressEl.textContent=(stress|0)+'%';
+    }
+    draw();
+  }
+  requestAnimationFrame(tick);
+
+  // back btn keep
+  setInterval(function(){
+    var a=document.querySelector('#vg-back-root a');
+    if(a){ a.href='/vincent-games-studio/games'; a.textContent='← 返回遊戲目錄'; }
+  },3000);
 })();
 </script>
 </body>
