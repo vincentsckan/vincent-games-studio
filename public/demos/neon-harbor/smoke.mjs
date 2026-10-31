@@ -59,6 +59,12 @@ try {
   const splashSecondary = await page.$eval('#splashSecondary', (el) => el.textContent.trim()).catch(() => '');
   check('splash primary Translation', splashPrimary === '霓虹未熄，港灣已開打——鏡頭一開就係戰場。', splashPrimary);
   check('splash secondary Translation', splashSecondary === 'Channel 7 開波，今晚收視你話事。', splashSecondary);
+  const heroA1 = await page.$eval('#splashHeroA1', (img) => ({ src: img.getAttribute('src'), ok: img.complete && img.naturalWidth > 0 })).catch(() => null);
+  const heroB2 = await page.$eval('#splashHeroB2', (img) => ({ src: img.getAttribute('src'), ok: img.complete && img.naturalWidth > 0 })).catch(() => null);
+  check('splash hero A1 招牌峽谷', !!(heroA1 && heroA1.ok && /hero\.jpg$/.test(heroA1.src)), JSON.stringify(heroA1));
+  check('splash hero B2 天台連橋', !!(heroB2 && heroB2.ok && /hero-roof\.jpg$/.test(heroB2.src)), JSON.stringify(heroB2));
+  const ogImg = await page.$eval('meta[property="og:image"]', (m) => m.getAttribute('content')).catch(() => '');
+  check('og:image cover.jpg', /\/cover\.jpg$/.test(ogImg || ''), ogImg);
 
   await page.click('#btnEnter');
   await page.waitForSelector('#panelMode.on');
@@ -132,7 +138,8 @@ try {
   check('env plate resolves ready|missing', envAfter && (envAfter.status === 'ready' || envAfter.status === 'missing'), JSON.stringify(envAfter));
 
   // Wire-first smoke for env plates already on disk (Multimedia drop)
-  const PRESENT_ENV = ['cargo','estate','kaitak','minibus','neonroof','nightstall','signs','skybridge','temple','tonglau','tram','watertower'];
+  // All 20 Multimedia cinematic env plates must resolve ready
+  const PRESENT_ENV = ALL_MAPS.slice();
   for (const mid of PRESENT_ENV) {
     await page.evaluate((id) => window.__startForTest(id, 'spark'), mid);
     await page.waitForFunction((id) => {
