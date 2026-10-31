@@ -242,9 +242,9 @@ const PLATE_ONLY_ARENA = true;
 let muzzleFlash = null;
 let gunMesh = null;
 let playerMesh = null; // visible TPP hero (simple humanoid; Multimedia refs/player/* can skin later)
-const CAM_BACK = 3.35;
-const CAM_RIGHT = 0.72;
-const CAM_UP = 0.55;
+const CAM_BACK = 3.85;
+const CAM_RIGHT = 0.68;
+const CAM_UP = 0.95;
 let spawnPoints = [];
 let bulletTraces = [];
 let bloodBursts = [];
@@ -2514,18 +2514,21 @@ function applyCinematicEnv(root, mapId, tex, atlas = {}) {
   endS.name = 'envWallS';
   envGroup.add(endS);
 
-  // Near awning parallax strip (scrolls slightly with camera later via userData)
+  // Near-awning atlas kept for Multimedia hit, but NEVER as a mid-street translucent billboard.
+  // Prior y=8.6 / z=-14.5 strip cut horizontally across TPP FOV (camera inside roof/awning FAIL).
+  // Park as a far/high atmospheric accent; fade/hide if chase cam ever approaches.
   if (atlas.near) {
     const awnMat = new THREE.MeshBasicMaterial({
-      map: atlas.near, transparent: true, depthWrite: false, fog: true, side: THREE.DoubleSide, opacity: 0.88,
+      map: atlas.near, transparent: true, depthWrite: false, fog: true, side: THREE.DoubleSide, opacity: 0.55,
     });
-    const awn = new THREE.Mesh(new THREE.PlaneGeometry(32, 6), awnMat);
-    // High + far — TPP chase cam (~y 2) must not clip through roof strip
-    awn.position.set(0, 8.6, -14.5);
+    const awn = new THREE.Mesh(new THREE.PlaneGeometry(96, 18), awnMat);
+    awn.position.set(0, 28, -68);
     awn.name = 'envParallaxNear';
     awn.userData.envTextured = true;
     awn.userData.parallaxNear = true;
-    awn.renderOrder = 2;
+    awn.userData.cameraOccluder = true;
+    awn.userData.baseOpacity = 0.55;
+    awn.renderOrder = -3;
     envGroup.add(awn);
   }
 
@@ -2870,7 +2873,7 @@ function buildWorld(mapId) {
   scene.background = new THREE.Color(0x050818);
   scene.fog = new THREE.FogExp2(0x050818, 0.012);
 
-  camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.12, 220);
+  camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.22, 220);
   camera.position.set(0, PLAYER_HEIGHT, 0);
 
   const hemi = new THREE.HemisphereLight(0x80a0ff, 0x201030, 1.45);
@@ -3142,30 +3145,36 @@ function applyPlayerPhysics(dt) {
   state.z = c.z;
 }
 
+/** Expanded AABB test — sphere-ish radius so chase cam never sits inside walls/roofs. */
+function pointHitsSolidExpanded(px, py, pz, pad) {
+  for (const b of solidBoxes) {
+    // Skip ground slab — only walls/roofs/props clip the chase cam
+    if (b.maxY < 0.4) continue;
+    if (
+      px >= b.minX - pad && px <= b.maxX + pad &&
+      py >= b.minY - pad && py <= b.maxY + pad &&
+      pz >= b.minZ - pad && pz <= b.maxZ + pad
+    ) return true;
+  }
+  return false;
+}
+
 /** Step ideal camera back→player; if solid AABB hit, pull in (TPP roof/wall clip fix). */
 function cameraPullBack(idealX, idealY, idealZ, targetX, targetY, targetZ) {
   const dx = idealX - targetX;
   const dy = idealY - targetY;
   const dz = idealZ - targetZ;
   const dist = Math.hypot(dx, dy, dz) || 0.001;
-  const steps = Math.max(8, Math.ceil(dist / 0.18));
+  const steps = Math.max(12, Math.ceil(dist / 0.12));
+  const pad = 0.42; // camera collision radius
   let best = 1;
   for (let i = 1; i <= steps; i++) {
     const t = i / steps;
     const px = targetX + dx * t;
     const py = targetY + dy * t;
     const pz = targetZ + dz * t;
-    let hit = false;
-    for (const b of solidBoxes) {
-      // Skip ground slab (minY < 0) — only walls/roofs/props clip the chase cam
-      if (b.maxY < 0.4) continue;
-      if (px >= b.minX && px <= b.maxX && py >= b.minY && py <= b.maxY && pz >= b.minZ && pz <= b.maxZ) {
-        hit = true;
-        break;
-      }
-    }
-    if (hit) {
-      best = Math.max(0.12, (i - 1) / steps);
+    if (pointHitsSolidExpanded(px, py, pz, pad)) {
+      best = Math.max(0.08, (i - 1) / steps);
       break;
     }
   }
@@ -3177,14 +3186,45 @@ function cameraPullBack(idealX, idealY, idealZ, targetX, targetY, targetZ) {
   };
 }
 
+/** Fade/hide translucent atlas planes marked cameraOccluder when near the chase cam. */
+function updateCameraOccluders(camX, camY, camZ) {
+  if (!worldRoot) return;
+  worldRoot.traverse((o) => {
+    if (!o.isMesh || !o.userData || !o.userData.cameraOccluder) return;
+    const wp = new THREE.Vector3();
+    o.getWorldPosition(wp);
+    // Approximate half-extents from geometry (PlaneGeometry width/height)
+    let halfW = 8, halfH = 4;
+    if (o.geometry && o.geometry.parameters) {
+      halfW = (o.geometry.parameters.width || 16) * 0.5;
+      halfH = (o.geometry.parameters.height || 8) * 0.5;
+    }
+    // Treat as vertical billboard AABB in world XZ/Y
+    const near =
+      Math.abs(camX - wp.x) < halfW + 2.5 &&
+      Math.abs(camY - wp.y) < halfH + 2.5 &&
+      Math.abs(camZ - wp.z) < 3.5;
+    const base = o.userData.baseOpacity != null ? o.userData.baseOpacity : 0.6;
+    if (o.material) {
+      if (near) {
+        o.visible = false;
+        o.material.opacity = 0;
+      } else {
+        o.visible = true;
+        o.material.opacity = base;
+      }
+    }
+  });
+}
+
 function updateCamera() {
-  // Mild near-awning parallax — keep strip ABOVE chase cam so it never fills the lens
+  // Keep near-awning atlas FAR — never drag a translucent strip into street FOV with the player
   if (worldRoot) {
     worldRoot.traverse((o) => {
       if (o.name === 'envParallaxNear' && o.userData && o.userData.parallaxNear) {
-        o.position.x = (state.x || 0) * 0.08;
-        o.position.y = 8.6;
-        o.position.z = -14.5 + (state.z || 0) * 0.03;
+        o.position.x = (state.x || 0) * 0.02;
+        o.position.y = 28;
+        o.position.z = -68 + (state.z || 0) * 0.01;
       }
     });
   }
@@ -3215,6 +3255,7 @@ function updateCamera() {
   const pivotZ = state.z;
   const pulled = cameraPullBack(idealX, idealY, idealZ, pivotX, pivotY, pivotZ);
   camera.position.set(pulled.x, pulled.y, pulled.z);
+  updateCameraOccluders(pulled.x, pulled.y, pulled.z);
   // look along aim (yaw/pitch) through a point ahead of the hero
   const { dx, dy, dz } = dirFromAngles(yaw, pitch);
   const lookDist = 22;
@@ -4528,6 +4569,61 @@ window.__clearPlayerToCorridor = () => {
   return { x: state.x, z: state.z };
 };
 
+window.__setCameraLook = (y, p) => {
+  yaw = Number(y) || 0;
+  pitch = Math.max(-1.2, Math.min(1.2, Number(p) || 0));
+  updateCamera();
+  return { yaw, pitch, cam: camera ? { x: camera.position.x, y: camera.position.y, z: camera.position.z } : null };
+};
+window.__cameraClipProbe = () => {
+  if (!camera || !worldRoot) return { ok: false, reason: 'no-cam' };
+  const cam = camera.position;
+  let nearHits = 0;
+  const samples = [];
+  worldRoot.traverse((o) => {
+    if (!o.isMesh || !o.visible) return;
+    if (o.name !== 'envParallaxNear' && !(o.userData && o.userData.cameraOccluder)) return;
+    const wp = new THREE.Vector3();
+    o.getWorldPosition(wp);
+    const dist = cam.distanceTo(wp);
+    let halfW = 8, halfH = 4;
+    if (o.geometry && o.geometry.parameters) {
+      halfW = (o.geometry.parameters.width || 16) * 0.5;
+      halfH = (o.geometry.parameters.height || 8) * 0.5;
+    }
+    const inBand =
+      Math.abs(cam.x - wp.x) < halfW + 1.2 &&
+      Math.abs(cam.y - wp.y) < halfH + 1.2 &&
+      Math.abs(cam.z - wp.z) < 2.8;
+    if (inBand || dist < 4) {
+      nearHits += 1;
+      if (samples.length < 6) {
+        samples.push({
+          name: o.name,
+          dist: +dist.toFixed(2),
+          camY: +cam.y.toFixed(2),
+          planeY: +wp.y.toFixed(2),
+          planeZ: +wp.z.toFixed(2),
+        });
+      }
+    }
+  });
+  // Also fail if near-awning sits in mid-street playable band (legacy bug)
+  let midStreetAwning = false;
+  worldRoot.traverse((o) => {
+    if (o.name !== 'envParallaxNear' || !o.visible) return;
+    const wp = new THREE.Vector3();
+    o.getWorldPosition(wp);
+    if (wp.y < 16 && Math.abs(wp.z) < 40) midStreetAwning = true;
+  });
+  return {
+    ok: nearHits === 0 && !midStreetAwning,
+    nearHits,
+    midStreetAwning,
+    cam: { x: +cam.x.toFixed(2), y: +cam.y.toFixed(2), z: +cam.z.toFixed(2) },
+    samples,
+  };
+};
 window.__whiteMeshProbe = () => {
   const r = worldRoot;
   let untexturedWhite = 0, awaitingTex = 0, visiblePickupOrbs = 0, visiblePips = 0;
