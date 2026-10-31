@@ -12,7 +12,7 @@
 html,body{height:100%;background:#05010a;color:#fff;font-family:"Noto Sans TC",system-ui,sans-serif;overflow:hidden;touch-action:none;user-select:none}
 #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
 canvas{display:block;width:100%;height:100%;max-width:100vw;max-height:100vh;background:#05010a}
-#hud{position:fixed;left:0;right:0;top:0;padding:calc(10px + env(safe-area-inset-top)) 16px 0;display:flex;justify-content:space-between;pointer-events:none;z-index:2;font-weight:700;text-shadow:0 2px 8px #000}
+#hud{position:fixed;left:0;right:0;top:0;padding:calc(10px + env(safe-area-inset-top)) 16px 0;padding-left:148px;display:flex;justify-content:space-between;pointer-events:none;z-index:2;font-weight:700;text-shadow:0 2px 8px #000}
 #hud .l{color:#ff4dc8}#hud .r{color:#40f0ff;text-align:right}
 #hud small{display:block;font-family:Syne,sans-serif;font-size:11px;opacity:.7;font-weight:700;letter-spacing:.06em}
 #overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(5,1,10,.78);z-index:3;padding:24px}
@@ -30,9 +30,19 @@ button.play:active{transform:scale(.97)}
 #touch{position:fixed;left:0;right:0;bottom:0;height:28%;display:flex;z-index:2;pointer-events:none}
 #touch.play{pointer-events:auto}
 #touch button{flex:1;background:transparent;border:0;opacity:0}
+
+
+#vg-back{position:fixed;left:12px;top:calc(10px + env(safe-area-inset-top));z-index:9999;pointer-events:auto;display:inline-flex;align-items:center;gap:6px;padding:10px 14px;border-radius:999px;font:700 13px "Noto Sans TC",system-ui,sans-serif;text-decoration:none;letter-spacing:.02em;border:1px solid #40f0ff55;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:0 4px 20px rgba(0,0,0,.45);transition:transform .15s ease,filter .15s;background:#120018cc;color:#40f0ff}
+#vg-back:hover{filter:brightness(1.15)}
+#vg-back:active{transform:scale(.96)}
+a.vg-catalog{display:inline-block;margin-top:14px;color:#40f0ff;font-weight:700;font-size:14px;text-decoration:none;opacity:.9}
+a.vg-catalog:hover{text-decoration:underline;opacity:1}
 </style>
 </head>
 <body>
+<a id="vg-back" href="/vincent-games-studio/games" title="返回遊戲目錄">← 返回遊戲目錄</a>
+
+
 <div id="wrap"><canvas id="c"></canvas></div>
 <div id="hud">
   <div class="l"><small>DISTANCE · 距離</small><span id="dist">0</span>m</div>
@@ -48,6 +58,7 @@ button.play:active{transform:scale(.97)}
       <div><b id="bestScore">0</b><span>最佳紀錄 m</span></div>
     </div>
     <button class="play" id="startBtn">開始 START</button>
+    <a class="vg-catalog" href="/vincent-games-studio/games">← 返回遊戲目錄</a>
   </div>
 </div>
 <div id="touch"><button id="tL" aria-label="left"></button><button id="tJ" aria-label="jump"></button><button id="tR" aria-label="right"></button></div>
