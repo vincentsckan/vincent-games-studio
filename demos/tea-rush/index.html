@@ -264,53 +264,32 @@ newOrder();
       root.setAttribute('aria-label','catalog');
       document.body.appendChild(root);
     }
-    // remove legacy bottom-left fixed pill if present
+    // Vincent: only one top-right back button
     var bl=document.getElementById('vg-back-bl');
     if(bl && bl.parentNode) bl.parentNode.removeChild(bl);
+    document.querySelectorAll('a.vg-catalog, a[data-vg-catalog]').forEach(function(a){
+      if(a.parentNode) a.parentNode.removeChild(a);
+    });
     var tr=document.getElementById('vg-back-tr');
     if(!tr){
       tr=document.createElement('a');
       tr.id='vg-back-tr';
       tr.className='vg-back-btn';
       root.appendChild(tr);
+    } else if(tr.parentNode!==root){
+      root.appendChild(tr);
     }
-    root.style.setProperty('position','fixed');
-    root.style.setProperty('inset','0');
-    root.style.setProperty('z-index','2147483647');
-    root.style.setProperty('pointer-events','none');
-    root.style.setProperty('display','block');
-    root.style.setProperty('visibility','visible');
-    root.style.setProperty('opacity','1');
+    root.style.cssText='position:fixed;inset:0;z-index:2147483647;pointer-events:none;display:block;visibility:visible;opacity:1';
     tr.href=HREF; tr.title=LABEL; tr.textContent=LABEL;
     tr.className='vg-back-btn';
-    tr.style.pointerEvents='auto';
-    tr.style.position='fixed';
-    tr.style.display='inline-flex';
-    tr.style.visibility='visible';
-    tr.style.opacity='1';
-    tr.style.zIndex='2147483647';
-    tr.style.right='max(12px, env(safe-area-inset-right))';
-    tr.style.top='max(12px, env(safe-area-inset-top))';
-    tr.style.left='auto';
-    tr.style.bottom='auto';
+    tr.style.cssText='pointer-events:auto;position:fixed;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:12px 18px;border-radius:14px;font:800 16px/1.2 "Noto Sans TC",system-ui,sans-serif;text-decoration:none;letter-spacing:.02em;visibility:visible;opacity:1;z-index:2147483647;right:max(12px, env(safe-area-inset-right));top:max(12px, env(safe-area-inset-top));left:auto;bottom:auto';
     if(root.parentNode!==document.body) document.body.appendChild(root);
     else if(document.body.lastElementChild!==root) document.body.appendChild(root);
-  }
-  function ensureCardLinks(){
-    // Vincent: only the fixed top-right control — strip any card/end catalog links
-    document.querySelectorAll('a.vg-catalog, a[data-vg-catalog]').forEach(function(a){
-      if(a.id==='vg-back-tr' || a.id==='vg-back-bl') return;
-      if(a.parentNode) a.parentNode.removeChild(a);
-    });
-    var end=document.getElementById('end');
-    if(end && end.style && end.style.display==='block'){
-      end.style.pointerEvents='auto';
-    }
   }
   function ensure(){
     if(locking) return;
     locking=true;
-    try{ ensureFixed(); ensureCardLinks(); }catch(e){}
+    try{ ensureFixed(); }catch(e){}
     locking=false;
   }
   function schedule(){
@@ -321,12 +300,10 @@ newOrder();
   else ensure();
   setTimeout(ensure,0);
   setTimeout(ensure,500);
-  setTimeout(ensure,2000);
-  setInterval(ensure,2000);
+  setInterval(ensure,3000);
   try{
     new MutationObserver(schedule).observe(document.documentElement,{childList:true,subtree:true});
   }catch(e){}
-  document.addEventListener('click',function(){ setTimeout(ensure,60); },true);
 })();
 </script>
 </body>
