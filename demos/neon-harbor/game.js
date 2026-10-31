@@ -240,6 +240,10 @@ let holdZone = null; // {x,z,r}
 let selectedMode = 'ffa';
 let campaignIdx = 0;
 let worldRoot = null;
+let envTextureCache = new Map(); // mapId -> THREE.Texture (success only)
+let envLoader = null;
+let envLoadToken = 0;
+let envPlateStatus = { mapId: null, status: 'idle', url: null }; // idle|loading|ready|missing
 
 function showPanel(id) {
   document.querySelectorAll('.panel').forEach((p) => p.classList.remove('on'));
@@ -1901,6 +1905,277 @@ function initRenderer() {
   clock = new THREE.Clock();
 }
 
+
+/** Cinematic 4K env plates from Multimedia: refs/env/env-<mapId>.jpg */
+const ENV_MAP_IDS = MAPS.map((m) => m.id);
+
+function envPlateUrl(mapId) {
+  return `./refs/env/env-${mapId}.jpg`;
+}
+
+function getEnvLoader() {
+  if (!envLoader) envLoader = new THREE.TextureLoader();
+  return envLoader;
+}
+
+function loadEnvPlate(mapId) {
+  return new Promise((resolve) => {
+    if (envTextureCache.has(mapId)) {
+      resolve(envTextureCache.get(mapId));
+      return;
+    }
+    const url = envPlateUrl(mapId);
+    getEnvLoader().load(
+      url,
+      (tex) => {
+        if ('colorSpace' in tex && THREE.SRGBColorSpace) tex.colorSpace = THREE.SRGBColorSpace;
+        tex.wrapS = THREE.ClampToEdgeWrapping;
+        tex.wrapT = THREE.ClampToEdgeWrapping;
+        tex.anisotropy = 4;
+        envTextureCache.set(mapId, tex);
+        resolve(tex);
+      },
+      undefined,
+      () => {
+        // Soft miss — keep procedural map playable; do not cache so a later drop can succeed
+        resolve(null);
+      }
+    );
+  });
+}
+
+function disposeEnvGroup(root) {
+  if (!root) return;
+  const stale = root.getObjectByName('cinematicEnv');
+  if (!stale) return;
+  root.remove(stale);
+  stale.traverse((obj) => {
+    if (obj.geometry) obj.geometry.dispose();
+    if (obj.material) {
+      const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+      mats.forEach((m) => {
+        // do not dispose shared envTextureCache maps
+        if (m.map && !envTextureCache.has(state.mapId)) {
+          /* leave shared */
+        }
+        m.dispose?.();
+      });
+    }
+  });
+}
+
+/** Apply photographic plate as sky/backdrop + ground/wall materials when present. */
+function applyCinematicEnv(root, mapId, tex) {
+  if (!root || !tex || !scene) return false;
+  disposeEnvGroup(root);
+
+  const envGroup = new THREE.Group();
+  envGroup.name = 'cinematicEnv';
+
+  // Large photographic sky cylinder — cinematic HK neon city backdrop
+  const skyMat = new THREE.MeshBasicMaterial({
+    map: tex,
+    side: THREE.BackSide,
+    fog: false,
+    depthWrite: false,
+  });
+  const sky = new THREE.Mesh(new THREE.CylinderGeometry(88, 88, 52, 64, 1, true), skyMat);
+  sky.position.y = 16;
+  sky.renderOrder = -2;
+  envGroup.add(sky);
+
+  // Soft ground wash from the same plate
+  const groundMap = tex.clone();
+  groundMap.wrapS = THREE.RepeatWrapping;
+  groundMap.wrapT = THREE.RepeatWrapping;
+  groundMap.repeat.set(3.2, 3.2);
+  groundMap.needsUpdate = true;
+  const groundMat = new THREE.MeshStandardMaterial({
+    map: groundMap,
+    color: 0xffffff,
+    roughness: 0.92,
+    metalness: 0.06,
+  });
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(96, 96), groundMat);
+  ground.rotation.x = -Math.PI / 2;
+  ground.position.y = 0.015;
+  ground.receiveShadow = false;
+  ground.renderOrder = -1;
+  envGroup.add(ground);
+
+  // Road stripe strip (wet asphalt feel under the plate)
+  const roadMat = new THREE.MeshStandardMaterial({
+    color: 0x1a1e28,
+    roughness: 0.35,
+    metalness: 0.45,
+    emissive: 0x102030,
+    emissiveIntensity: 0.25,
+  });
+  const road = new THREE.Mesh(new THREE.PlaneGeometry(14, 72), roadMat);
+  road.rotation.x = -Math.PI / 2;
+  road.position.set(0, 0.02, 0);
+  envGroup.add(road);
+  for (let i = -8; i <= 8; i++) {
+    const dash = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.35, 2.2),
+      new THREE.MeshBasicMaterial({ color: 0xffe080 })
+    );
+    dash.rotation.x = -Math.PI / 2;
+    dash.position.set(0, 0.03, i * 4.2);
+    envGroup.add(dash);
+  }
+
+  // Far cyclorama walls so FPS views stay photographic
+  const wallMat = new THREE.MeshBasicMaterial({
+    map: tex,
+    side: THREE.DoubleSide,
+    fog: true,
+    transparent: true,
+    opacity: 0.92,
+  });
+  const wallSpecs = [
+    [0, 14, -42, 84, 28, 0],
+    [0, 14, 42, 84, 28, 0],
+    [-42, 14, 0, 84, 28, Math.PI / 2],
+    [42, 14, 0, 84, 28, Math.PI / 2],
+  ];
+  wallSpecs.forEach(([x, y, z, w, h, rotY]) => {
+    const wall = new THREE.Mesh(new THREE.PlaneGeometry(w, h), wallMat.clone());
+    wall.position.set(x, y, z);
+    wall.rotation.y = rotY;
+    wall.renderOrder = -1;
+    envGroup.add(wall);
+  });
+
+  // Retexture existing ground planes from map builders
+  root.traverse((obj) => {
+    if (!obj.isMesh || !obj.geometry) return;
+    if (obj.geometry.type !== 'PlaneGeometry') return;
+    if (Math.abs(obj.rotation.x + Math.PI / 2) > 0.05) return;
+    const mat = obj.material;
+    if (!mat || !mat.isMeshStandardMaterial) return;
+    const gmap = tex.clone();
+    gmap.wrapS = THREE.RepeatWrapping;
+    gmap.wrapT = THREE.RepeatWrapping;
+    gmap.repeat.set(2.5, 2.5);
+    gmap.needsUpdate = true;
+    mat.map = gmap;
+    mat.color.set(0xffffff);
+    mat.needsUpdate = true;
+  });
+
+  // Living neon-city slice densify (vehicles / billboards / curb clutter) — not open-world GTA
+  densifyCinematicCitySlice(envGroup, root, mapId);
+
+  // Richer cinematic lighting keyed off the plate
+  const neonPink = new THREE.PointLight(0xff4dc8, 1.35, 55, 2);
+  neonPink.position.set(-10, 8, 6);
+  envGroup.add(neonPink);
+  const neonCyan = new THREE.PointLight(0x40f0ff, 1.25, 55, 2);
+  neonCyan.position.set(12, 7, -8);
+  envGroup.add(neonCyan);
+  const amberFill = new THREE.PointLight(0xffd36a, 0.85, 40, 2);
+  amberFill.position.set(0, 5, 10);
+  envGroup.add(amberFill);
+  const rim = new THREE.DirectionalLight(0xff80c8, 0.55);
+  rim.position.set(-8, 22, -14);
+  envGroup.add(rim);
+
+  scene.background = tex;
+  scene.fog = new THREE.FogExp2(0x0a1020, 0.0075);
+  root.add(envGroup);
+  return true;
+}
+
+/** Denser HK neon street silhouettes when an env plate is live (browser FPS city slice). */
+function densifyCinematicCitySlice(envGroup, root, mapId) {
+  const seed = String(mapId || 'cargo').split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+  const rnd = (i) => {
+    const x = Math.sin(seed * 12.9898 + i * 78.233) * 43758.5453;
+    return x - Math.floor(x);
+  };
+
+  // Parked vehicle silhouettes along curb lines (reuse existing prop builders; collision on)
+  const vehicleSlots = [
+    [-9.5, -18, 0], [9.5, -14, Math.PI], [-9.5, -6, 0], [9.5, -2, Math.PI],
+    [-9.5, 8, 0], [9.5, 12, Math.PI], [-9.5, 20, 0], [9.5, 22, Math.PI],
+  ];
+  vehicleSlots.forEach(([x, z, rot], i) => {
+    const pick = Math.floor(rnd(i + 1) * 5);
+    try {
+      if (pick === 0) addYellowTaxi(root, x, z, rot);
+      else if (pick === 1) addMinibus(root, x, z, rnd(i + 2) > 0.5 ? 'red' : 'green', rot);
+      else if (pick === 2) addVintageSedan(root, x, z, rot, rnd(i + 3) > 0.5 ? 0xf2f0ea : 0x2a3344);
+      else if (pick === 3) addSmallTruck(root, x, z, rot);
+      else addYellowTaxi(root, x, z, rot + 0.05);
+    } catch (_) { /* keep soft if a prop helper throws */ }
+  });
+
+  // Billboard / hanging sign canopy densify
+  const billboardCols = [0xff2d9b, 0x00e8ff, 0xffd36a, 0xff4dc8, 0x40f0ff];
+  for (let i = 0; i < 14; i++) {
+    const side = rnd(i + 40) > 0.5 ? 1 : -1;
+    const x = side * (11 + rnd(i + 41) * 2.5);
+    const z = -28 + i * 4.2 + rnd(i + 42) * 1.2;
+    const y = 3.2 + rnd(i + 43) * 4.5;
+    const col = billboardCols[i % billboardCols.length];
+    addNeonSign(root, x, y, z, 2.4 + rnd(i + 44) * 2.2, 0.7 + rnd(i + 45) * 1.1, col);
+  }
+
+  // Curb clutter — handcarts, stools, bins, barber poles
+  for (let i = 0; i < 10; i++) {
+    const side = rnd(i + 80) > 0.5 ? 1 : -1;
+    const x = side * (7.2 + rnd(i + 81) * 1.8);
+    const z = -24 + i * 5.1;
+    const kind = Math.floor(rnd(i + 82) * 4);
+    if (kind === 0) addRedHandcart(root, x, z, side > 0 ? Math.PI / 2 : -Math.PI / 2, false);
+    else if (kind === 1) addTrashBin(root, x, z, i % 2);
+    else if (kind === 2) addRedStool(root, x, z, false);
+    else addBarberPole(root, x, z, 2.2 + rnd(i + 83));
+  }
+
+  // Extra zebra + wet neon ground glow strips
+  try {
+    addZebraCrossing(root, 0, -10, true);
+    addZebraCrossing(root, 0, 10, true);
+  } catch (_) {}
+  for (let i = -4; i <= 4; i++) {
+    addBox(envGroup, i * 7, 0.01, 0, 5.5, 0.04, 0.35, 0x081018, i % 2 ? 0xff2d9b : 0x00e8ff, 1.1, false);
+  }
+
+  // Tall facade silhouettes framing the plate (soft — no solid, keep lanes open)
+  for (let i = -3; i <= 3; i++) {
+    if (i === 0) continue;
+    const h = 10 + Math.abs(i) * 2.5 + rnd(i + 100) * 4;
+    addBox(envGroup, -30, 0, i * 10, 6, h, 8, 0x10141c, 0x000000, 0, false);
+    addBox(envGroup, 30, 0, i * 10, 6, h * 0.9, 8, 0x12101a, 0x000000, 0, false);
+    const neon = i % 2 ? 0xff2d9b : 0x40f0ff;
+    addNeonSign(envGroup, -26.8, 4 + rnd(i + 110) * 3, i * 10, 3.5, 1.2, neon);
+    addNeonSign(envGroup, 26.8, 5 + rnd(i + 111) * 3, i * 10, 3.2, 1.0, neon === 0xff2d9b ? 0x00e8ff : 0xffd36a);
+  }
+}
+
+function beginEnvPlateLoad(root, mapId) {
+  const token = ++envLoadToken;
+  const url = envPlateUrl(mapId);
+  envPlateStatus = { mapId, status: 'loading', url };
+
+  const applyIfCurrent = (tex) => {
+    if (token !== envLoadToken) return;
+    if (tex && applyCinematicEnv(root, mapId, tex)) {
+      envPlateStatus = { mapId, status: 'ready', url };
+    } else {
+      envPlateStatus = { mapId, status: 'missing', url };
+    }
+  };
+
+  if (envTextureCache.has(mapId)) {
+    applyIfCurrent(envTextureCache.get(mapId));
+    return;
+  }
+  loadEnvPlate(mapId).then(applyIfCurrent);
+}
+
 function buildWorld(mapId) {
   solidBoxes = [];
   neonMats = [];
@@ -1962,6 +2237,9 @@ function buildWorld(mapId) {
   };
   const builder = builders[mapId] || buildCargoPier;
   builder(root);
+
+  // Cinematic env plate (4K) — soft-fallback if Multimedia plate not on disk yet
+  beginEnvPlateLoad(root, mapId);
 
   // pickups + hold zone after geometry
   spawnPickups(root);
@@ -3085,7 +3363,19 @@ window.__dbg = () => ({
   allyBots: bots.filter((b) => b.team === 0 && !b.isBoss).length,
   enemyBots: bots.filter((b) => b.team === 1 && !b.isBoss).length,
   builderUnique: true,
+  envPlate: { ...envPlateStatus },
 });
+
+window.__envPlateStatus = (mapId) => {
+  const id = mapId || state.mapId || envPlateStatus.mapId;
+  return {
+    mapId: id,
+    url: envPlateUrl(id),
+    status: id === envPlateStatus.mapId ? envPlateStatus.status : (envTextureCache.has(id) ? 'ready' : 'unknown'),
+    cached: envTextureCache.has(id),
+    envMapIds: ENV_MAP_IDS.slice(),
+  };
+};
 
 window.__mapBuilders = () => ({
   signs: 'buildNeonSignStreet',
@@ -3180,6 +3470,10 @@ window.__startBossHuntTest = (mapId, classId, bossId) => {
 };
 
 window.__lexicon = () => ({
+  splash: {
+    primary: '霓虹未熄，港灣已開打——鏡頭一開就係戰場。',
+    secondary: 'Channel 7 開波，今晚收視你話事。',
+  },
   modes: GAME_MODES.map((m) => m.nameZh),
   guns: [
     ...CLASSES.map((c) => c.nameZh),

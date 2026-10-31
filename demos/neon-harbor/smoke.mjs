@@ -34,6 +34,8 @@ page.on('console', (m) => {
 page.on('requestfailed', (r) => {
   const u = r.url();
   if (u.includes('favicon')) return;
+  // Soft-missing Multimedia cinematic plates — scaffold keeps playable without them
+  if (/\/refs\/env\/env-[^/?#]+\.jpg(?:\?|$)/.test(u)) return;
   errors.push(`REQFAIL ${u} ${r.failure()?.errorText}`);
 });
 
@@ -53,8 +55,23 @@ try {
   check('vg-back-tr present', !!backHref);
   check('vg-back-tr href', backHref === '/vincent-games-studio/games', backHref);
 
+  const splashPrimary = await page.$eval('#splashPrimary', (el) => el.textContent.trim()).catch(() => '');
+  const splashSecondary = await page.$eval('#splashSecondary', (el) => el.textContent.trim()).catch(() => '');
+  check('splash primary Translation', splashPrimary === '霓虹未熄，港灣已開打——鏡頭一開就係戰場。', splashPrimary);
+  check('splash secondary Translation', splashSecondary === 'Channel 7 開波，今晚收視你話事。', splashSecondary);
+  const heroA1 = await page.$eval('#splashHeroA1', (img) => ({ src: img.getAttribute('src'), ok: img.complete && img.naturalWidth > 0 })).catch(() => null);
+  const heroB2 = await page.$eval('#splashHeroB2', (img) => ({ src: img.getAttribute('src'), ok: img.complete && img.naturalWidth > 0 })).catch(() => null);
+  check('splash hero A1 招牌峽谷', !!(heroA1 && heroA1.ok && /hero\.jpg$/.test(heroA1.src)), JSON.stringify(heroA1));
+  check('splash hero B2 天台連橋', !!(heroB2 && heroB2.ok && /hero-roof\.jpg$/.test(heroB2.src)), JSON.stringify(heroB2));
+  const ogImg = await page.$eval('meta[property="og:image"]', (m) => m.getAttribute('content')).catch(() => '');
+  check('og:image cover.jpg', /\/cover\.jpg$/.test(ogImg || ''), ogImg);
+
   await page.click('#btnEnter');
   await page.waitForSelector('#panelMode.on');
+  const modeSplashP = await page.$eval('#modeSplashPrimary', (el) => el.textContent.trim()).catch(() => '');
+  const modeSplashS = await page.$eval('#modeSplashSecondary', (el) => el.textContent.trim()).catch(() => '');
+  check('mode splash primary', modeSplashP === '霓虹未熄，港灣已開打——鏡頭一開就係戰場。', modeSplashP);
+  check('mode splash secondary', modeSplashS === 'Channel 7 開波，今晚收視你話事。', modeSplashS);
   const modeCount = await page.$$eval('#modeGrid .pick', (els) => els.length);
   check('6 game modes', modeCount === 6, String(modeCount));
   const modeLabels = await page.$$eval('#modeGrid .pick b', (els) => els.map((e) => e.textContent.trim()));
@@ -107,6 +124,32 @@ try {
   check('20 builder entries', vals.length === 20, String(vals.length));
   check('builders all unique fn names', new Set(vals).size === 20, vals.join(','));
 
+  // cinematic env plate scaffold (soft-missing ok)
+  const envApi = await page.evaluate(() => window.__envPlateStatus && window.__envPlateStatus('cargo'));
+  check('env plate API present', !!envApi, JSON.stringify(envApi));
+  check('env plate url pattern', !!(envApi && envApi.url && /env-cargo\.jpg$/.test(envApi.url)), JSON.stringify(envApi));
+  check('env plate ids 20', !!(envApi && Array.isArray(envApi.envMapIds) && envApi.envMapIds.length === 20), JSON.stringify(envApi && envApi.envMapIds));
+  await page.evaluate(() => window.__startForTest('cargo', 'spark'));
+  await page.waitForFunction(() => {
+    const s = window.__envPlateStatus && window.__envPlateStatus('cargo');
+    return s && (s.status === 'ready' || s.status === 'missing');
+  }, { timeout: 8000 });
+  const envAfter = await page.evaluate(() => window.__envPlateStatus('cargo'));
+  check('env plate resolves ready|missing', envAfter && (envAfter.status === 'ready' || envAfter.status === 'missing'), JSON.stringify(envAfter));
+
+  // Wire-first smoke for env plates already on disk (Multimedia drop)
+  // All 20 Multimedia cinematic env plates must resolve ready
+  const PRESENT_ENV = ALL_MAPS.slice();
+  for (const mid of PRESENT_ENV) {
+    await page.evaluate((id) => window.__startForTest(id, 'spark'), mid);
+    await page.waitForFunction((id) => {
+      const s = window.__envPlateStatus && window.__envPlateStatus(id);
+      return window.__dbg().map === id && window.__dbg().running && s && (s.status === 'ready' || s.status === 'missing');
+    }, { timeout: 10000 }, mid);
+    const st = await page.evaluate((id) => window.__envPlateStatus(id), mid);
+    check(`${mid} env plate ready`, st && st.status === 'ready', JSON.stringify(st));
+  }
+
   // every map boots + moves
   for (const mid of ALL_MAPS) {
     await page.evaluate((id) => window.__startForTest(id, 'spark'), mid);
@@ -156,6 +199,8 @@ try {
 
   // lexicon locked names
   const lex = await page.evaluate(() => window.__lexicon());
+  check('lexicon splash primary', lex.splash && lex.splash.primary === '霓虹未熄，港灣已開打——鏡頭一開就係戰場。', JSON.stringify(lex.splash));
+  check('lexicon splash secondary', lex.splash && lex.splash.secondary === 'Channel 7 開波，今晚收視你話事。', JSON.stringify(lex.splash));
   check('lexicon modes 5+campaign', lex.modes.length === 6, JSON.stringify(lex.modes));
   check('lexicon ladder 8 guns', lex.ladder.length === 8, lex.ladder.join('|'));
   check('lexicon has 港灣AR', lex.ladder.includes('港灣AR'), lex.ladder.join('|'));
