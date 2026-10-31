@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-HK">
+<head>
+<meta charset="utf-8"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<meta http-equiv="Pragma" content="no-cache"/>
+<meta http-equiv="Expires" content="0"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
+<title>霓虹港戰 · Neon Harbor Clash — Vincent Games Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:#03040c;color:#fff;font-family:"Noto Sans TC",system-ui,sans-serif;overflow:hidden;touch-action:none;user-select:none}
+#wrap{position:fixed;inset:0}
+#c{display:block;width:100%;height:100%;outline:none;background:#050818}
+#cross{position:fixed;left:50%;top:50%;width:18px;height:18px;margin:-9px 0 0 -9px;pointer-events:none;z-index:5;opacity:0}
+#cross.on{opacity:.9}
+#cross:before,#cross:after{content:"";position:absolute;background:#40f0ff;box-shadow:0 0 6px #40f0ff}
+#cross:before{left:8px;top:0;width:2px;height:18px}
+#cross:after{left:0;top:8px;width:18px;height:2px}
+#hud{position:fixed;left:0;right:0;bottom:0;top:0;pointer-events:none;z-index:4;opacity:0;transition:opacity .2s}
+#hud.on{opacity:1}
+#hudTop{position:absolute;left:14px;top:calc(12px + env(safe-area-inset-top));padding-right:160px;font-weight:800;text-shadow:0 2px 10px #000}
+#hudTop .row{display:flex;gap:14px;flex-wrap:wrap;font-size:15px}
+#hudTop .k{color:#ff4dc8}#hudTop .d{color:#ff8a9a}#hudTop .t{color:#40f0ff}#hudTop .s{color:#ffd36a}
+#hudTop small{display:block;font-family:Syne,sans-serif;font-size:10px;opacity:.65;letter-spacing:.08em;margin-bottom:2px}
+#hudBot{position:absolute;left:14px;bottom:calc(14px + env(safe-area-inset-bottom));font-weight:900;font-size:18px;text-shadow:0 2px 10px #000}
+#hudBot .hp{color:#5dff9a}#hudBot .ammo{color:#ffd36a;margin-left:16px}#hudBot .slide{color:#40f0ff;margin-left:16px;opacity:0}
+#hudBot .slide.on{opacity:1}
+#killfeed{position:absolute;right:14px;top:calc(64px + env(safe-area-inset-top));text-align:right;font-size:13px;font-weight:800;text-shadow:0 2px 8px #000;max-width:46vw}
+#killfeed div{margin-bottom:4px;color:#e8d0ff;animation:kf .4s ease}
+@keyframes kf{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:none}}
+#dmgFlash{position:fixed;inset:0;pointer-events:none;z-index:6;background:radial-gradient(ellipse at center,transparent 40%,rgba(180,0,40,.55));opacity:0;transition:opacity .15s}
+#hitmark{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);font-size:28px;font-weight:900;color:#ff4dc8;text-shadow:0 0 12px #ff4dc8;pointer-events:none;z-index:7;opacity:0}
+#overlay{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:rgba(3,4,12,.88);padding:20px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+#overlay.hidden{display:none}
+.card{max-width:560px;width:100%;background:linear-gradient(165deg,#1a0830,#081428);border:1px solid #ff4dc866;border-radius:22px;padding:26px 22px;text-align:center;box-shadow:0 0 48px #ff4dc822;max-height:min(94vh,920px);overflow-y:auto}
+.card h1{font-family:Syne,sans-serif;font-size:clamp(1.6rem,4vw,2.2rem);font-weight:800;background:linear-gradient(90deg,#ff4dc8,#40f0ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.card .sub{margin-top:6px;color:#ffd36a;font-size:13px;letter-spacing:.06em}
+.card p{margin-top:12px;color:#c8b8d8;font-size:14px;line-height:1.55}
+.hero{width:100%;max-height:160px;object-fit:cover;border-radius:14px;margin-top:14px;border:1px solid #40f0ff44}
+.panel{display:none}.panel.on{display:block}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+@media(max-width:480px){.grid{grid-template-columns:1fr}}
+.pick{border:2px solid #40f0ff44;background:#0a1224;border-radius:14px;padding:12px 10px;cursor:pointer;text-align:left;color:#fff;font-family:inherit;transition:border .15s,transform .1s}
+.pick:hover,.pick:focus{border-color:#40f0ff;outline:none}
+.pick.sel{border-color:#ff4dc8;box-shadow:0 0 16px #ff4dc855}
+.pick b{display:block;font-size:15px;color:#40f0ff}
+.pick span{display:block;margin-top:4px;font-size:12px;color:#b8a8c8;line-height:1.4}
+.pick img{width:100%;height:72px;object-fit:cover;border-radius:8px;margin-bottom:8px}
+button.play{margin-top:18px;min-height:52px;padding:0 28px;border:0;border-radius:999px;background:linear-gradient(90deg,#ff4dc8,#5a3cff);color:#fff;font-weight:900;font-size:17px;cursor:pointer;font-family:inherit;box-shadow:0 8px 28px #ff4dc855}
+button.play:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+button.ghost{margin-top:10px;background:transparent;border:1px solid #40f0ff66;color:#40f0ff;min-height:42px;padding:0 18px;border-radius:999px;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit}
+#endStats{margin-top:14px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+#endStats div{background:#fff1;border-radius:12px;padding:10px 14px;min-width:90px}
+#endStats b{display:block;font-size:1.35rem;color:#40f0ff}
+#endStats span{font-size:11px;opacity:.7}
+.hint{margin-top:10px;font-size:12px;color:#8a7a9a}
+#vg-back-root{position:fixed;inset:0;z-index:2147483647;pointer-events:none}
+#vg-back-root a.vg-back-btn{pointer-events:auto;position:fixed;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 14px;border-radius:14px;font:800 15px/1.2 "Noto Sans TC",system-ui,sans-serif;text-decoration:none;letter-spacing:.02em;border:2px solid #40f0ff;background:#05010a;color:#40f0ff;box-shadow:0 6px 28px rgba(0,0,0,.65)}
+#vg-back-tr{right:max(12px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));left:auto;bottom:auto}
+</style>
+<script type="importmap">
+{"imports":{"three":"../vendor/three.module.min.js"}}
+</script>
+</head>
+<body>
+<div id="wrap"><canvas id="c" tabindex="0"></canvas></div>
+<div id="cross"></div>
+<div id="dmgFlash"></div>
+<div id="hitmark">✕</div>
+<div id="hud">
+  <div id="hudTop">
+    <small>NEON HARBOR CLASH · 霓虹港戰</small>
+    <div class="row">
+      <span class="k">擊殺 <b id="kills">0</b></span>
+      <span class="d">死亡 <b id="deaths">0</b></span>
+      <span class="t">剩餘 <b id="time">2:30</b></span>
+      <span class="s">目標 20</span>
+    </div>
+  </div>
+  <div id="killfeed"></div>
+  <div id="hudBot">
+    <span class="hp">HP <b id="hp">100</b></span>
+    <span class="ammo">彈藥 <b id="ammo">30</b>/<b id="reserve">90</b></span>
+    <span class="slide" id="slideTag">滑行中</span>
+  </div>
+</div>
+
+<div id="overlay">
+  <div class="card">
+    <div class="panel on" id="panelSplash">
+      <h1>NEON HARBOR CLASH</h1>
+      <div class="sub">霓虹港戰 · Vincent Games Studio</div>
+      <img class="hero" src="refs/hero.jpg" alt="Neon Harbor" onerror="this.style.display='none'"/>
+      <p>Frag Channel 開播——快一步，今晚先有糧。<br/>你加入 Channel 7；貨櫃區同廟市天台，打贏先有收視。</p>
+      <p class="hint">WASD 移動 · 滑鼠瞄準 · Space 跳 · C／Ctrl 蹲滑 · 左鍵射擊 · R 換彈</p>
+      <button class="play" id="btnEnter">進入遊戲</button>
+    </div>
+
+    <div class="panel" id="panelMap">
+      <h1>選擇地圖</h1>
+      <div class="sub">MAP SELECT</div>
+      <div class="grid" id="mapGrid"></div>
+      <button class="play" id="btnMapNext" disabled>下一步：選角色</button>
+      <button class="ghost" id="btnMapBack">返回</button>
+    </div>
+
+    <div class="panel" id="panelClass">
+      <h1>選擇角色</h1>
+      <div class="sub">CLASS SELECT</div>
+      <img class="hero" src="refs/chars.jpg" alt="classes" style="max-height:100px" onerror="this.style.display='none'"/>
+      <div class="grid" id="classGrid"></div>
+      <button class="play" id="btnStart" disabled>開始對戰 · 鎖定滑鼠</button>
+      <button class="ghost" id="btnClassBack">返回地圖</button>
+      <p class="hint">點擊畫面可重新鎖定滑鼠視角</p>
+    </div>
+
+    <div class="panel" id="panelEnd">
+      <h1 id="endTitle">對戰結束</h1>
+      <div class="sub" id="endSub">MATCH OVER</div>
+      <div id="endStats">
+        <div><b id="endKills">0</b><span>擊殺</span></div>
+        <div><b id="endDeaths">0</b><span>死亡</span></div>
+        <div><b id="endKD">0.0</b><span>K/D</span></div>
+      </div>
+      <button class="play" id="btnAgain">再來一局</button>
+      <button class="ghost" id="btnMenu">返回主選單</button>
+    </div>
+  </div>
+</div>
+
+<div id="vg-back-root" aria-label="catalog">
+  <a id="vg-back-tr" class="vg-back-btn" href="/vincent-games-studio/games" title="← 返回遊戲目錄">← 返回遊戲目錄</a>
+</div>
+
+<script type="module" src="./game.js"></script>
+<script>
+(function(){
+  var HREF='/vincent-games-studio/games', LABEL='← 返回遊戲目錄', locking=false, scheduled=null;
+  function ensureFixed(){
+    var root=document.getElementById('vg-back-root');
+    if(!root){ root=document.createElement('div'); root.id='vg-back-root'; document.body.appendChild(root); }
+    var tr=document.getElementById('vg-back-tr');
+    if(!tr){ tr=document.createElement('a'); tr.id='vg-back-tr'; tr.className='vg-back-btn'; root.appendChild(tr); }
+    else if(tr.parentNode!==root) root.appendChild(tr);
+    root.style.cssText='position:fixed;inset:0;z-index:2147483647;pointer-events:none;display:block;visibility:visible;opacity:1';
+    tr.href=HREF; tr.title=LABEL; tr.textContent=LABEL; tr.className='vg-back-btn';
+    tr.style.cssText='pointer-events:auto;position:fixed;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:12px 18px;border-radius:14px;font:800 16px/1.2 "Noto Sans TC",system-ui,sans-serif;text-decoration:none;letter-spacing:.02em;visibility:visible;opacity:1;z-index:2147483647;right:max(12px, env(safe-area-inset-right));top:max(12px, env(safe-area-inset-top));left:auto;bottom:auto;border:2px solid #40f0ff;background:#05010a;color:#40f0ff;box-shadow:0 6px 28px rgba(0,0,0,.65)';
+    if(root.parentNode!==document.body) document.body.appendChild(root);
+    else if(document.body.lastElementChild!==root) document.body.appendChild(root);
+  }
+  function ensure(){ if(locking) return; locking=true; try{ ensureFixed(); }catch(e){} locking=false; }
+  function schedule(){ if(scheduled) return; scheduled=setTimeout(function(){ scheduled=null; ensure(); }, 80); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',ensure); else ensure();
+  setTimeout(ensure,0); setTimeout(ensure,500); setInterval(ensure,3000);
+  try{ new MutationObserver(schedule).observe(document.documentElement,{childList:true,subtree:true}); }catch(e){}
+})();
+</script>
+</body>
+</html>
