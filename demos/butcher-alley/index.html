@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-HK">
+<head>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/><meta http-equiv="Pragma" content="no-cache"/><meta http-equiv="Expires" content="0"/>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
+<title>血色街市 · Butcher Alley — Vincent Games Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:#0a0202;color:#fff;font-family:"Noto Sans TC",system-ui,sans-serif;overflow:hidden;touch-action:none;user-select:none}
+#c{display:block;width:100%;height:100%;position:fixed;inset:0}
+#hud{position:fixed;left:0;right:0;top:0;padding:calc(12px + env(safe-area-inset-top)) 16px 0;padding-right:160px;display:flex;justify-content:space-between;pointer-events:none;z-index:2;font-weight:700;text-shadow:0 2px 10px #000}
+#hud .l{color:#ff6b6b}#hud .r{color:#ffd36a;text-align:right}
+#hud small{display:block;font-family:Syne,sans-serif;font-size:11px;opacity:.7;letter-spacing:.06em}
+#hint{position:fixed;left:50%;bottom:calc(18% + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:2;pointer-events:none;background:rgba(0,0,0,.55);border:1px solid #ff444455;padding:8px 14px;border-radius:999px;font-size:13px;color:#ffc9c9;opacity:0;transition:opacity .3s}
+#hint.show{opacity:1}
+#overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(8,1,1,.82);z-index:3;overflow-y:auto;padding:24px}
+#overlay.hidden{display:none}
+.card{max-width:440px;width:100%;background:linear-gradient(160deg,#2a0808,#100404);border:1px solid #ff444466;border-radius:20px;padding:28px 24px;text-align:center;box-shadow:0 0 48px #ff202033;max-height:min(92vh,900px);overflow-y:auto}
+.card h1{font-family:Syne,sans-serif;font-size:1.85rem;font-weight:800;background:linear-gradient(90deg,#ff4040,#ffd36a);-webkit-background-clip:text;background-clip:text;color:transparent}
+.card .sub{margin-top:6px;color:#ff8a8a;font-size:13px;letter-spacing:.06em}
+.card p{margin-top:14px;color:#d8b8b8;font-size:14px;line-height:1.6}
+.card .scores{margin-top:16px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.card .scores div{background:#fff1;border-radius:12px;padding:10px 16px;min-width:110px}
+.card .scores b{display:block;font-size:1.35rem;color:#ff6b6b}
+.card .scores span{font-size:11px;opacity:.7}
+button.play{margin-top:20px;min-height:48px;padding:0 28px;border:0;border-radius:999px;background:linear-gradient(90deg,#c01818,#7a0a0a);color:#fff;font-weight:900;font-size:16px;cursor:pointer;font-family:inherit;box-shadow:0 8px 24px #ff202055}
+button.play:active{transform:scale(.97)}
+#joy{position:fixed;left:max(16px,env(safe-area-inset-left));bottom:max(20px,env(safe-area-inset-bottom));width:120px;height:120px;border-radius:50%;border:2px solid #ff444455;background:rgba(0,0,0,.35);z-index:2;display:none;touch-action:none}
+#joy.play{display:block}
+#joy-knob{position:absolute;left:50%;top:50%;width:48px;height:48px;margin:-24px 0 0 -24px;border-radius:50%;background:#ff444488;pointer-events:none}
+#lookpad{position:fixed;right:0;top:20%;bottom:20%;width:45%;z-index:1;display:none;touch-action:none}
+#lookpad.play{display:block}
+#cross{position:fixed;left:50%;top:50%;width:18px;height:18px;margin:-9px 0 0 -9px;z-index:2;pointer-events:none;opacity:0}
+#cross.on{opacity:.55}
+#cross:before,#cross:after{content:"";position:absolute;background:#ffc9c9}
+#cross:before{left:8px;top:0;width:2px;height:18px}
+#cross:after{left:0;top:8px;width:18px;height:2px}
+#flash{position:fixed;inset:0;background:#ff1010;opacity:0;pointer-events:none;z-index:4;transition:opacity .08s}
+#vg-back-root{position:fixed;left:0;right:0;bottom:0;top:0;z-index:2147483647;pointer-events:none}
+#vg-back-root a.vg-back-btn{pointer-events:auto;position:fixed;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;min-width:48px;padding:12px 18px;border-radius:14px;font:800 16px/1.2 "Noto Sans TC",system-ui,sans-serif;text-decoration:none;letter-spacing:.02em;border:2px solid #ff6b6b;background:#0a0202;color:#ff6b6b;box-shadow:0 6px 28px rgba(0,0,0,.65),0 0 0 1px rgba(255,255,255,.08);-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+#vg-back-root a.vg-back-btn:active{transform:scale(.97)}
+#vg-back-tr{right:max(12px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));left:auto;bottom:auto;font-size:15px!important;min-height:44px;padding:10px 14px;opacity:.95}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="cross"></div>
+<div id="flash"></div>
+<div id="hud">
+  <div class="l"><small>TIME · 時間</small><span id="time">0:00</span></div>
+  <div class="r"><small>目標</small><span id="obj">搵鎖匙 · 逃離後巷</span></div>
+</div>
+<div id="hint"></div>
+<div id="joy"><div id="joy-knob"></div></div>
+<div id="lookpad"></div>
+<div id="overlay">
+  <div class="card">
+    <h1>BUTCHER ALLEY</h1>
+    <div class="sub">血色街市 · 後巷掛肉滴水，鎖匙喺最入</div>
+    <p id="intro">收檔後嘅街市後巷。血水喺地滑，肉掛喺頭頂滴。搵到鐵鎖匙，再開閘走人——小心嗰個影。<br/><br/>WASD / 虛擬搖桿移動 · 滑鼠／右半屏望向 · Esc 解鎖滑鼠</p>
+    <div class="scores" id="endScores" style="display:none">
+      <div><b id="endTime">0:00</b><span>通關時間</span></div>
+      <div><b id="endResult">—</b><span>結果</span></div>
+    </div>
+    <button class="play" id="startBtn">開始 START</button>
+  </div>
+</div>
+
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+
+const canvas = document.getElementById('c');
+const overlay = document.getElementById('overlay');
+const startBtn = document.getElementById('startBtn');
+const hintEl = document.getElementById('hint');
+const flashEl = document.getElementById('flash');
+const crossEl = document.getElementById('cross');
+const joy = document.getElementById('joy');
+const joyKnob = document.getElementById('joy-knob');
+const lookpad = document.getElementById('lookpad');
+const KEY_BEST = 'vgs-butcher-alley-best';
+
+let best = +localStorage.getItem(KEY_BEST) || 0;
+let running = false, won = false, dead = false;
+let t0 = 0, elapsed = 0;
+let hasKey = false, gateOpen = false;
+let hintTimer = 0;
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+renderer.setClearColor(0x0a0202);
+renderer.shadowMap.enabled = false;
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x1a0505, 0.085);
+
+const camera = new THREE.PerspectiveCamera(72, 1, 0.08, 80);
+const clock = new THREE.Clock();
+
+const ALLEY_LEN = 48;
+const ALLEY_W = 3.2;
+const keyPos = new THREE.Vector3(0, 0.6, -ALLEY_LEN + 6);
+const exitPos = new THREE.Vector3(0, 1.0, -ALLEY_LEN + 1.2);
+
+// player state
+const player = { x: 0, y: 1.55, z: -2.5, yaw: Math.PI, pitch: 0, vx: 0, vz: 0 };
+const keys = {};
+const moveStick = { x: 0, y: 0 };
+let lookTouch = null, lookLX = 0, lookLY = 0;
+
+// pursuer
+const pursuer = { z: 4, active: false, speed: 2.1, caught: false };
+
+function resize() {
+  const w = innerWidth, h = innerHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+addEventListener('resize', resize); resize();
+
+function mat(color, opts = {}) {
+  return new THREE.MeshStandardMaterial({ color, roughness: opts.roughness ?? 0.85, metalness: opts.metalness ?? 0.05, emissive: opts.emissive ?? 0x000000, emissiveIntensity: opts.emissiveIntensity ?? 0 });
+}
+
+function buildWorld() {
+  // floor
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(ALLEY_W + 1.2, ALLEY_LEN + 8), mat(0x2a0a0a, { roughness: 0.55 }));
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.set(0, 0, -ALLEY_LEN / 2);
+  scene.add(floor);
+
+  // blood puddles
+  for (let i = 0; i < 28; i++) {
+    const p = new THREE.Mesh(
+      new THREE.CircleGeometry(0.25 + Math.random() * 0.55, 10),
+      mat(0x5a080c, { roughness: 0.35 })
+    );
+    p.rotation.x = -Math.PI / 2;
+    p.position.set((Math.random() - 0.5) * (ALLEY_W - 0.4), 0.015, -2 - Math.random() * (ALLEY_LEN - 4));
+    scene.add(p);
+  }
+
+  // walls + stalls
+  const wallH = 3.4;
+  const wallMat = mat(0x1c1010);
+  const stallMat = mat(0x3a2018);
+  const left = new THREE.Mesh(new THREE.BoxGeometry(0.25, wallH, ALLEY_LEN + 4), wallMat);
+  left.position.set(-ALLEY_W / 2 - 0.1, wallH / 2, -ALLEY_LEN / 2);
+  scene.add(left);
+  const right = left.clone();
+  right.position.x = ALLEY_W / 2 + 0.1;
+  scene.add(right);
+
+  // stall counters
+  for (let z = -4; z > -ALLEY_LEN + 4; z -= 3.2) {
+    for (const side of [-1, 1]) {
+      const counter = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.9, 2.4), stallMat);
+      counter.position.set(side * (ALLEY_W / 2 - 0.35), 0.45, z);
+      scene.add(counter);
+      // tiles / trays
+      const tray = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.06, 1.8), mat(0x4a1515));
+      tray.position.set(side * (ALLEY_W / 2 - 0.35), 0.93, z);
+      scene.add(tray);
+    }
+  }
+
+  // hanging meat
+  const meatMat = mat(0x6e1218, { roughness: 0.7 });
+  const hookMat = mat(0x555555, { metalness: 0.6, roughness: 0.4 });
+  for (let i = 0; i < 22; i++) {
+    const z = -3 - i * 1.9 - Math.random() * 0.4;
+    const x = (Math.random() < 0.5 ? -1 : 1) * (0.55 + Math.random() * 0.7);
+    const hook = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.55, 6), hookMat);
+    hook.position.set(x, 2.85, z);
+    scene.add(hook);
+    const meat = new THREE.Mesh(
+      new THREE.CapsuleGeometry(0.12 + Math.random() * 0.1, 0.35 + Math.random() * 0.55, 4, 8),
+      meatMat
+    );
+    meat.position.set(x, 2.15 - Math.random() * 0.3, z);
+    meat.rotation.z = (Math.random() - 0.5) * 0.35;
+    scene.add(meat);
+  }
+
+  // ceiling beams
+  for (let z = -2; z > -ALLEY_LEN; z -= 2.5) {
+    const beam = new THREE.Mesh(new THREE.BoxGeometry(ALLEY_W + 0.6, 0.18, 0.22), mat(0x2a1810));
+    beam.position.set(0, 3.35, z);
+    scene.add(beam);
+  }
+
+  // red lamps
+  for (let z = -5; z > -ALLEY_LEN + 2; z -= 6) {
+    const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), mat(0xff2200, { emissive: 0xff1500, emissiveIntensity: 1.2, roughness: 0.4 }));
+    lamp.position.set(0, 3.05, z);
+    scene.add(lamp);
+    const light = new THREE.PointLight(0xff2a1a, 2.2, 9, 1.6);
+    light.position.copy(lamp.position);
+    scene.add(light);
+  }
+
+  // ambient + fill
+  scene.add(new THREE.AmbientLight(0x3a1010, 0.55));
+  const fill = new THREE.DirectionalLight(0xff8866, 0.25);
+  fill.position.set(2, 6, 2);
+  scene.add(fill);
+
+  // key
+  const keyGroup = new THREE.Group();
+  const keyBody = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.035, 8, 16), mat(0xffd36a, { emissive: 0xffaa33, emissiveIntensity: 0.8, metalness: 0.7, roughness: 0.35 }));
+  keyBody.rotation.x = Math.PI / 2;
+  keyGroup.add(keyBody);
+  const keyShaft = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.28), mat(0xffd36a, { emissive: 0xffaa33, emissiveIntensity: 0.6, metalness: 0.7 }));
+  keyShaft.position.z = 0.2;
+  keyGroup.add(keyShaft);
+  keyGroup.position.copy(keyPos);
+  keyGroup.name = 'key';
+  scene.add(keyGroup);
+  window.__keyGroup = keyGroup;
+  const keyLight = new THREE.PointLight(0xffcc55, 1.4, 5, 2);
+  keyLight.position.copy(keyPos);
+  scene.add(keyLight);
+  window.__keyLight = keyLight;
+
+  // exit gate
+  const gate = new THREE.Mesh(new THREE.BoxGeometry(ALLEY_W - 0.3, 2.8, 0.15), mat(0x222222, { metalness: 0.5, roughness: 0.4 }));
+  gate.position.copy(exitPos);
+  gate.name = 'gate';
+  scene.add(gate);
+  window.__gate = gate;
+  const gateFrame = new THREE.Mesh(new THREE.BoxGeometry(ALLEY_W + 0.2, 3.0, 0.2), mat(0x444444, { metalness: 0.4 }));
+  gateFrame.position.set(exitPos.x, exitPos.y + 0.1, exitPos.z - 0.05);
+  scene.add(gateFrame);
+
+  // end wall beyond gate
+  const endWall = new THREE.Mesh(new THREE.BoxGeometry(ALLEY_W + 2, 4, 0.4), wallMat);
+  endWall.position.set(0, 2, -ALLEY_LEN - 0.5);
+  scene.add(endWall);
+
+  // start wall
+  const startWall = new THREE.Mesh(new THREE.BoxGeometry(ALLEY_W + 2, 4, 0.4), wallMat);
+  startWall.position.set(0, 2, 2);
+  scene.add(startWall);
+
+  // pursuer silhouette
+  const sil = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.28, 0.9, 4, 8), mat(0x050505, { emissive: 0x220000, emissiveIntensity: 0.3 }));
+  body.position.y = 1.0;
+  sil.add(body);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 10), mat(0x080000));
+  head.position.y = 1.75;
+  sil.add(head);
+  sil.position.set(0, 0, pursuer.z);
+  sil.name = 'pursuer';
+  scene.add(sil);
+  window.__pursuer = sil;
+}
+
+buildWorld();
+
+function showHint(text, ms = 2800) {
+  hintEl.textContent = text;
+  hintEl.classList.add('show');
+  clearTimeout(hintTimer);
+  hintTimer = setTimeout(() => hintEl.classList.remove('show'), ms);
+}
+
+function fmt(t) {
+  const s = Math.floor(t);
+  const m = Math.floor(s / 60);
+  return m + ':' + String(s % 60).padStart(2, '0');
+}
+
+function flash(a = 0.35) {
+  flashEl.style.opacity = String(a);
+  setTimeout(() => { flashEl.style.opacity = '0'; }, 90);
+}
+
+function resetGame() {
+  running = true; won = false; dead = false;
+  hasKey = false; gateOpen = false;
+  player.x = 0; player.y = 1.55; player.z = -2.5;
+  player.yaw = Math.PI; player.pitch = 0;
+  pursuer.z = 4; pursuer.active = false; pursuer.caught = false;
+  pursuer.speed = 2.1;
+  t0 = performance.now();
+  elapsed = 0;
+  if (window.__keyGroup) window.__keyGroup.visible = true;
+  if (window.__keyLight) window.__keyLight.visible = true;
+  if (window.__gate) { window.__gate.position.y = exitPos.y; window.__gate.visible = true; }
+  if (window.__pursuer) window.__pursuer.visible = true;
+  document.getElementById('obj').textContent = '搵鎖匙 · 逃離後巷';
+  document.getElementById('endScores').style.display = 'none';
+  document.getElementById('intro').style.display = '';
+  overlay.classList.add('hidden');
+  joy.classList.add('play');
+  lookpad.classList.add('play');
+  crossEl.classList.add('on');
+  showHint('沿住後巷行深入……鎖匙喺最入嗰邊', 3200);
+  try { canvas.requestPointerLock?.(); } catch (_) {}
+}
+
+function endGame(success) {
+  running = false;
+  won = success;
+  dead = !success;
+  elapsed = (performance.now() - t0) / 1000;
+  document.exitPointerLock?.();
+  joy.classList.remove('play');
+  lookpad.classList.remove('play');
+  crossEl.classList.remove('on');
+  const endScores = document.getElementById('endScores');
+  endScores.style.display = 'flex';
+  document.getElementById('intro').style.display = 'none';
+  document.getElementById('endTime').textContent = fmt(elapsed);
+  document.getElementById('endResult').textContent = success ? '逃脫' : '被追上';
+  if (success) {
+    const ms = Math.floor(elapsed * 1000);
+    if (!best || ms < best) { best = ms; localStorage.setItem(KEY_BEST, String(best)); }
+    showHint('你逃出咗血色街市', 2000);
+  } else {
+    flash(0.55);
+    showHint('影追上你……', 2000);
+  }
+  startBtn.textContent = '再玩一次 RETRY';
+  overlay.classList.remove('hidden');
+}
+
+startBtn.addEventListener('click', () => resetGame());
+
+addEventListener('keydown', e => {
+  keys[e.code] = true;
+  if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
+  if (!running && (e.code === 'Enter' || e.code === 'Space') && !overlay.classList.contains('hidden')) resetGame();
+  if (e.code === 'KeyE' && running) tryInteract();
+});
+addEventListener('keyup', e => { keys[e.code] = false; });
+
+addEventListener('mousemove', e => {
+  if (!running || document.pointerLockElement !== canvas) return;
+  player.yaw -= e.movementX * 0.0022;
+  player.pitch -= e.movementY * 0.0020;
+  player.pitch = Math.max(-1.2, Math.min(1.2, player.pitch));
+});
+canvas.addEventListener('click', () => {
+  if (running) try { canvas.requestPointerLock?.(); } catch (_) {}
+});
+
+// touch joystick
+(function setupJoy() {
+  let id = null, cx = 0, cy = 0;
+  const R = 42;
+  function setKnob(x, y) {
+    const len = Math.hypot(x, y) || 1;
+    const nx = x / len * Math.min(len, R);
+    const ny = y / len * Math.min(len, R);
+    moveStick.x = nx / R;
+    moveStick.y = ny / R;
+    joyKnob.style.transform = `translate(${nx}px,${ny}px)`;
+  }
+  function onStart(e) {
+    if (!running) return;
+    const t = e.changedTouches ? e.changedTouches[0] : e;
+    id = t.identifier ?? 'mouse';
+    const r = joy.getBoundingClientRect();
+    cx = r.left + r.width / 2; cy = r.top + r.height / 2;
+    setKnob(t.clientX - cx, t.clientY - cy);
+    e.preventDefault();
+  }
+  function onMove(e) {
+    if (id === null) return;
+    const touches = e.changedTouches ? [...e.changedTouches] : [e];
+    const t = touches.find(tt => (tt.identifier ?? 'mouse') === id) || touches[0];
+    if (!t) return;
+    setKnob(t.clientX - cx, t.clientY - cy);
+    e.preventDefault();
+  }
+  function onEnd() {
+    id = null; moveStick.x = 0; moveStick.y = 0;
+    joyKnob.style.transform = 'translate(0,0)';
+  }
+  joy.addEventListener('touchstart', onStart, { passive: false });
+  joy.addEventListener('touchmove', onMove, { passive: false });
+  joy.addEventListener('touchend', onEnd);
+  joy.addEventListener('mousedown', onStart);
+  addEventListener('mousemove', onMove);
+  addEventListener('mouseup', onEnd);
+})();
+
+// look pad
+(function setupLook() {
+  lookpad.addEventListener('touchstart', e => {
+    if (!running) return;
+    const t = e.changedTouches[0];
+    lookTouch = t.identifier; lookLX = t.clientX; lookLY = t.clientY;
+    e.preventDefault();
+  }, { passive: false });
+  lookpad.addEventListener('touchmove', e => {
+    if (lookTouch === null) return;
+    const t = [...e.changedTouches].find(tt => tt.identifier === lookTouch);
+    if (!t) return;
+    player.yaw -= (t.clientX - lookLX) * 0.004;
+    player.pitch -= (t.clientY - lookLY) * 0.0035;
+    player.pitch = Math.max(-1.2, Math.min(1.2, player.pitch));
+    lookLX = t.clientX; lookLY = t.clientY;
+    e.preventDefault();
+  }, { passive: false });
+  lookpad.addEventListener('touchend', () => { lookTouch = null; });
+})();
+
+function tryInteract() {
+  const dx = player.x - keyPos.x, dz = player.z - keyPos.z;
+  if (!hasKey && Math.hypot(dx, dz) < 1.4) {
+    hasKey = true;
+    if (window.__keyGroup) window.__keyGroup.visible = false;
+    if (window.__keyLight) window.__keyLight.visible = false;
+    document.getElementById('obj').textContent = '開閘離開';
+    showHint('攞到鎖匙！去最入開鐵閘', 3000);
+    flash(0.2);
+    pursuer.active = true;
+    return;
+  }
+  if (hasKey && !gateOpen) {
+    const gx = player.x - exitPos.x, gz = player.z - exitPos.z;
+    if (Math.hypot(gx, gz) < 2.0) {
+      gateOpen = true;
+      if (window.__gate) {
+        // animate up
+        const g = window.__gate;
+        const startY = g.position.y;
+        const tStart = performance.now();
+        (function lift() {
+          const k = Math.min(1, (performance.now() - tStart) / 900);
+          g.position.y = startY + k * 2.6;
+          if (k < 1) requestAnimationFrame(lift);
+          else g.visible = false;
+        })();
+      }
+      showHint('閘開咗——快走！', 2200);
+    }
+  }
+}
+
+function update(dt) {
+  if (!running) return;
+  elapsed = (performance.now() - t0) / 1000;
+  document.getElementById('time').textContent = fmt(elapsed);
+
+  // time pressure: after 90s pursuer speeds up; hard cap ~5 min
+  if (elapsed > 90) pursuer.speed = 2.8;
+  if (elapsed > 150) pursuer.speed = 3.6;
+  if (elapsed > 300) { endGame(false); return; }
+
+  let mx = 0, mz = 0;
+  if (keys.KeyW || keys.ArrowUp) mz += 1;
+  if (keys.KeyS || keys.ArrowDown) mz -= 1;
+  if (keys.KeyA || keys.ArrowLeft) mx -= 1;
+  if (keys.KeyD || keys.ArrowRight) mx += 1;
+  mx += moveStick.x;
+  mz += -moveStick.y;
+  const len = Math.hypot(mx, mz);
+  if (len > 1) { mx /= len; mz /= len; }
+
+  const speed = keys.ShiftLeft || keys.ShiftRight ? 4.2 : 3.0;
+  const syn = Math.sin(player.yaw), cy = Math.cos(player.yaw);
+  // yaw=PI looks -Z; forward is -sin? standard: forward = (-sin yaw? wait)
+  // yaw 0 looks -Z in three default? We use: forward = (sin(yaw), cos(yaw)) in xz with yaw=PI initially facing -Z
+  const fx = Math.sin(player.yaw);
+  const fz = Math.cos(player.yaw);
+  const rx = Math.cos(player.yaw);
+  const rz = -Math.sin(player.yaw);
+
+  let nx = player.x + (fx * mz + rx * mx) * speed * dt;
+  let nz = player.z + (fz * mz + rz * mx) * speed * dt;
+  const half = ALLEY_W / 2 - 0.35;
+  nx = Math.max(-half, Math.min(half, nx));
+  nz = Math.max(-ALLEY_LEN + 0.6, Math.min(1.2, nz));
+  // block gate until open
+  if (!gateOpen && nz < exitPos.z + 0.6) nz = exitPos.z + 0.6;
+  player.x = nx; player.z = nz;
+
+  // auto pickup / interact proximity
+  if (!hasKey && Math.hypot(player.x - keyPos.x, player.z - keyPos.z) < 1.15) tryInteract();
+  if (hasKey && !gateOpen && Math.hypot(player.x - exitPos.x, player.z - exitPos.z) < 1.7) tryInteract();
+  if (gateOpen && player.z < exitPos.z - 0.2) { endGame(true); return; }
+
+  // pursuer activates after key or after 25s
+  if (!pursuer.active && (hasKey || elapsed > 25)) {
+    pursuer.active = true;
+    showHint('有嘢跟住你……', 2200);
+  }
+  if (pursuer.active && window.__pursuer) {
+    // chase toward player along z primarily
+    const targetZ = player.z + 0.8;
+    const dz = targetZ - pursuer.z;
+    const step = Math.sign(dz) * Math.min(Math.abs(dz), pursuer.speed * dt);
+    pursuer.z += step;
+    // slight x drift toward player
+    const sil = window.__pursuer;
+    sil.position.z = pursuer.z;
+    sil.position.x += (player.x - sil.position.x) * Math.min(1, 2.5 * dt);
+    // bob
+    sil.position.y = Math.sin(elapsed * 6) * 0.04;
+    if (pursuer.z < player.z + 1.1 && Math.abs(sil.position.x - player.x) < 0.85) {
+      endGame(false);
+      return;
+    }
+  }
+
+  // key spin
+  if (window.__keyGroup && window.__keyGroup.visible) {
+    window.__keyGroup.rotation.y += dt * 2.2;
+    window.__keyGroup.position.y = keyPos.y + Math.sin(elapsed * 3) * 0.08;
+  }
+
+  camera.position.set(player.x, player.y, player.z);
+  camera.rotation.order = 'YXZ';
+  camera.rotation.y = player.yaw;
+  camera.rotation.x = player.pitch;
+}
+
+function loop() {
+  requestAnimationFrame(loop);
+  const dt = Math.min(0.05, clock.getDelta());
+  update(dt);
+  // subtle flicker
+  scene.fog.density = 0.075 + Math.sin(performance.now() * 0.004) * 0.008;
+  renderer.render(scene, camera);
+}
+loop();
+</script>
+<div id="vg-back-root" aria-label="catalog"><a id="vg-back-tr" class="vg-back-btn" href="/vincent-games-studio/games" title="← 返回遊戲目錄">← 返回遊戲目錄</a></div>
+<script>
+(function(){
+  var HREF='/vincent-games-studio/games', LABEL='← 返回遊戲目錄';
+  var scheduled=null, locking=false;
+  function ensureFixed(){
+    var root=document.getElementById('vg-back-root');
+    if(!root){
+      root=document.createElement('div');
+      root.id='vg-back-root';
+      root.setAttribute('aria-label','catalog');
+      document.body.appendChild(root);
+    }
+    var bl=document.getElementById('vg-back-bl');
+    if(bl && bl.parentNode) bl.parentNode.removeChild(bl);
+    document.querySelectorAll('a.vg-catalog, a[data-vg-catalog]').forEach(function(a){
+      if(a.parentNode) a.parentNode.removeChild(a);
+    });
+    var tr=document.getElementById('vg-back-tr');
+    if(!tr){
+      tr=document.createElement('a');
+      tr.id='vg-back-tr';
+      tr.className='vg-back-btn';
+      root.appendChild(tr);
+    } else if(tr.parentNode!==root){
+      root.appendChild(tr);
+    }
+    root.style.cssText='position:fixed;inset:0;z-index:2147483647;pointer-events:none;display:block;visibility:visible;opacity:1';
+    tr.href=HREF; tr.title=LABEL; tr.textContent=LABEL;
+    tr.className='vg-back-btn';
+    tr.style.cssText='pointer-events:auto;position:fixed;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:12px 18px;border-radius:14px;font:800 16px/1.2 "Noto Sans TC",system-ui,sans-serif;text-decoration:none;letter-spacing:.02em;visibility:visible;opacity:1;z-index:2147483647;right:max(12px, env(safe-area-inset-right));top:max(12px, env(safe-area-inset-top));left:auto;bottom:auto;border:2px solid #ff6b6b;background:#0a0202;color:#ff6b6b;box-shadow:0 6px 28px rgba(0,0,0,.65)';
+    if(root.parentNode!==document.body) document.body.appendChild(root);
+    else if(document.body.lastElementChild!==root) document.body.appendChild(root);
+  }
+  function ensure(){ if(locking) return; locking=true; try{ ensureFixed(); }catch(e){} locking=false; }
+  function schedule(){ if(scheduled) return; scheduled=setTimeout(function(){ scheduled=null; ensure(); }, 80); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',ensure); else ensure();
+  setTimeout(ensure,0); setTimeout(ensure,500); setInterval(ensure,3000);
+  try{ new MutationObserver(schedule).observe(document.documentElement,{childList:true,subtree:true}); }catch(e){}
+})();
+</script>
+</body>
+</html>
