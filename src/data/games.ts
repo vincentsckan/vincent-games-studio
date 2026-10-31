@@ -120,30 +120,30 @@ export const games: Game[] = [
     titleEn: 'Night Cold Hold',
     taglineZh: '唔好開第三道閘',
     taglineEn: 'Do not open the third gate.',
-    dimension: '3D',
+    dimension: '2D',
     status: 'demo',
     year: 2026,
-    genres: ['恐怖', '生存', '第一人稱'],
+    genres: ['恐怖', '生存', '固定鏡頭'],
     hookZh:
-      '夜更清潔。凍庫停電。同事最後一個 WhatsApp：「唔好開第三道閘。」開應急電、執同事證、開卸貨門逃出——手電筒同噪音會引來貨架間嗰影。',
+      '夜更清潔。凍庫停電。同事最後一個 WhatsApp：「唔好開第三道閘。」固定鏡頭電影場景·生化危機風——開應急電、執同事證、開卸貨門逃出。',
     hookEn:
-      'Night-shift warehouse staff. The cold room auto-locks in minutes. Scan barcode tags, set the thermostat, then unlock the exit. Your flashlight drains—and lights make the stalker faster.',
+      'Night-shift cleaning. Cold-hold blackout. Last WhatsApp: "Do not open the third gate." Classic fixed-camera cinematic horror—restore power, grab the badge, escape the dock.',
     gameplayZh:
-      '電筒耗電、掃描三個條碼、調恆溫、掛肉簾匿藏。Shift 衝刺耗體力。清單 3/3 後綠門先開。',
+      '預渲染場景＋坦克操控。執撬棍／手槍／散彈槍同彈藥，應急電池、同事證。遇跟蹤者可射擊或近戰；彈藥有限，能走就走。',
     gameplayEn:
-      'Flashlight drain, scan three tags, set thermostat, hide in meat curtains. Sprint costs stamina. Exit opens only after checklist 3/3.',
+      'Pre-rendered rooms with tank controls. Loot crowbar, handgun, shotgun and ammo, battery, colleague badge. Fight or flee the stalker—ammo is scarce.',
     features: [
       {
-        titleZh: '封倉清單',
-        titleEn: 'Lockdown checklist',
-        bodyZh: '條碼掃描＋恆溫安全區，完成先逃。',
-        bodyEn: 'Barcode scans and a safe thermostat unlock escape.',
+        titleZh: '固定鏡頭電影場景',
+        titleEn: 'Fixed-camera cinema',
+        bodyZh: '生化危機風預渲染場景，一室一機位。',
+        bodyEn: 'Resident Evil–style pre-rendered rooms, one camera per scene.',
       },
       {
-        titleZh: '影嘅追逐',
-        titleEn: 'Stalker hunt',
-        bodyZh: '手電筒照住會加速；掛肉簾可匿。',
-        bodyEn: 'Lit and facing it speeds the chase; hide behind meat curtains.',
+        titleZh: '資源與武器',
+        titleEn: 'Loot and weapons',
+        bodyZh: '手槍、散彈、撬棍、綠草、電池——裝備再戰。',
+        bodyEn: 'Handgun, shotgun, crowbar, herbs, battery—equip and fight.',
       },
       {
         titleZh: '即開即玩',
@@ -171,30 +171,30 @@ export const games: Game[] = [
     titleEn: 'Lockdown Clinic',
     taglineZh: '門反鎖之後',
     taglineEn: 'After the door locks behind you.',
-    dimension: '3D',
+    dimension: '2D',
     status: 'demo',
     year: 2026,
-    genres: ['恐怖', '潛行', '第一人稱'],
+    genres: ['恐怖', '生存', '固定鏡頭'],
     hookZh:
-      '颱風夜你入錯非法診所攞藥，門反鎖。「病人」開始睜眼。注射血清自救、拆警報開後門、衝天台等車。',
+      '颱風夜，你入錯非法診所攞藥。門反鎖。「病人」開始睜眼。固定鏡頭電影場景·生化危機風——注射血清、拆警報、衝天台。',
     hookEn:
-      'Typhoon night: you enter the wrong illegal clinic for meds. The door locks. Patients wake. Serum, kill the alarm, rooftop pickup.',
+      'Typhoon night: wrong illegal clinic, door locks, patients wake. Classic fixed-camera cinematic horror—serum, kill the alarm, rooftop escape.',
     gameplayZh:
-      '三階段：血清→隔離→天台。噪音錶、窗簾匿藏、jump scare。WASD／觸控＋螢幕方向掣。',
+      '預渲染場景＋坦克操控。執撬棍／手槍／散彈槍、血清、電池。病房遇感染者可射擊或近戰；彈藥有限，夠近先用撬棍。',
     gameplayEn:
-      'Three phases: serums → isolation → rooftop. Noise meter, curtain stealth, jump scares. WASD/touch with on-screen pad.',
+      'Pre-rendered rooms with tank controls. Loot crowbar, guns, serum, battery. Fight the ward patient—ammo is limited; crowbar up close.',
     features: [
       {
-        titleZh: '封鎖三階段',
-        titleEn: 'Three-phase lockdown',
-        bodyZh: '血清、隔離面板、天台出口連環推進。',
-        bodyEn: 'Serums, isolation panels, then rooftop exit.',
+        titleZh: '固定鏡頭電影場景',
+        titleEn: 'Fixed-camera cinema',
+        bodyZh: '生化危機風預渲染場景，一室一機位。',
+        bodyEn: 'Resident Evil–style pre-rendered rooms, one camera per scene.',
       },
       {
-        titleZh: '噪音潛行',
-        titleEn: 'Noise stealth',
-        bodyZh: '跑步提高噪音；病人跟聲調查。',
-        bodyEn: 'Running raises noise; patients investigate the sound.',
+        titleZh: '資源與武器',
+        titleEn: 'Loot and weapons',
+        bodyZh: '手槍、散彈、撬棍、綠草、電池——裝備再戰。',
+        bodyEn: 'Handgun, shotgun, crowbar, herbs, battery—equip and fight.',
       },
       {
         titleZh: '即開即玩',
