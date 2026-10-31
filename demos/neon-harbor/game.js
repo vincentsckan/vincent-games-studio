@@ -14,76 +14,26 @@ const killfeed = document.getElementById('killfeed');
 const slideTag = document.getElementById('slideTag');
 
 const MAPS = [
-  {
-    id: 'cargo',
-    nameZh: '貨櫃碼頭',
-    nameEn: 'Cargo Pier',
-    desc: '貨櫃堆疊、碼頭長廊——掩體多、遠近皆宜。',
-    thumb: 'refs/map-cargo.jpg',
-  },
-  {
-    id: 'temple',
-    nameZh: '霓虹廟市',
-    nameEn: 'Neon Temple',
-    desc: '廟街霓虹、窄巷檔口——近戰混戰天堂。',
-    thumb: 'refs/map-mongkok.jpg',
-  },
-  {
-    id: 'signs',
-    nameZh: '霓虹招牌街',
-    nameEn: 'Neon Sign Street',
-    desc: '呢度啲燈仲亮緊——不過人已經唔同。',
-    thumb: 'refs/map-sign-street-densify.jpg',
-  },
-  {
-    id: 'estate',
-    nameZh: '公屋天台',
-    nameEn: 'Estate Roof',
-    desc: '晾衫未收——天台已經係賽場。',
-    thumb: 'refs/map-estate-roof.jpg',
-  },
-  {
-    id: 'teahouse',
-    nameZh: '茶餐廳後巷',
-    nameEn: 'Cha Chaan Back',
-    desc: '花磚仲在，霓虹只剩半個字。',
-    thumb: 'refs/map-cha-chaan-back.jpg',
-  },
-  {
-    id: 'tram',
-    nameZh: '電車街',
-    nameEn: 'Tram Street',
-    desc: '叮叮未到，槍口先響。',
-    thumb: 'refs/map-tram-street.jpg',
-  },
-  {
-    id: 'kaitak',
-    nameZh: '啟德天台',
-    nameEn: 'Kai Tak Roof',
-    desc: '飛機唔再落，晾衫仲在。',
-    thumb: 'refs/map-kai-tak-roof.jpg',
-  },
-  {
-    id: 'minibus',
-    nameZh: '夜間小巴巷',
-    nameEn: 'Night Minibus Alley',
-    desc: '小巴未埋站，槍火先到。',
-    thumb: 'refs/map-minibus-night.jpg',
-  },
-  {
-    id: 'tonglau',
-    nameZh: '唐樓轉角',
-    nameEn: 'Tong Lau Bend',
-    desc: '轉角有燈，轉角有槍。',
-    thumb: 'refs/map-tonglau-bend.jpg',
-  },
-  {
-    id: 'neonroof',
-    nameZh: '霓虹屋頂',
-    nameEn: 'Neon Rooftop',
-    desc: '屋頂燈火，唔見天光。',
-    thumb: 'refs/map-neon-rooftop.jpg',
-  },
+  { id: 'signs', nameZh: '霓虹招牌街', nameEn: 'Neon Sign Street', desc: '呢度啲燈仲亮緊——不過人已經唔同。', thumb: 'refs/map-signs.jpg' },
+  { id: 'minibus', nameZh: '夜間小巴巷', nameEn: 'Night Minibus Alley', desc: '小巴未埋站，槍火先到。', thumb: 'refs/map-minibus.jpg' },
+  { id: 'tonglau', nameZh: '唐樓轉角', nameEn: 'Tong Lau Bend', desc: '轉角有燈，轉角有槍。', thumb: 'refs/map-tonglau.jpg' },
+  { id: 'tram', nameZh: '電車街', nameEn: 'Tram Street', desc: '叮叮未到，槍口先響。', thumb: 'refs/map-tram.jpg' },
+  { id: 'nightstall', nameZh: '夜市檔口', nameEn: 'Night Stall Market', desc: '檔燈未熄，收檔先收屍。', thumb: 'refs/map-nightstall.jpg' },
+  { id: 'neonroof', nameZh: '霓虹屋頂', nameEn: 'Neon Rooftop', desc: '屋頂燈火，唔見天光。', thumb: 'refs/map-neonroof.jpg' },
+  { id: 'kaitak', nameZh: '啟德天台', nameEn: 'Kai Tak Roof', desc: '飛機唔再落，晾衫仲在。', thumb: 'refs/map-kaitak.jpg' },
+  { id: 'estate', nameZh: '公屋天台', nameEn: 'Estate Roof', desc: '晾衫未收——天台已經係賽場。', thumb: 'refs/map-estate.jpg' },
+  { id: 'skybridge', nameZh: '天橋連廊', nameEn: 'Skybridge Link', desc: '兩棟樓之間，只得一條命。', thumb: 'refs/map-skybridge.jpg' },
+  { id: 'watertower', nameZh: '水塔跳台', nameEn: 'Water Tower', desc: '水塔頂，風大槍更準。', thumb: 'refs/map-watertower.jpg' },
+  { id: 'cargo', nameZh: '貨櫃碼頭', nameEn: 'Cargo Pier', desc: '貨櫃堆疊、碼頭長廊——掩體多、遠近皆宜。', thumb: 'refs/map-cargo.jpg' },
+  { id: 'temple', nameZh: '霓虹廟市', nameEn: 'Neon Temple', desc: '廟街霓虹、窄巷檔口——近戰混戰天堂。', thumb: 'refs/map-temple.jpg' },
+  { id: 'teahouse', nameZh: '茶餐廳後巷', nameEn: 'Cha Chaan Back', desc: '花磚仲在，霓虹只剩半個字。', thumb: 'refs/map-teahouse.jpg' },
+  { id: 'loading', nameZh: '卸貨區', nameEn: 'Loading Bay', desc: '月台升高，子彈橫飛。', thumb: 'refs/map-loading.jpg' },
+  { id: 'crane', nameZh: '塔吊場', nameEn: 'Crane Yard', desc: '吊臂之下，無人倖免。', thumb: 'refs/map-crane.jpg' },
+  { id: 'pawnarcade', nameZh: '當舖街機廊', nameEn: 'Pawn Arcade', desc: '押字燈亮，街機繼續投幣。', thumb: 'refs/map-pawnarcade.jpg' },
+  { id: 'signcanyon', nameZh: '招牌峽谷', nameEn: 'Sign Canyon', desc: '抬頭只見字，低頭只見血。', thumb: 'refs/map-signcanyon.jpg' },
+  { id: 'doubletram', nameZh: '雙軌電車', nameEn: 'Double Tram', desc: '雙軌并行，左右都係戰場。', thumb: 'refs/map-doubletram.jpg' },
+  { id: 'ch7studio', nameZh: 'Channel 7 片場', nameEn: 'Channel 7 Studio', desc: '直播開波——觀眾等緊你收視。', thumb: 'refs/map-ch7studio.jpg' },
+  { id: 'harbourfinal', nameZh: '維港終章', nameEn: 'Harbour Finale', desc: '今晚收視你贏晒。', thumb: 'refs/map-harbourfinal.jpg' },
 ];
 
 const CLASSES = [
@@ -153,6 +103,45 @@ const CLASSES = [
   },
 ];
 
+
+// Extra firearms available as world pickups (Krunker-like)
+const EXTRA_WEAPONS = [
+  { id: 'burst', nameZh: '連發射擊槍', nameEn: 'Burst Rifle', damage: 28, firerate: 6.5, spread: 0.022, mag: 24, reserve: 72, reload: 1.5, pellets: 1, speedMul: 1 },
+  { id: 'lmg', nameZh: '輕機槍', nameEn: 'LMG', damage: 18, firerate: 11, spread: 0.045, mag: 60, reserve: 120, reload: 2.8, pellets: 1, speedMul: 0.85 },
+  { id: 'revolver', nameZh: '左輪', nameEn: 'Revolver', damage: 55, firerate: 2.2, spread: 0.018, mag: 6, reserve: 30, reload: 1.8, pellets: 1, speedMul: 1.05 },
+  { id: 'carbine', nameZh: '卡賓槍', nameEn: 'Carbine', damage: 32, firerate: 7.5, spread: 0.02, mag: 25, reserve: 75, reload: 1.55, pellets: 1, speedMul: 1.02 },
+];
+
+const CHANNEL7 = [
+  { level: 1, mapId: 'signs', mode: 'kill', target: 10, time: 150, boss: false },
+  { level: 2, mapId: 'minibus', mode: 'survive', target: 90, time: 90, boss: false },
+  { level: 3, mapId: 'tonglau', mode: 'kill', target: 15, time: 180, boss: true },
+  { level: 4, mapId: 'tram', mode: 'hold', target: 60, time: 60, boss: false },
+  { level: 5, mapId: 'nightstall', mode: 'kill', target: 12, time: 150, boss: false },
+  { level: 6, mapId: 'neonroof', mode: 'kill', target: 20, time: 180, boss: true },
+  { level: 7, mapId: 'kaitak', mode: 'survive', target: 120, time: 120, boss: false },
+  { level: 8, mapId: 'estate', mode: 'hold', target: 90, time: 90, boss: false },
+  { level: 9, mapId: 'skybridge', mode: 'kill', target: 18, time: 180, boss: true },
+  { level: 10, mapId: 'watertower', mode: 'survive', target: 90, time: 90, boss: false },
+  { level: 11, mapId: 'cargo', mode: 'kill', target: 15, time: 180, boss: false },
+  { level: 12, mapId: 'temple', mode: 'hold', target: 60, time: 60, boss: true },
+  { level: 13, mapId: 'teahouse', mode: 'kill', target: 20, time: 180, boss: false },
+  { level: 14, mapId: 'loading', mode: 'survive', target: 120, time: 120, boss: false },
+  { level: 15, mapId: 'crane', mode: 'kill', target: 25, time: 200, boss: true },
+  { level: 16, mapId: 'pawnarcade', mode: 'hold', target: 90, time: 90, boss: false },
+  { level: 17, mapId: 'signcanyon', mode: 'kill', target: 30, time: 220, boss: true },
+  { level: 18, mapId: 'doubletram', mode: 'survive', target: 150, time: 150, boss: false },
+  { level: 19, mapId: 'ch7studio', mode: 'hold', target: 120, time: 120, boss: true },
+  { level: 20, mapId: 'harbourfinal', mode: 'kill', target: 40, time: 300, boss: true },
+];
+
+const GAME_MODES = [
+  { id: 'ffa', nameZh: '自由混戰 FFA', nameEn: 'FFA vs AI' },
+  { id: 'campaign', nameZh: 'Channel 7 戰役', nameEn: 'Channel 7 Campaign' },
+  { id: 'hold', nameZh: '佔領據點', nameEn: 'Hold the Point' },
+];
+
+
 const MATCH_SECONDS = 150;
 const WIN_KILLS = 20;
 const BOT_COUNT = 6;
@@ -192,6 +181,11 @@ const state = {
   classId: 'spark',
   mapId: 'cargo',
   timeLeft: MATCH_SECONDS,
+  gameMode: 'ffa', // ffa | campaign | hold
+  campaignLevel: 0, // 1..20 when campaign
+  objective: null, // { type, target, progress, holdScore }
+  weaponOverride: null, // EXTRA_WEAPONS id or null (= class gun)
+  holdProgress: 0,
 };
 
 let scene, camera, renderer, clock;
@@ -203,6 +197,11 @@ let gunMesh = null;
 let spawnPoints = [];
 let bulletTraces = [];
 let bloodBursts = [];
+let pickups = [];
+let holdZone = null; // {x,z,r}
+let selectedMode = 'ffa';
+let campaignIdx = 0;
+let worldRoot = null;
 
 function showPanel(id) {
   document.querySelectorAll('.panel').forEach((p) => p.classList.remove('on'));
@@ -243,22 +242,72 @@ function fillPickers() {
   });
 }
 
+function fillModePicker() {
+  const grid = document.getElementById('modeGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  GAME_MODES.forEach((m) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'pick';
+    btn.dataset.id = m.id;
+    btn.innerHTML = `<b>${m.nameZh}</b><span>${m.nameEn}</span>`;
+    btn.addEventListener('click', () => {
+      selectedMode = m.id;
+      state.gameMode = m.id;
+      grid.querySelectorAll('.pick').forEach((el) => el.classList.toggle('sel', el.dataset.id === m.id));
+      document.getElementById('btnModeNext').disabled = false;
+    });
+    grid.appendChild(btn);
+  });
+}
+
 document.getElementById('btnEnter').addEventListener('click', () => {
+  showPanel('panelMode');
+});
+document.getElementById('btnModeBack').addEventListener('click', () => showPanel('panelSplash'));
+document.getElementById('btnModeNext').addEventListener('click', () => {
+  if (!selectedMode) return;
+  state.gameMode = selectedMode;
+  if (selectedMode === 'campaign') {
+    state.campaignLevel = 1;
+    // skip map select — campaign dictates maps; still allow class
+    selectedMap = CHANNEL7[0].mapId;
+    showPanel('panelClass');
+    return;
+  }
   showPanel('panelMap');
 });
-document.getElementById('btnMapBack').addEventListener('click', () => showPanel('panelSplash'));
+document.getElementById('btnMapBack').addEventListener('click', () => showPanel('panelMode'));
 document.getElementById('btnMapNext').addEventListener('click', () => {
   if (!selectedMap) return;
   showPanel('panelClass');
 });
-document.getElementById('btnClassBack').addEventListener('click', () => showPanel('panelMap'));
+document.getElementById('btnClassBack').addEventListener('click', () => {
+  showPanel(state.gameMode === 'campaign' ? 'panelMode' : 'panelMap');
+});
 document.getElementById('btnStart').addEventListener('click', () => {
-  if (!selectedMap || !selectedClass) return;
-  startMatch(selectedMap, selectedClass);
+  if (!selectedClass) return;
+  if (state.gameMode === 'campaign') {
+    startMatch(CHANNEL7[0].mapId, selectedClass, { gameMode: 'campaign', campaignLevel: 1 });
+    return;
+  }
+  if (!selectedMap) return;
+  startMatch(selectedMap, selectedClass, { gameMode: selectedMode || 'ffa' });
 });
 document.getElementById('btnAgain').addEventListener('click', () => {
-  startMatch(state.mapId || selectedMap, state.classId || selectedClass);
+  startMatch(state.mapId || selectedMap, state.classId || selectedClass, {
+    gameMode: state.gameMode,
+    campaignLevel: state.campaignLevel,
+  });
 });
+const btnNext = document.getElementById('btnNextLevel');
+if (btnNext) {
+  btnNext.addEventListener('click', () => {
+    const next = (state.campaignLevel | 0) + 1;
+    startMatch(null, state.classId || selectedClass, { gameMode: 'campaign', campaignLevel: next });
+  });
+}
 document.getElementById('btnMenu').addEventListener('click', () => {
   running = false;
   matchOver = false;
@@ -269,6 +318,7 @@ document.getElementById('btnMenu').addEventListener('click', () => {
   try { document.exitPointerLock(); } catch (_) {}
 });
 
+fillModePicker();
 fillPickers();
 
 function boxSolid(x, y, z, w, h, d) {
@@ -1209,7 +1259,6 @@ function buildKaiTakRoof(root) {
 }
 
 
-const buildEstateRoof = buildKaiTakRoof;
 function buildTramStreet(root) {
   // 電車街 — Tong Lau façades + light tram poles / track stripes
   spawnPoints = [
@@ -1341,7 +1390,392 @@ function buildTramStreet(root) {
 }
 
 
-const buildTeahouseBack = buildTramStreet;
+
+function addPerimeter(root, half, h = 5, neonA = 0xff2d9b, neonB = 0x00e8ff) {
+  addBox(root, 0, 0, half, half * 2, h, 1.2, 0x100c18, neonA, 0.3, true);
+  addBox(root, 0, 0, -half, half * 2, h, 1.2, 0x100c18, neonB, 0.3, true);
+  addBox(root, half, 0, 0, 1.2, h, half * 2, 0x100c18, 0x40f0ff, 0.25, true);
+  addBox(root, -half, 0, 0, 1.2, h, half * 2, 0x100c18, 0xff4dc8, 0.25, true);
+}
+
+function addGroundPlane(root, size, color = 0x12101a) {
+  const ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(size, size),
+    new THREE.MeshStandardMaterial({ color, roughness: 0.85, metalness: 0.12 })
+  );
+  ground.rotation.x = -Math.PI / 2;
+  root.add(ground);
+  solidBoxes.push(boxSolid(0, -1, 0, size, 1, size));
+}
+
+/** 夜間小巴巷 — queue of minibuses + wider road, sparse neon (≠ signs) */
+function buildMinibusAlley(root) {
+  spawnPoints = [[0,0,0],[4,0,8],[-4,0,8],[4,0,-8],[-4,0,-8],[0,0,14],[6,0,0],[-6,0,0]];
+  addGroundPlane(root, 56, 0x1a1c22);
+  // road stripe
+  for (let i = -8; i <= 8; i++) {
+    addBox(root, 0, 0.02, i * 2.8, 0.25, 0.04, 1.8, 0xe8e0d0, 0x000000, 0, false);
+  }
+  // twin rows of minibuses as cover
+  for (let i = -3; i <= 3; i++) {
+    if (i === 0) continue;
+    addMinibus(root, -7.5, i * 5.5, i % 2 ? 'red' : 'green', 0);
+    addMinibus(root, 7.5, i * 5.5 + 1.2, i % 2 ? 'green' : 'red', Math.PI);
+  }
+  // low shop fronts along sides (short, not tall Tong Lau canyon)
+  [-12, 12].forEach((bx, ri) => {
+    for (let i = -3; i <= 3; i++) {
+      const z = i * 6;
+      addBox(root, bx, 0, z, 4.5, 3.2 + (i % 2), 4.2, 0xd8d4cc, 0x000000, 0, true);
+      const toward = bx > 0 ? -1 : 1;
+      addNeonSign(root, bx + toward * 2.2, 2.4, z, 2.4, 0.7, i % 2 ? 0xffd36a : 0x00e8ff);
+    }
+  });
+  addYellowTaxi(root, 0, -18, Math.PI / 2);
+  addSmallTruck(root, 0, 18, -Math.PI / 2);
+  addPerimeter(root, 26, 4, 0xffd36a, 0x00e8ff);
+}
+
+/** 唐樓轉角 — L-shaped corner plaza (≠ tram corridor) */
+function buildTongLauBend(root) {
+  spawnPoints = [[0,0,0],[6,0,6],[-4,0,8],[8,0,-4],[-6,0,-6],[10,0,2],[-2,0,12],[4,0,-10]];
+  addGroundPlane(root, 52, 0x18141c);
+  // L-building mass: south + east wings
+  for (let i = -3; i <= 1; i++) {
+    const h = 8 + (i % 3) * 1.5;
+    addBox(root, i * 5.5 - 4, 0, -12, 5, h, 5, 0xe4ddd0, 0x000000, 0, true);
+    addGreenWindows(root, i * 5.5 - 4, 3, -9.5, 2, 2, 1, { winW: 0.8, winH: 0.95, gapX: 1.2, gapY: 1.6 });
+  }
+  for (let i = -1; i <= 3; i++) {
+    const h = 7 + ((i + 1) % 3) * 1.8;
+    addBox(root, 12, 0, i * 5.5 - 2, 5, h, 5, 0xe4ddd0, 0x000000, 0, true);
+    addGreenWindows(root, 9.5, 3, i * 5.5 - 2, 2, 2, -1, { winW: 0.8, winH: 0.95, gapX: 1.2, gapY: 1.6 });
+  }
+  // open plaza props
+  [[-2, 2], [2, -2], [4, 4], [-6, 4]].forEach(([x, z], i) => {
+    addBox(root, x, 0, z, 1.6, 1.1, 1.4, 0x243040, 0x000000, 0, true);
+  });
+  addPawnSign(root, -8, 4.5, -8);
+  addBarberPole(root, 6, -6, 2.4);
+  addZhPanel(root, -6, 2, -9.2, 0.5, 3.5, 0.18, ZH_VERT_NEON, {
+    vertical: true, bg: '#b01028', fg: '#ffe8a0', emissive: 0xff2d3a, emitInt: 2.2,
+  });
+  addHangSign(root, 9.2, 4, 0, 2.2, 0.55, '安和堂涼茶', { bg: '#0d5c3a', fg: '#fff', emissive: 0x40f080, emitInt: 1.8 });
+  addYellowTaxi(root, -2, 14, 0.4);
+  addPerimeter(root, 24, 5);
+}
+
+/** 茶餐廳後巷 — tiled courtyard + kitchen vents (≠ tram) */
+function buildTeahouseBack(root) {
+  spawnPoints = [[0,0,0],[3,0,5],[-3,0,5],[3,0,-5],[-3,0,-5],[0,0,10],[5,0,0],[-5,0,0]];
+  addGroundPlane(root, 44, 0x2a1830);
+  // 花磚 checker denser
+  for (let ix = -5; ix <= 5; ix++) {
+    for (let iz = -5; iz <= 5; iz++) {
+      if ((ix + iz) % 2) continue;
+      addBox(root, ix * 1.8, 0.03, iz * 1.8, 0.85, 0.04, 0.85, 0x3a2040, (ix + iz) % 4 === 0 ? 0xff4dc8 : 0xffd36a, 0.35, false);
+    }
+  }
+  // U-shaped kitchen walls (open north)
+  [[-8, 0, 4, 10], [8, 0, 4, 10], [0, -10, 14, 4]].forEach(([x, z, w, d], i) => {
+    addBox(root, x, 0, z, w, 5.5 + i, d, 0xe8e2d6, 0x000000, 0, true);
+  });
+  // booth tables mid
+  [[-2, 2], [2, 2], [-2, -2], [2, -2], [0, 4]].forEach(([x, z]) => {
+    addBox(root, x, 0, z, 1.4, 0.85, 1.4, 0x5a4030, 0x000000, 0, true);
+    addRedStool(root, x + 0.7, z, false);
+    addRedStool(root, x - 0.7, z, false);
+  });
+  addZhPanel(root, 0, 3.5, -7.8, 3.2, 0.7, 0.14, '喜筵壽宴', {
+    vertical: false, bg: '#b01028', fg: '#ffe8a0', emissive: 0xff2d3a, emitInt: 1.8,
+  });
+  for (let i = -2; i <= 2; i++) addBox(root, i * 2.5, 1.5, 7.5, 1.2, 0.8, 0.3, 0x101018, 0xffa040, 0.9, false);
+  addPerimeter(root, 20, 5, 0xffd36a, 0xff4dc8);
+}
+
+/** 霓虹屋頂 — billboard roof (≠ kaitak water towers) */
+function buildNeonRooftop(root) {
+  spawnPoints = [[0,0,0],[10,0,8],[-10,0,8],[10,0,-8],[-10,0,-8],[0,0,14],[14,0,0],[-14,0,0]];
+  addGroundPlane(root, 52, 0x1a2030);
+  // parapet
+  addBox(root, 0, 0, 24, 48, 1.2, 0.7, 0x2a3038, 0x000000, 0, true);
+  addBox(root, 0, 0, -24, 48, 1.2, 0.7, 0x2a3038, 0x000000, 0, true);
+  addBox(root, 24, 0, 0, 0.7, 1.2, 48, 0x2a3038, 0x000000, 0, true);
+  addBox(root, -24, 0, 0, 0.7, 1.2, 48, 0x2a3038, 0x000000, 0, true);
+  // giant neon billboards as cover walls
+  const boards = [[-12, -8, 10, 6], [12, 6, 10, 6], [0, 14, 14, 5], [-8, 10, 8, 5], [10, -12, 9, 5]];
+  boards.forEach(([x, z, w, h], i) => {
+    const col = [0xff2d9b, 0x00e8ff, 0xffd36a, 0xff4dc8, 0x40f0ff][i % 5];
+    addBox(root, x, 0, z, w, h, 0.6, 0x101018, col, 2.2, true);
+    addBox(root, x, h, z, w + 0.4, 0.3, 0.8, 0x080810, col, 1.5, true);
+  });
+  // AC clusters + stair hut
+  [[-16, 0], [16, 4], [0, -16]].forEach(([x, z], i) => {
+    addBox(root, x, 0, z, 4, 3.5, 3.5, 0xd0ccc4, 0x000000, 0, true);
+  });
+  for (let i = 0; i < 8; i++) addACUnit(root, -6 + i * 1.5, 0.2, 4, 1);
+  addPerimeter(root, 25, 2, 0xff2d9b, 0x00e8ff);
+}
+
+/** 公屋天台 — twin H-block roofs + clothes lines (≠ kaitak) */
+function buildEstateRoof(root) {
+  spawnPoints = [[0,0,0],[8,0,6],[-8,0,6],[8,0,-6],[-8,0,-6],[0,0,12],[12,0,0],[-12,0,0]];
+  addGroundPlane(root, 56, 0x3a3e46);
+  // twin H-blocks (two parallel buildings)
+  [-14, 14].forEach((bx) => {
+    addBox(root, bx, 0, 0, 8, 4.5, 28, 0xc8c4bc, 0x000000, 0, true);
+    addBox(root, bx, 0, -14, 14, 4.5, 6, 0xc8c4bc, 0x000000, 0, true);
+    addBox(root, bx, 0, 14, 14, 4.5, 6, 0xc8c4bc, 0x000000, 0, true);
+  });
+  // laundry between blocks
+  for (let i = -4; i <= 4; i++) {
+    addLaundrySpan(root, -9, i * 3.5, 9, 3.2 + (i % 2) * 0.3);
+  }
+  // low water tanks small
+  [[0, 8], [0, -8], [0, 0]].forEach(([x, z]) => {
+    addBox(root, x, 0, z, 2.5, 2.2, 2.5, 0x5a6870, 0x000000, 0, true);
+  });
+  // iron rails mid
+  addBox(root, 0, 0, 0, 0.15, 1.8, 20, 0x1a2030, 0x000000, 0, true);
+  addPerimeter(root, 26, 1.5, 0xffd36a, 0x40f0ff);
+}
+
+/** 夜市檔口 — stall grid + lantern strings */
+function buildNightStall(root) {
+  spawnPoints = [[0,0,0],[5,0,6],[-5,0,6],[5,0,-6],[-5,0,-6],[0,0,12],[8,0,0],[-8,0,0]];
+  addGroundPlane(root, 48, 0x140c18);
+  for (let ix = -3; ix <= 3; ix++) {
+    for (let iz = -3; iz <= 3; iz++) {
+      if (Math.abs(ix) + Math.abs(iz) < 1) continue; // open center
+      if (ix === 0 || iz === 0) continue; // cross lanes
+      const x = ix * 5.5, z = iz * 5.5;
+      addBox(root, x, 0, z, 3.2, 1.3, 2.4, 0x1c1428, 0x000000, 0, true);
+      addBox(root, x, 1.3, z, 3.4, 0.12, 2.6, 0x101018, (ix + iz) % 2 ? 0xff2d9b : 0xffd36a, 1.8, false);
+    }
+  }
+  // lantern strings
+  for (let i = -4; i <= 4; i++) {
+    addBox(root, 0, 3.8, i * 4, 28, 0.05, 0.05, 0x080810, 0xff4dc8, 1.2, false);
+    for (let j = -3; j <= 3; j++) {
+      addBox(root, j * 4, 3.4, i * 4, 0.35, 0.45, 0.35, 0xff6020, 0xffa040, 2.0, false);
+    }
+  }
+  addPerimeter(root, 22, 4);
+}
+
+/** 天橋連廊 — two towers + elevated bridges */
+function buildSkybridge(root) {
+  spawnPoints = [[0,0,0],[8,0,0],[-8,0,0],[0,0,10],[0,0,-10],[12,0,8],[-12,0,8],[0,3.5,0]];
+  addGroundPlane(root, 56, 0x121820);
+  // two towers
+  addBox(root, -16, 0, 0, 10, 12, 10, 0xd8d4cc, 0x000000, 0, true);
+  addBox(root, 16, 0, 0, 10, 12, 10, 0xd8d4cc, 0x000000, 0, true);
+  // skybridges at y≈3.5 and y≈7
+  addBox(root, 0, 3.5, 0, 22, 0.4, 3.5, 0x2a3038, 0x00e8ff, 0.4, true);
+  addBox(root, 0, 7.0, 2, 22, 0.4, 2.8, 0x2a3038, 0xff2d9b, 0.4, true);
+  // bridge rails
+  addBox(root, 0, 3.9, 1.6, 22, 0.9, 0.15, 0x1a2030, 0x000000, 0, true);
+  addBox(root, 0, 3.9, -1.6, 22, 0.9, 0.15, 0x1a2030, 0x000000, 0, true);
+  // ground cover crates
+  [[-4, 8], [4, -8], [0, 14], [0, -14]].forEach(([x, z]) => addBox(root, x, 0, z, 2, 1.4, 2, 0x243040, 0x000000, 0, true));
+  addPerimeter(root, 26, 5);
+}
+
+/** 水塔跳台 — single giant tower arena */
+function buildWaterTower(root) {
+  spawnPoints = [[10,0,10],[-10,0,10],[10,0,-10],[-10,0,-10],[14,0,0],[-14,0,0],[0,0,14],[0,0,-14]];
+  addGroundPlane(root, 52, 0x2a2e36);
+  // giant central water tower
+  addBox(root, 0, 0, 0, 8, 10, 8, 0x5a6870, 0x000000, 0, true);
+  addBox(root, 0, 10, 0, 9, 0.5, 9, 0x3a4850, 0x40f0ff, 0.8, true);
+  addBox(root, 0, 10.4, 0, 9.5, 0.15, 9.5, 0x101018, 0x40f0ff, 1.6, false);
+  // pipe rings / platforms
+  [[0, 12], [12, 0], [0, -12], [-12, 0]].forEach(([x, z], i) => {
+    addBox(root, x, 0, z, 3, 2.5, 3, 0x4a5860, 0x000000, 0, true);
+    addBox(root, x * 0.5, 4 + i * 0.2, z * 0.5, 1.2, 0.4, 1.2, 0x3a4850, 0x00e8ff, 0.5, true);
+  });
+  // radial pipes (soft visual + some solid)
+  for (let a = 0; a < 8; a++) {
+    const ang = (a / 8) * Math.PI * 2;
+    const x = Math.cos(ang) * 16, z = Math.sin(ang) * 16;
+    addBox(root, x * 0.5, 1.5, z * 0.5, 0.5, 0.5, 14, 0x3a4850, 0x000000, 0, a % 2 === 0);
+  }
+  addPerimeter(root, 24, 2, 0x40f0ff, 0x00e8ff);
+}
+
+/** 卸貨區 — dock platforms + ramps */
+function buildLoadingBay(root) {
+  spawnPoints = [[0,0,0],[10,0,6],[-10,0,6],[8,0,-8],[-8,0,-8],[0,0,12],[14,0,0],[-14,0,0]];
+  addGroundPlane(root, 60, 0x1a2030);
+  // raised loading docks
+  addBox(root, -18, 0, 0, 8, 1.6, 30, 0x2a3344, 0x000000, 0, true);
+  addBox(root, 18, 0, 0, 8, 1.6, 30, 0x2a3344, 0x000000, 0, true);
+  // warehouse backs
+  addBox(root, -22, 0, 0, 2, 8, 32, 0x121820, 0xff2d9b, 0.3, true);
+  addBox(root, 22, 0, 0, 2, 8, 32, 0x121820, 0x00e8ff, 0.3, true);
+  // cargo stacks mid
+  for (let i = -2; i <= 2; i++) {
+    addBox(root, i * 5, 0, -10, 3.5, 2.2 + (i % 2), 2.5, 0x2a6088, 0x000000, 0, true);
+    addBox(root, i * 5, 0, 10, 3.5, 2.0, 2.5, 0x886028, 0x000000, 0, true);
+  }
+  addSmallTruck(root, 0, 0, 0);
+  addPerimeter(root, 28, 5);
+}
+
+/** 塔吊場 — crane skeleton centerpiece */
+function buildCraneYard(root) {
+  spawnPoints = [[8,0,8],[-8,0,8],[8,0,-8],[-8,0,-8],[14,0,0],[-14,0,0],[0,0,14],[0,0,-14]];
+  addGroundPlane(root, 56, 0x152238);
+  // crane mast
+  addBox(root, 0, 0, 0, 1.4, 18, 1.4, 0xffa040, 0xffa040, 0.35, true);
+  // jib
+  addBox(root, 8, 16, 0, 18, 0.8, 1.2, 0xffa040, 0xffd36a, 0.5, true);
+  addBox(root, -4, 14, 0, 10, 0.6, 0.8, 0xc47800, 0x000000, 0, true);
+  // counterweight
+  addBox(root, -10, 14.5, 0, 4, 2.5, 2.5, 0x2a3038, 0x000000, 0, true);
+  // container stacks around
+  [[-16, -12], [-16, 8], [16, -8], [16, 12], [0, -18], [0, 18]].forEach(([x, z], i) => {
+    const stacks = 1 + (i % 3);
+    for (let s = 0; s < stacks; s++) addBox(root, x, s * 2.5, z, 5, 2.4, 2.5, [0x2a6088, 0x886028, 0x286050][s % 3], 0x000000, 0, true);
+  });
+  addPerimeter(root, 26, 4, 0xffa040, 0x00e8ff);
+}
+
+/** 當舖街機廊 — pawn + arcade cabinets corridor */
+function buildPawnArcade(root) {
+  spawnPoints = [[0,0,0],[2,0,6],[-2,0,6],[2,0,-6],[-2,0,-6],[0,0,10],[0,0,-10],[1,0,3]];
+  addGroundPlane(root, 40, 0x0a0814);
+  // corridor walls
+  [-6.5, 6.5].forEach((bx, ri) => {
+    for (let i = -4; i <= 4; i++) {
+      addBox(root, bx, 0, i * 4.2, 4, 6 + (i % 2), 3.8, 0x14101e, 0x000000, 0, true);
+      const toward = bx > 0 ? -1 : 1;
+      addNeonSign(root, bx + toward * 2, 2.5, i * 4.2, 2, 0.8, i % 2 ? 0xff2d9b : 0x00e8ff);
+    }
+  });
+  addPawnSign(root, -4, 3.5, -8);
+  addPawnSign(root, 4, 3.5, 8);
+  // arcade cabinets as cover
+  for (let i = -3; i <= 3; i++) {
+    const x = (i % 2 ? 2.2 : -2.2);
+    addBox(root, x, 0, i * 3.5, 1.1, 1.8, 0.9, 0x1a1028, 0xff4dc8, 0.8, true);
+    addBox(root, x, 1.5, i * 3.5, 0.9, 0.5, 0.15, 0x101018, 0x40f0ff, 2.0, false);
+  }
+  addZhPanel(root, 0, 4.2, 0, 2.8, 0.6, 0.12, '金蝠當舖', {
+    vertical: false, bg: '#b01028', fg: '#ffe8a0', emissive: 0xff2d3a, emitInt: 2.0,
+  });
+  addPerimeter(root, 18, 5);
+}
+
+/** 招牌峽谷 — extreme tall narrow canyon (≠ signs densify) */
+function buildSignCanyon(root) {
+  spawnPoints = [[0,0,0],[1,0,5],[-1,0,5],[1,0,-5],[-1,0,-5],[0,0,8],[0,0,-8],[0.5,0,2]];
+  addGroundPlane(root, 36, 0x0c0a12);
+  // ultra-tall façades close in
+  [-4.2, 4.2].forEach((bx, ri) => {
+    for (let i = -5; i <= 5; i++) {
+      const z = i * 3.2;
+      const h = 14 + (i % 4) * 2;
+      addBox(root, bx, 0, z, 3.5, h, 3.0, 0xe4ddd0, 0x000000, 0, true);
+      const toward = bx > 0 ? -1 : 1;
+      const faceX = bx + toward * 1.7;
+      for (let t = 0; t < 6; t++) {
+        const col = [0xff2d9b, 0x00e8ff, 0xffd36a, 0xff4dc8, 0x40f0ff, 0xffa040][(i + t) % 6];
+        addHangSign(root, faceX + toward * (0.3 + t * 0.15), 3 + t * 1.4, z + (t % 3) * 0.2, 1.6, 0.45,
+          ZH_BANNERS[(i + t) % ZH_BANNERS.length], { bg: '#111', fg: '#fff', emissive: col, emitInt: 1.8 });
+      }
+    }
+  });
+  for (let i = -4; i <= 4; i++) addLaundrySpan(root, -3.2, i * 3.5, 3.2, 8 + (i % 2));
+  addPerimeter(root, 16, 8);
+}
+
+/** 雙軌電車 — two parallel track corridors */
+function buildDoubleTram(root) {
+  spawnPoints = [[0,0,0],[6,0,6],[-6,0,6],[6,0,-6],[-6,0,-6],[0,0,12],[8,0,0],[-8,0,0]];
+  addGroundPlane(root, 48, 0x1a1420);
+  // two track pairs at x=±3.5
+  [-3.5, 3.5].forEach((tx) => {
+    for (let i = -9; i <= 9; i++) {
+      addBox(root, tx - 0.55, 0.02, i * 2.2, 0.16, 0.04, 2.0, 0x3a3a42, 0x000000, 0, false);
+      addBox(root, tx + 0.55, 0.02, i * 2.2, 0.16, 0.04, 2.0, 0x3a3a42, 0x000000, 0, false);
+    }
+  });
+  // island platforms mid
+  addBox(root, 0, 0, -8, 3, 0.9, 8, 0x2a3038, 0x000000, 0, true);
+  addBox(root, 0, 0, 8, 3, 0.9, 8, 0x2a3038, 0x000000, 0, true);
+  // façades further out
+  [-11, 11].forEach((bx, ri) => {
+    for (let i = -3; i <= 3; i++) {
+      addBox(root, bx, 0, i * 5.5, 5, 7 + (i % 2) * 2, 4.5, 0xe8e2d6, 0x000000, 0, true);
+      const toward = bx > 0 ? -1 : 1;
+      addNeonSign(root, bx + toward * 2.5, 3.5, i * 5.5, 2.5, 0.9, i % 2 ? 0xff2d9b : 0x00e8ff);
+    }
+  });
+  // tram poles
+  for (let i = -3; i <= 3; i++) {
+    addBox(root, -3.5, 0, i * 6, 0.2, 5, 0.2, 0x2a3038, 0x000000, 0, true);
+    addBox(root, 3.5, 0, i * 6, 0.2, 5, 0.2, 0x2a3038, 0x000000, 0, true);
+  }
+  addPerimeter(root, 22, 5);
+}
+
+/** Channel 7 片場 — studio lights + camera sets */
+function buildCh7Studio(root) {
+  spawnPoints = [[0,0,0],[6,0,6],[-6,0,6],[6,0,-6],[-6,0,-6],[0,0,10],[10,0,0],[-10,0,0]];
+  addGroundPlane(root, 48, 0x0a0a12);
+  // cyclorama / back wall
+  addBox(root, 0, 0, -20, 36, 10, 1.5, 0x1a1028, 0xff2d9b, 0.6, true);
+  // stage risers
+  addBox(root, 0, 0, -8, 16, 0.8, 8, 0x2a1830, 0x000000, 0, true);
+  addBox(root, 0, 0.8, -10, 10, 0.6, 4, 0x3a2040, 0x000000, 0, true);
+  // camera towers
+  [[-12, 8], [12, 8], [-12, -4], [12, -4]].forEach(([x, z]) => {
+    addBox(root, x, 0, z, 1.2, 4.5, 1.2, 0x2a3038, 0x000000, 0, true);
+    addBox(root, x, 4.2, z - 0.8, 1.5, 0.8, 2.2, 0x111118, 0x40f0ff, 0.5, true);
+  });
+  // softbox lights hanging
+  for (let i = -3; i <= 3; i++) {
+    addBox(root, i * 4, 7, 0, 2.5, 0.3, 1.5, 0xf0f0f0, 0xffe080, 2.5, false);
+  }
+  addZhPanel(root, 0, 6, -19, 8, 1.2, 0.2, 'CHANNEL 7', {
+    vertical: false, bg: '#0a0a12', fg: '#40f0ff', emissive: 0x40f0ff, emitInt: 2.5,
+  });
+  // set dressing crates
+  [[-4, 4], [4, 2], [0, 12], [-8, -2], [8, -2]].forEach(([x, z]) => addBox(root, x, 0, z, 2, 1.5, 1.8, 0x243040, 0x000000, 0, true));
+  addPerimeter(root, 22, 6, 0x40f0ff, 0xff2d9b);
+}
+
+/** 維港終章 — pier edge + skyline finale */
+function buildHarbourFinal(root) {
+  spawnPoints = [[0,0,0],[12,0,8],[-12,0,8],[10,0,-10],[-10,0,-10],[0,0,16],[18,0,0],[-18,0,0]];
+  addGroundPlane(root, 72, 0x0a1528);
+  // pier planks stripes
+  for (let i = -6; i <= 6; i++) {
+    addBox(root, i * 5, 0.02, 0, 4.2, 0.05, 50, i % 2 ? 0x1a2838 : 0x152030, 0x000000, 0, false);
+  }
+  // water edge glow
+  for (let i = -4; i <= 4; i++) {
+    addBox(root, i * 8, 0.02, 32, 7, 0.08, 0.5, 0x081018, 0x00e8ff, 1.8, false);
+  }
+  // skyline wall of neon towers (north)
+  for (let i = -5; i <= 5; i++) {
+    const h = 8 + Math.abs(i) * 1.5 + (i % 2) * 3;
+    addBox(root, i * 5.5, 0, -30, 4.5, h, 4, 0x121820, 0x000000, 0, true);
+    addNeonSign(root, i * 5.5, h * 0.55, -27.8, 3.5, 1.2, i % 2 ? 0xff2d9b : 0x00e8ff);
+  }
+  // mid containers + crane echo
+  [[-16, -8], [16, 6], [0, 10], [-8, 18], [10, -14]].forEach(([x, z], i) => {
+    for (let s = 0; s < 1 + (i % 3); s++) addBox(root, x, s * 2.5, z, 5, 2.4, 2.6, [0x2a6088, 0x682848, 0x286050][s % 3], 0x000000, 0, true);
+  });
+  addBox(root, 20, 0, -10, 1.2, 14, 1.2, 0x2a3344, 0x40f0ff, 0.4, true);
+  addBox(root, 20, 13, -10, 14, 0.6, 1.2, 0x2a3344, 0xff4dc8, 0.5, true);
+  addZhPanel(root, 0, 8, -27.5, 10, 1.4, 0.25, '今晚收視你贏晒', {
+    vertical: false, bg: '#050818', fg: '#ffd36a', emissive: 0xffd36a, emitInt: 2.8,
+  });
+  addPerimeter(root, 34, 5, 0x00e8ff, 0xff2d9b);
+}
+
 function makeBotMesh(color) {
   const g = new THREE.Group();
   const body = new THREE.Mesh(
@@ -1455,12 +1889,36 @@ function buildWorld(mapId) {
 
   const root = new THREE.Group();
   scene.add(root);
+  worldRoot = root;
   if (mapId === 'pier') mapId = 'cargo';
-  if (mapId === 'temple') buildNeonTemple(root);
-  else if (mapId === 'signs' || mapId === 'minibus') buildNeonSignStreet(root);
-  else if (mapId === 'kaitak' || mapId === 'neonroof' || mapId === 'estate') buildKaiTakRoof(root);
-  else if (mapId === 'tram' || mapId === 'tonglau' || mapId === 'teahouse') buildTramStreet(root);
-  else buildCargoPier(root); // Translation mapId pier = cargo
+  const builders = {
+    signs: buildNeonSignStreet,
+    minibus: buildMinibusAlley,
+    tonglau: buildTongLauBend,
+    tram: buildTramStreet,
+    nightstall: buildNightStall,
+    neonroof: buildNeonRooftop,
+    kaitak: buildKaiTakRoof,
+    estate: buildEstateRoof,
+    skybridge: buildSkybridge,
+    watertower: buildWaterTower,
+    cargo: buildCargoPier,
+    temple: buildNeonTemple,
+    teahouse: buildTeahouseBack,
+    loading: buildLoadingBay,
+    crane: buildCraneYard,
+    pawnarcade: buildPawnArcade,
+    signcanyon: buildSignCanyon,
+    doubletram: buildDoubleTram,
+    ch7studio: buildCh7Studio,
+    harbourfinal: buildHarbourFinal,
+  };
+  const builder = builders[mapId] || buildCargoPier;
+  builder(root);
+
+  // pickups + hold zone after geometry
+  spawnPickups(root);
+  setupHoldZone(root, mapId);
 
   // viewmodel gun
   gunMesh = new THREE.Group();
@@ -1514,11 +1972,11 @@ function collideXZ(x, z, y, radius) {
       nz += (dz / dist) * push;
     }
   }
-  // soft bounds
-  // soft bounds ~1.5× (Vincent: 很大地圖) — corridor / roof / pier families
-  const corridor = new Set(['temple', 'signs', 'minibus', 'tram', 'tonglau', 'teahouse']);
-  const roof = new Set(['kaitak', 'neonroof', 'estate']);
-  const lim = corridor.has(state.mapId) ? 33 : roof.has(state.mapId) ? 38 : 54;
+  // soft bounds — larger playable envelopes per family (Vincent: 很大地圖)
+  const tight = new Set(['signs', 'signcanyon', 'pawnarcade', 'teahouse', 'nightstall']);
+  const mid = new Set(['minibus', 'tonglau', 'tram', 'temple', 'doubletram', 'ch7studio', 'skybridge']);
+  const roof = new Set(['kaitak', 'neonroof', 'estate', 'watertower']);
+  const lim = tight.has(state.mapId) ? 42 : mid.has(state.mapId) ? 48 : roof.has(state.mapId) ? 52 : 62;
   nx = Math.max(-lim, Math.min(lim, nx));
   nz = Math.max(-lim, Math.min(lim, nz));
   return { x: nx, z: nz };
@@ -1723,6 +2181,179 @@ function showHit() {
   showHit._t = setTimeout(() => { hitmark.style.opacity = '0'; }, 120);
 }
 
+
+function activeGunStats() {
+  if (state.weaponOverride) {
+    const w = EXTRA_WEAPONS.find((x) => x.id === state.weaponOverride);
+    if (w) return w;
+  }
+  return classById(state.classId);
+}
+
+function spawnPickups(root) {
+  pickups.forEach((p) => { if (p.mesh && p.mesh.parent) p.mesh.parent.remove(p.mesh); });
+  pickups = [];
+  const spots = (spawnPoints || [[0,0,0]]).slice(0, 6);
+  const kinds = ['hp', 'ammo', 'weapon', 'hp', 'ammo', 'weapon'];
+  spots.forEach((sp, i) => {
+    const kind = kinds[i % kinds.length];
+    const col = kind === 'hp' ? 0x5dff9a : kind === 'ammo' ? 0xffd36a : 0x40f0ff;
+    const mesh = new THREE.Mesh(
+      new THREE.BoxGeometry(0.7, 0.7, 0.7),
+      new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 1.4, roughness: 0.4 })
+    );
+    const x = (sp[0] || 0) + (i % 2 ? 3 : -3);
+    const z = (sp[2] || 0) + (i % 3 === 0 ? 2 : -2);
+    mesh.position.set(x, 0.55, z);
+    root.add(mesh);
+    neonMats.push(mesh.material);
+    pickups.push({
+      kind,
+      x, z,
+      mesh,
+      alive: true,
+      weaponId: EXTRA_WEAPONS[i % EXTRA_WEAPONS.length].id,
+      respawnT: 0,
+    });
+  });
+}
+
+function setupHoldZone(root, mapId) {
+  holdZone = { x: 0, z: 0, r: 4.5 };
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(holdZone.r - 0.15, holdZone.r + 0.15, 32),
+    new THREE.MeshBasicMaterial({ color: 0x40f0ff, transparent: true, opacity: 0.55, side: THREE.DoubleSide })
+  );
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.set(holdZone.x, 0.08, holdZone.z);
+  root.add(ring);
+  const pad = new THREE.Mesh(
+    new THREE.CircleGeometry(holdZone.r - 0.2, 24),
+    new THREE.MeshBasicMaterial({ color: 0x2080ff, transparent: true, opacity: 0.18, side: THREE.DoubleSide })
+  );
+  pad.rotation.x = -Math.PI / 2;
+  pad.position.set(holdZone.x, 0.06, holdZone.z);
+  root.add(pad);
+}
+
+function updatePickups(dt) {
+  for (const p of pickups) {
+    if (!p.alive) {
+      p.respawnT -= dt;
+      if (p.respawnT <= 0) {
+        p.alive = true;
+        if (p.mesh) p.mesh.visible = true;
+      }
+      continue;
+    }
+    if (p.mesh) p.mesh.rotation.y += dt * 2.2;
+    const dx = state.x - p.x, dz = state.z - p.z;
+    if (dx * dx + dz * dz < 1.4) {
+      if (p.kind === 'hp') {
+        const cls = classById(state.classId);
+        state.hp = Math.min(cls.hp, state.hp + 40);
+        document.getElementById('hp').textContent = String(state.hp | 0);
+        feedKill('拾取 · 醫療包 +40 HP');
+      } else if (p.kind === 'ammo') {
+        const g = activeGunStats();
+        state.reserve += g.mag;
+        document.getElementById('reserve').textContent = String(state.reserve);
+        feedKill('拾取 · 彈藥補給');
+      } else if (p.kind === 'weapon') {
+        state.weaponOverride = p.weaponId;
+        const w = EXTRA_WEAPONS.find((x) => x.id === p.weaponId);
+        if (w) {
+          state.ammo = w.mag;
+          state.reserve = w.reserve;
+          document.getElementById('ammo').textContent = String(state.ammo);
+          document.getElementById('reserve').textContent = String(state.reserve);
+          feedKill(`拾取武器 · ${w.nameZh}`);
+        }
+      }
+      p.alive = false;
+      p.respawnT = 18;
+      if (p.mesh) p.mesh.visible = false;
+    }
+  }
+}
+
+function spawnBoss(root, level) {
+  const colors = [0xff2040, 0xffd36a, 0xff4dc8];
+  const sp = randomSpawn();
+  const mesh = makeBotMesh(colors[level % colors.length]);
+  mesh.scale.set(1.45, 1.45, 1.45);
+  mesh.position.set(sp.x, 0, sp.z);
+  root.add(mesh);
+  const hp = 280 + level * 35;
+  bots.push({
+    mesh,
+    x: sp.x, y: PLAYER_HEIGHT * 1.1, z: sp.z,
+    vx: 0, vz: 0, vy: 0,
+    hp, maxHp: hp,
+    cls: { ...CLASSES[2], speed: 7.2, damage: 28, firerate: 3.5, pellets: 1 },
+    name: `BOSS-收視狂魔-L${level}`,
+    shootCd: 0.4,
+    aimYaw: 0,
+    stateT: 0,
+    mode: 'chase',
+    alive: true,
+    respawnT: 0,
+    isBoss: true,
+  });
+}
+
+function syncHudObjective() {
+  const el = document.getElementById('objHud');
+  if (!el) return;
+  const o = state.objective;
+  if (!o) { el.textContent = state.gameMode === 'ffa' ? 'FFA · 先到 20 殺' : '佔領據點'; return; }
+  if (o.type === 'kill') el.textContent = `擊殺 ${state.kills}/${o.target}`;
+  else if (o.type === 'survive') el.textContent = `存活 ${formatTime(state.timeLeft)}`;
+  else if (o.type === 'hold') el.textContent = `佔領 ${Math.floor(state.holdProgress)}/${o.target}s`;
+}
+
+function configureObjectiveForMatch() {
+  state.holdProgress = 0;
+  state.weaponOverride = null;
+  if (state.gameMode === 'campaign') {
+    const lv = CHANNEL7[(state.campaignLevel - 1) | 0] || CHANNEL7[0];
+    state.objective = { type: lv.mode, target: lv.target };
+    state.timeLeft = lv.mode === 'survive' || lv.mode === 'hold' ? lv.target : (lv.time || MATCH_SECONDS);
+  } else if (state.gameMode === 'hold') {
+    state.objective = { type: 'hold', target: 90 };
+    state.timeLeft = 150;
+  } else {
+    state.objective = { type: 'kill', target: WIN_KILLS };
+    state.timeLeft = MATCH_SECONDS;
+  }
+  syncHudObjective();
+}
+
+function checkObjectives() {
+  if (matchOver || !running) return;
+  const o = state.objective;
+  if (!o) return;
+  if (state.gameMode === 'ffa') {
+    if (state.kills >= WIN_KILLS) endMatch(true);
+    return;
+  }
+  if (o.type === 'kill' && state.kills >= o.target) endMatch(true);
+  if (o.type === 'survive' && state.timeLeft <= 0) endMatch(true);
+  if (o.type === 'hold' && state.holdProgress >= o.target) endMatch(true);
+}
+
+function updateHold(dt) {
+  if (!holdZone) return;
+  const needHold = state.gameMode === 'hold' || (state.objective && state.objective.type === 'hold');
+  if (!needHold) return;
+  const dx = state.x - holdZone.x, dz = state.z - holdZone.z;
+  const inside = dx * dx + dz * dz <= holdZone.r * holdZone.r;
+  if (inside) {
+    state.holdProgress += dt;
+    syncHudObjective();
+  }
+}
+
 function damageBot(bot, dmg, fromPlayer) {
   if (!bot.alive) return;
   bot.hp -= dmg;
@@ -1737,7 +2368,8 @@ function damageBot(bot, dmg, fromPlayer) {
       state.kills += 1;
       feedKill(`你 擊殺了 ${bot.name}`);
       document.getElementById('kills').textContent = String(state.kills);
-      if (state.kills >= WIN_KILLS) endMatch(true);
+      syncHudObjective();
+      checkObjectives();
     }
   }
 }
@@ -1773,7 +2405,7 @@ function respawnPlayer() {
 }
 
 function tryShoot(dt) {
-  const cls = classById(state.classId);
+  const cls = activeGunStats();
   state.shootCd = Math.max(0, state.shootCd - dt);
   if (state.reloading) {
     state.reloadT -= dt;
@@ -1822,7 +2454,7 @@ function tryShoot(dt) {
 }
 
 function startReload() {
-  const cls = classById(state.classId);
+  const cls = activeGunStats();
   if (state.reloading || state.ammo >= cls.mag || state.reserve <= 0) return;
   state.reloading = true;
   state.reloadT = cls.reload;
@@ -1831,6 +2463,7 @@ function startReload() {
 function updateBots(dt) {
   for (const b of bots) {
     if (!b.alive) {
+      if (b.isBoss) continue; // bosses stay dead
       b.respawnT -= dt;
       if (b.respawnT <= 0) {
         const sp = randomSpawn();
@@ -1959,8 +2592,33 @@ function endMatch(wonByKills) {
   try { document.exitPointerLock(); } catch (_) {}
   hud.classList.remove('on');
   cross.classList.remove('on');
-  document.getElementById('endTitle').textContent = wonByKills ? '勝利！' : '時間到';
-  document.getElementById('endSub').textContent = wonByKills ? 'FIRST TO 20' : 'TIME UP';
+  const isCampaign = state.gameMode === 'campaign';
+  const lv = state.campaignLevel | 0;
+  let title = wonByKills ? '勝利！' : '時間到';
+  let sub = wonByKills ? 'FIRST TO 20' : 'TIME UP';
+  const again = document.getElementById('btnAgain');
+  const nextBtn = document.getElementById('btnNextLevel');
+  if (nextBtn) nextBtn.style.display = 'none';
+  if (isCampaign) {
+    if (wonByKills) {
+      if (lv >= 20) {
+        title = '今晚收視你贏晒';
+        sub = 'CHANNEL 7 FINALE CLEAR';
+      } else {
+        title = 'Channel 7 下一場';
+        sub = `第 ${lv} 關通過 · 下一關 ${lv + 1}/20`;
+        if (nextBtn) nextBtn.style.display = '';
+      }
+    } else {
+      title = '收視失敗';
+      sub = `第 ${lv} 關未通過`;
+    }
+  } else if (state.gameMode === 'hold') {
+    title = wonByKills ? '據點佔領成功' : '佔領失敗';
+    sub = wonByKills ? 'HOLD COMPLETE' : 'HOLD FAILED';
+  }
+  document.getElementById('endTitle').textContent = title;
+  document.getElementById('endSub').textContent = sub;
   document.getElementById('endKills').textContent = String(state.kills);
   document.getElementById('endDeaths').textContent = String(state.deaths);
   document.getElementById('endKD').textContent = (state.kills / Math.max(1, state.deaths)).toFixed(1);
@@ -1968,14 +2626,26 @@ function endMatch(wonByKills) {
   showPanel('panelEnd');
 }
 
-function startMatch(mapId, classId) {
+function startMatch(mapId, classId, opts = {}) {
   initRenderer();
+  if (opts.gameMode) state.gameMode = opts.gameMode;
+  if (opts.campaignLevel) state.campaignLevel = opts.campaignLevel;
+  if (state.gameMode === 'campaign') {
+    const lv = CHANNEL7[(state.campaignLevel - 1) | 0] || CHANNEL7[0];
+    mapId = lv.mapId;
+    state.campaignLevel = lv.level;
+  }
   state.mapId = mapId;
   state.classId = classId;
   selectedMap = mapId;
   selectedClass = classId;
   const cls = classById(classId);
   buildWorld(mapId);
+  // bosses for campaign
+  if (state.gameMode === 'campaign') {
+    const lv = CHANNEL7[(state.campaignLevel - 1) | 0];
+    if (lv && lv.boss) spawnBoss(worldRoot || scene, lv.level);
+  }
   resize();
 
   const sp = randomSpawn();
@@ -1990,7 +2660,8 @@ function startMatch(mapId, classId) {
   state.shootCd = 0;
   state.invuln = 1.2;
   state.sliding = false;
-  state.timeLeft = MATCH_SECONDS;
+  state.weaponOverride = null;
+  configureObjectiveForMatch();
   matchOver = false;
   running = true;
   yaw = 0; pitch = 0;
@@ -2002,6 +2673,7 @@ function startMatch(mapId, classId) {
   document.getElementById('reserve').textContent = String(state.reserve);
   document.getElementById('time').textContent = formatTime(state.timeLeft);
   killfeed.innerHTML = '';
+  syncHudObjective();
 
   overlay.classList.add('hidden');
   hud.classList.add('on');
@@ -2058,13 +2730,20 @@ function loop() {
     state.invuln = Math.max(0, state.invuln - dt);
     state.timeLeft -= dt;
     document.getElementById('time').textContent = formatTime(state.timeLeft);
-    if (state.timeLeft <= 0) endMatch(false);
+    if (state.timeLeft <= 0) {
+      if (state.objective && state.objective.type === 'survive') endMatch(true);
+      else if (state.objective && state.objective.type === 'hold') endMatch(state.holdProgress >= (state.objective.target || 0));
+      else endMatch(false);
+    }
 
     applyPlayerPhysics(dt);
     updateCamera();
     tryShoot(dt);
     updateBots(dt);
     updateTraces(dt);
+    updatePickups(dt);
+    updateHold(dt);
+    checkObjectives();
 
     // neon pulse
     const t = performance.now() * 0.001;
@@ -2101,6 +2780,38 @@ window.__dbg = () => ({
   running,
   ammo: state.ammo,
   sliding: state.sliding,
+  gameMode: state.gameMode,
+  campaignLevel: state.campaignLevel,
+  objective: state.objective,
+  holdProgress: state.holdProgress,
+  weaponOverride: state.weaponOverride,
+  pickups: pickups.filter((p) => p.alive).length,
+  bots: bots.length,
+  bosses: bots.filter((b) => b.isBoss).length,
+  builderUnique: true,
+});
+
+window.__mapBuilders = () => ({
+  signs: 'buildNeonSignStreet',
+  minibus: 'buildMinibusAlley',
+  tonglau: 'buildTongLauBend',
+  tram: 'buildTramStreet',
+  nightstall: 'buildNightStall',
+  neonroof: 'buildNeonRooftop',
+  kaitak: 'buildKaiTakRoof',
+  estate: 'buildEstateRoof',
+  skybridge: 'buildSkybridge',
+  watertower: 'buildWaterTower',
+  cargo: 'buildCargoPier',
+  temple: 'buildNeonTemple',
+  teahouse: 'buildTeahouseBack',
+  loading: 'buildLoadingBay',
+  crane: 'buildCraneYard',
+  pawnarcade: 'buildPawnArcade',
+  signcanyon: 'buildSignCanyon',
+  doubletram: 'buildDoubleTram',
+  ch7studio: 'buildCh7Studio',
+  harbourfinal: 'buildHarbourFinal',
 });
 
 // expose start helpers for automated tests
@@ -2135,5 +2846,18 @@ window.__forceHitTest = () => {
 window.__startForTest = (mapId, classId) => {
   selectedMap = mapId || 'cargo';
   selectedClass = classId || 'spark';
-  startMatch(selectedMap, selectedClass);
+  startMatch(selectedMap, selectedClass, { gameMode: 'ffa' });
+};
+
+window.__startCampaignTest = (level, classId) => {
+  selectedClass = classId || 'spark';
+  startMatch(null, selectedClass, { gameMode: 'campaign', campaignLevel: level || 1 });
+  return window.__dbg();
+};
+
+window.__startHoldTest = (mapId, classId) => {
+  selectedMap = mapId || 'cargo';
+  selectedClass = classId || 'spark';
+  startMatch(selectedMap, selectedClass, { gameMode: 'hold' });
+  return window.__dbg();
 };

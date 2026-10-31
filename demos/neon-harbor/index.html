@@ -42,7 +42,7 @@ html,body{height:100%;background:#03040c;color:#fff;font-family:"Noto Sans TC",s
 .card p{margin-top:12px;color:#c8b8d8;font-size:14px;line-height:1.55}
 .hero{width:100%;max-height:160px;object-fit:cover;border-radius:14px;margin-top:14px;border:1px solid #40f0ff44}
 .panel{display:none}.panel.on{display:block}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}#mapGrid{grid-template-columns:1fr 1fr;max-height:48vh;overflow-y:auto}.card{max-width:640px}
 @media(max-width:480px){.grid{grid-template-columns:1fr}}
 .pick{border:2px solid #40f0ff44;background:#0a1224;border-radius:14px;padding:12px 10px;cursor:pointer;text-align:left;color:#fff;font-family:inherit;transition:border .15s,transform .1s}
 .pick:hover,.pick:focus{border-color:#40f0ff;outline:none}
@@ -78,7 +78,7 @@ button.ghost{margin-top:10px;background:transparent;border:1px solid #40f0ff66;c
       <span class="k">擊殺 <b id="kills">0</b></span>
       <span class="d">死亡 <b id="deaths">0</b></span>
       <span class="t">剩餘 <b id="time">2:30</b></span>
-      <span class="s">目標 20</span>
+      <span class="s" id="objHud">目標 20</span>
     </div>
   </div>
   <div id="killfeed"></div>
@@ -100,9 +100,17 @@ button.ghost{margin-top:10px;background:transparent;border:1px solid #40f0ff66;c
       <button class="play" id="btnEnter">進入遊戲</button>
     </div>
 
+    <div class="panel" id="panelMode">
+      <h1>選擇模式</h1>
+      <div class="sub">GAME MODE · FFA / Channel 7 / 佔領</div>
+      <div class="grid" id="modeGrid"></div>
+      <button class="play" id="btnModeNext" disabled>下一步</button>
+      <button class="ghost" id="btnModeBack">返回</button>
+    </div>
+
     <div class="panel" id="panelMap">
-      <h1>選擇地圖</h1>
-      <div class="sub">MAP SELECT</div>
+      <h1>選擇地圖 · 20 場景</h1>
+      <div class="sub">MAP SELECT · FREE FFA</div>
       <div class="grid" id="mapGrid"></div>
       <button class="play" id="btnMapNext" disabled>下一步：選角色</button>
       <button class="ghost" id="btnMapBack">返回</button>
@@ -126,6 +134,7 @@ button.ghost{margin-top:10px;background:transparent;border:1px solid #40f0ff66;c
         <div><b id="endDeaths">0</b><span>死亡</span></div>
         <div><b id="endKD">0.0</b><span>K/D</span></div>
       </div>
+      <button class="play" id="btnNextLevel" style="display:none">Channel 7 下一場</button>
       <button class="play" id="btnAgain">再來一局</button>
       <button class="ghost" id="btnMenu">返回主選單</button>
     </div>
@@ -136,7 +145,7 @@ button.ghost{margin-top:10px;background:transparent;border:1px solid #40f0ff66;c
   <a id="vg-back-tr" class="vg-back-btn" href="/vincent-games-studio/games" title="← 返回遊戲目錄">← 返回遊戲目錄</a>
 </div>
 
-<script type="module" src="./game.js?v=c641a51"></script>
+<script type="module" src="./game.js?v=83f3a8f"></script>
 <script>
 (function(){
   var HREF='/vincent-games-studio/games', LABEL='← 返回遊戲目錄', locking=false, scheduled=null;
