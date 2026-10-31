@@ -3,6 +3,7 @@ import { GameArt, GalleryFrame } from '../components/GameArt'
 import { GameCtaRow } from '../components/CtaButton'
 import { EmptyState, LoadingBlock } from '../components/ui/States'
 import { useCatalogGame } from '../hooks/useCatalogGames'
+import { usePageMeta } from '../hooks/usePageMeta'
 
 const statusLabel: Record<string, string> = {
   demo: '可試玩',
@@ -11,17 +12,41 @@ const statusLabel: Record<string, string> = {
   'coming-soon': '即將推出',
 }
 
+function GameDetailMeta({
+  titleZh,
+  taglineZh,
+  slug,
+}: {
+  titleZh?: string
+  taglineZh?: string
+  slug?: string
+}) {
+  const title = titleZh ? `${titleZh}｜Vincent Games Studio` : '遊戲詳情｜Vincent Games Studio'
+  const description =
+    taglineZh ??
+    '瀏覽 Vincent Games Studio 遊戲詳情，試玩、下載、Wishlist。'
+  const image = slug ? `og/${slug}.jpg` : 'og-default.jpg'
+  usePageMeta({ title, description, image })
+  return null
+}
+
 export function GameDetailPage() {
   const { slug } = useParams<{ slug: string }>()
   const { game, loading, error } = useCatalogGame(slug)
 
   if (loading) {
-    return <LoadingBlock label="載入遊戲詳情…" />
+    return (
+      <>
+        <GameDetailMeta slug={slug} />
+        <LoadingBlock label="載入遊戲詳情…" />
+      </>
+    )
   }
 
   if (!game) {
     return (
       <div className="px-4 py-20">
+        <GameDetailMeta slug={slug} />
         <EmptyState
           title="找不到這款遊戲"
           description={error ?? '連結可能已失效，或作品尚未公開。'}
@@ -41,6 +66,7 @@ export function GameDetailPage() {
 
   return (
     <article>
+      <GameDetailMeta titleZh={game.titleZh} taglineZh={game.taglineZh} slug={game.slug} />
       <header className="relative overflow-hidden border-b border-white/8">
         <div
           className="absolute inset-0 -z-10 opacity-80"

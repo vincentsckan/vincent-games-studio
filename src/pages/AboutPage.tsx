@@ -1,11 +1,23 @@
 import { CtaButton } from '../components/CtaButton'
 import { PageHeading } from '../components/ui/States'
 import { studio, games } from '../data/games'
+import { usePageMeta } from '../hooks/usePageMeta'
 
 export function AboutPage() {
+  usePageMeta({
+    image: 'og-default.jpg',
+    title: '關於工作室｜Vincent Games Studio',
+    description:
+      '認識 Vincent Games Studio——香港獨立遊戲工作室。氣氛敘事、手感打磨，歡迎嚟玩。',
+  })
+
   return (
-    <div className="mx-auto max-w-3xl px-4 py-14 sm:px-6 sm:py-20">
-      <PageHeading eyebrow="關於" title={studio.nameZh} subtitle={`${studio.nameEn} · ${studio.studioZh} · ${studio.location}`} />
+    <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-20">
+      <PageHeading
+        eyebrow="關於"
+        title={studio.studioZh}
+        subtitle={`${studio.location} · 獨立遊戲工作室`}
+      />
 
       <div
         className="mt-10 aspect-[21/9] overflow-hidden rounded-2xl border border-white/10"
@@ -27,6 +39,7 @@ export function AboutPage() {
 
       <div className="mt-14">
         <h2 className="font-display text-2xl font-bold text-paper">目前作品線</h2>
+        <p className="mt-2 text-sm text-mist">有興趣？去遊戲目錄試玩吓啦。</p>
         <ul className="mt-4 space-y-3">
           {games.map((g) => (
             <li
@@ -47,7 +60,7 @@ export function AboutPage() {
 
       <div className="mt-12 flex flex-wrap gap-3">
         <CtaButton to="/games" variant="primary">
-          瀏覽遊戲
+          瀏覽遊戲 · 試玩
         </CtaButton>
         <CtaButton to="/contact" variant="ghost">
           聯絡／Press Kit

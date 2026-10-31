@@ -102,7 +102,7 @@ export function Navbar() {
                 onClick={() => setOpen(false)}
                 className="flex min-h-12 items-center justify-center rounded-xl bg-gold text-base font-bold text-ink"
               >
-                瀏覽遊戲
+                嚟玩吓
               </Link>
             </li>
           </ul>

@@ -1,6 +1,12 @@
 import { Link } from 'react-router-dom'
+import { usePageMeta } from '../hooks/usePageMeta'
 
 export function NotFoundPage() {
+  usePageMeta({
+    title: '頁面不存在｜Vincent Games Studio',
+    description: '搵唔到呢頁——返去首頁或者遊戲目錄繼續玩。',
+  })
+
   return (
     <div className="mx-auto flex min-h-[60dvh] max-w-lg flex-col items-center justify-center px-4 text-center">
       <p className="text-sm font-semibold tracking-widest text-mist">404</p>

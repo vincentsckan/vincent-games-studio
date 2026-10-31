@@ -1,6 +1,7 @@
 import { CtaButton } from '../components/CtaButton'
 import { PageHeading } from '../components/ui/States'
 import { studio } from '../data/games'
+import { usePageMeta } from '../hooks/usePageMeta'
 
 const pressAssets = [
   { name: '工作室標誌（SVG）', note: '佔位 — 替換為正式標誌' },
@@ -10,12 +11,19 @@ const pressAssets = [
 ]
 
 export function ContactPage() {
+  usePageMeta({
+    image: 'og-default.jpg',
+    title: '聯絡／媒體｜Vincent Games Studio',
+    description:
+      '媒體採訪、實況合作、發行洽談——歡迎聯絡 Vincent Games Studio（香港）。',
+  })
+
   return (
-    <div className="mx-auto max-w-3xl px-4 py-14 sm:px-6 sm:py-20">
+    <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-20">
       <PageHeading
         eyebrow="聯絡"
-        title="聯絡我們"
-        subtitle="媒體採訪、實況合作、發行洽談歡迎來信。"
+        title="有嘢想傾？歡迎嚟信"
+        subtitle="媒體採訪、實況合作、發行洽談——我哋好樂意聽吓你嘅想法。"
       />
 
       <div className="mt-10 grid gap-5 sm:grid-cols-2">
@@ -27,19 +35,20 @@ export function ContactPage() {
           >
             {studio.email}
           </a>
+          <p className="mt-3 text-sm leading-relaxed text-mist">一般會喺幾個工作天內回覆。</p>
         </div>
         <div className="rounded-2xl border border-white/10 bg-panel/50 p-6 sm:p-7">
           <h2 className="font-display text-lg font-bold text-paper">據點</h2>
           <p className="mt-4 text-lg text-fog">{studio.location}</p>
-          <p className="mt-2 text-sm text-mist">
-            {studio.nameZh}／{studio.nameEn}
-          </p>
+          <p className="mt-2 text-sm text-mist">{studio.studioZh}</p>
         </div>
       </div>
 
       <div className="mt-14">
         <h2 className="font-display text-2xl font-bold text-paper">媒體素材</h2>
-        <p className="mt-2 text-sm text-fog">以下為佔位清單。上線前會替換成可下載連結。</p>
+        <p className="mt-2 text-sm leading-relaxed text-fog">
+          以下係準備中嘅清單。需要 Press Kit 可以先電郵我哋，會盡快提供。
+        </p>
         <ul className="mt-6 divide-y divide-white/10 overflow-hidden rounded-2xl border border-white/10">
           {pressAssets.map((a) => (
             <li
@@ -51,12 +60,15 @@ export function ContactPage() {
             </li>
           ))}
         </ul>
-        <div className="mt-8">
+        <div className="mt-8 flex flex-wrap gap-3">
           <CtaButton
             href={`mailto:${studio.email}?subject=Press%20Kit%20Request`}
             variant="secondary"
           >
             索取 Press Kit
+          </CtaButton>
+          <CtaButton to="/games" variant="ghost">
+            先睇遊戲
           </CtaButton>
         </div>
       </div>

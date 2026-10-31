@@ -4,18 +4,24 @@ import { GameCard } from '../components/GameCard'
 import { EmptyState, LoadingGrid, PageHeading } from '../components/ui/States'
 import { useCatalogGames } from '../hooks/useCatalogGames'
 import { filterCatalog } from '../lib/gamesCatalog'
+import { usePageMeta } from '../hooks/usePageMeta'
 
 export function GamesPage() {
+  usePageMeta({
+    title: '遊戲目錄｜Vincent Games Studio',
+    description: '瀏覽 Vincent Games Studio 遊戲目錄。2D／3D 篩選，瀏覽器即開試玩。',
+    image: 'og-default.jpg',
+  })
   const [filter, setFilter] = useState<FilterValue>('all')
   const { games, loading, error } = useCatalogGames()
   const list = useMemo(() => filterCatalog(games, filter), [games, filter])
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20">
+    <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-20">
       <PageHeading
         eyebrow="遊戲目錄"
-        title="遊戲"
-        subtitle="以 2D／3D 篩選。點卡片進入詳情——試玩、下載、Steam Wishlist、itch.io。"
+        title="嚟玩吓"
+        subtitle="以 2D／3D 篩選。揀一款入詳情，或者直接試玩——瀏覽器即開，唔使安裝。"
       />
 
       <div className="mt-8">
@@ -27,32 +33,35 @@ export function GamesPage() {
           <LoadingGrid count={6} />
         ) : error ? (
           <EmptyState
-            title="載入失敗"
-            description={error}
+            title="暫時載唔到目錄"
+            description="暫時連唔上目錄。試吓稍後再嚟，或者返回首頁。"
             actionLabel="返回首頁"
             actionTo="/"
           />
         ) : list.length === 0 ? (
           filter !== 'all' ? (
-            <EmptyState title="此篩選下暫無作品" description="試吓切換「全部」，或稍後再來。">
+            <EmptyState
+              title="呢個篩選暫時未有作品"
+              description="試吓切換「全部」，或者過陣再嚟睇。"
+            >
               <button
                 type="button"
                 onClick={() => setFilter('all')}
                 className="mt-8 inline-flex min-h-12 items-center rounded-full bg-gold px-6 text-base font-bold text-ink hover:bg-gold-dim"
               >
-                顯示全部
+                顯示全部遊戲
               </button>
             </EmptyState>
           ) : (
             <EmptyState
-              title="尚未有公開作品"
-              description="遊戲發佈後會出現在這裡。"
+              title="暫時未有公開作品"
+              description="新遊戲發佈之後會出現喺呢度。歡迎先逛吓首頁。"
               actionLabel="返回首頁"
               actionTo="/"
             />
           )
         ) : (
-          <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {list.map((g) => (
               <li key={g.id}>
                 <GameCard game={g} />

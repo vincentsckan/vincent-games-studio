@@ -9,8 +9,8 @@
   --color-ink-2: #10101a;
   --color-ink-3: #181824;
   --color-panel: #1c1c2a;
-  --color-mist: #8e8ea8;
-  --color-fog: #c8c8d8;
+  --color-mist: #9a9ab2;
+  --color-fog: #d0d0dc;
   --color-paper: #f3efe6;
   --color-gold: #efc04a;
   --color-gold-dim: #c49a2c;
@@ -62,5 +62,9 @@
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  .prose-measure {
+    max-width: 42rem;
   }
 }

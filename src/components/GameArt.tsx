@@ -11,14 +11,38 @@ export function GameArt({
   game,
   className = '',
   variant = 'cover',
+  showCaption = true,
 }: {
   game: Game
   className?: string
-  variant?: 'cover' | 'wide' | 'thumb'
+  variant?: 'cover' | 'wide' | 'thumb' | 'card'
+  /** When false, omit title overlay (cards show title in body). */
+  showCaption?: boolean
 }) {
   const { palette, coverImage } = game
   const aspect =
-    variant === 'wide' ? 'aspect-[16/9]' : variant === 'thumb' ? 'aspect-square' : 'aspect-[4/5] sm:aspect-[3/4]'
+    variant === 'wide'
+      ? 'aspect-[16/9]'
+      : variant === 'thumb'
+        ? 'aspect-square'
+        : variant === 'card'
+          ? 'aspect-[16/10]'
+          : 'aspect-[4/5] sm:aspect-[3/4]'
+
+  const caption = showCaption ? (
+    <div className="absolute bottom-4 left-4 right-4">
+      <p className="font-display text-sm font-bold tracking-wide text-white/90 sm:text-base">
+        {game.titleZh}
+      </p>
+      <p className="font-en text-xs text-white/55">{game.titleEn}</p>
+    </div>
+  ) : null
+
+  const dimBadge = showCaption ? (
+    <span className="absolute top-3 right-3 rounded-full bg-black/40 px-2.5 py-1 font-en text-[10px] font-semibold tracking-wider text-white/80 backdrop-blur">
+      {game.dimension}
+    </span>
+  ) : null
 
   if (coverImage) {
     return (
@@ -26,19 +50,18 @@ export function GameArt({
         <img
           src={assetUrl(coverImage)}
           alt=""
-          className="absolute inset-0 h-full w-full object-cover"
+          className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
           loading="lazy"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/15" />
-        <div className="absolute bottom-4 left-4 right-4">
-          <p className="font-display text-sm font-bold tracking-wide text-white/90 sm:text-base">
-            {game.titleZh}
-          </p>
-          <p className="font-en text-xs text-white/55">{game.titleEn}</p>
-        </div>
-        <span className="absolute top-3 right-3 rounded-full bg-black/40 px-2.5 py-1 font-en text-[10px] font-semibold tracking-wider text-white/80 backdrop-blur">
-          {game.dimension}
-        </span>
+        <div
+          className={`absolute inset-0 ${
+            showCaption
+              ? 'bg-gradient-to-t from-black/55 via-transparent to-black/10'
+              : 'bg-gradient-to-t from-black/25 via-transparent to-black/5'
+          }`}
+        />
+        {caption}
+        {dimBadge}
       </div>
     )
   }
@@ -57,16 +80,9 @@ export function GameArt({
         {palette.pattern === 'crane' && <CranePattern accent={palette.accent} />}
         {palette.pattern === 'void' && <VoidPattern accent={palette.accent} />}
       </svg>
-      <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/20" />
-      <div className="absolute bottom-4 left-4 right-4">
-        <p className="font-display text-sm font-bold tracking-wide text-white/90 sm:text-base">
-          {game.titleZh}
-        </p>
-        <p className="font-en text-xs text-white/55">{game.titleEn}</p>
-      </div>
-      <span className="absolute top-3 right-3 rounded-full bg-black/40 px-2.5 py-1 font-en text-[10px] font-semibold tracking-wider text-white/80 backdrop-blur">
-        {game.dimension}
-      </span>
+      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/15" />
+      {caption}
+      {dimBadge}
     </div>
   )
 }
