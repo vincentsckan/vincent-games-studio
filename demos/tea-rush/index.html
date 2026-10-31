@@ -35,9 +35,9 @@ header .sub{font-size:11px;color:#c8a080;margin-top:2px}
 #bar button{flex:1;min-height:48px;border:0;border-radius:999px;font-family:inherit;font-weight:900;font-size:15px;cursor:pointer}
 #serve{background:linear-gradient(90deg,#ffd36a,#ff9a40);color:#1a1008}
 #clear{background:#fff1;color:#e8d0b0;border:1px solid #fff3!important}
-#overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(10,6,2,.82);z-index:5;padding:24px}
+#overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(10,6,2,.82);z-index:5;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:24px}
 #overlay.hidden{display:none}
-.card{max-width:400px;width:100%;background:linear-gradient(160deg,#3a2818,#1a1008);border:1px solid #ffd36a66;border-radius:20px;padding:28px 22px;text-align:center}
+.card{max-width:400px;width:100%;background:linear-gradient(160deg,#3a2818,#1a1008);border:1px solid #ffd36a66;border-radius:20px;padding:28px 22px;text-align:center;max-height:min(92vh,900px);overflow-y:auto;}
 .card h2{font-family:Syne,sans-serif;font-size:1.8rem;color:#ffd36a}
 .card p{margin-top:12px;color:#e8d0b0;font-size:14px;line-height:1.55}
 .card .scores{margin-top:14px;display:flex;gap:10px;justify-content:center}
@@ -56,9 +56,9 @@ header .sub{font-size:11px;color:#c8a080;margin-top:2px}
 #vg-back-root{position:fixed;left:0;right:0;bottom:0;top:0;z-index:2147483647;pointer-events:none}
 #vg-back-root a.vg-back-btn{pointer-events:auto;position:fixed;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;min-width:48px;padding:12px 18px;border-radius:14px;font:800 16px/1.2 "Noto Sans TC",system-ui,sans-serif;text-decoration:none;letter-spacing:.02em;border:2px solid #ffd36a;background:#1a1008;color:#ffd36a;box-shadow:0 6px 28px rgba(0,0,0,.65),0 0 0 1px rgba(255,255,255,.08);-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 #vg-back-root a.vg-back-btn:active{transform:scale(.97)}
-#vg-back-bl{left:max(12px,env(safe-area-inset-left));bottom:max(14px,env(safe-area-inset-bottom))}
+#vg-back-bl{left:max(12px,env(safe-area-inset-left));bottom:max(calc(30% + 16px),72px)}
 #vg-back-tr{right:max(12px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));left:auto;bottom:auto;font-size:15px!important;min-height:44px;padding:10px 14px;opacity:.95}
-a.vg-catalog{display:inline-flex!important;align-items:center;justify-content:center;margin-top:16px;min-height:48px;padding:12px 22px;border-radius:999px;font:800 16px/1.2 "Noto Sans TC",system-ui,sans-serif;text-decoration:none!important;border:2px solid #ffd36a;background:#1a1008;color:#ffd36a!important;box-shadow:0 6px 20px rgba(0,0,0,.4);opacity:1!important;width:100%;max-width:320px;box-sizing:border-box}
+a.vg-catalog{display:inline-flex!important;align-items:center;justify-content:center;margin-top:14px;min-height:52px;padding:14px 22px;border-radius:999px;font:800 17px/1.2 "Noto Sans TC",system-ui,sans-serif;text-decoration:none!important;border:2px solid #ffd36a;background:#1a1008;color:#ffd36a!important;box-shadow:0 6px 20px rgba(0,0,0,.4);opacity:1!important;width:100%;max-width:320px;box-sizing:border-box}
 a.vg-catalog:hover{filter:brightness(1.12);text-decoration:none!important}
 </style>
 </head>
@@ -92,6 +92,7 @@ a.vg-catalog:hover{filter:brightness(1.12);text-decoration:none!important}
 </div>
 <div id="overlay">
   <div class="card">
+    <a class="vg-catalog" href="/vincent-games-studio/games">← 返回遊戲目錄</a>
     <h2>TEA RUSH</h2>
     <p id="msg">茶餐廳開市！依點單點擊正確飲品與小食放上托盤，再按「上菜」。限時內盡量多完成訂單。</p>
     <div class="scores">
@@ -254,28 +255,114 @@ newOrder();
 <script>
 (function(){
   var HREF='/vincent-games-studio/games', LABEL='← 返回遊戲目錄';
-  function ensure(){
+  var scheduled=null, locking=false;
+  function mkLink(){
+    var a=document.createElement('a');
+    a.className='vg-catalog';
+    a.href=HREF; a.title=LABEL; a.textContent=LABEL;
+    a.setAttribute('data-vg-catalog','1');
+    return a;
+  }
+  function ensureFixed(){
     var root=document.getElementById('vg-back-root');
     if(!root){
       root=document.createElement('div');
       root.id='vg-back-root';
-      root.setAttribute('aria-hidden','false');
-      var mk=function(id,title){
+      root.setAttribute('aria-label','catalog');
+      function mk(id){
         var a=document.createElement('a');
         a.id=id; a.className='vg-back-btn'; a.href=HREF; a.title=LABEL; a.textContent=LABEL;
         return a;
-      };
-      root.appendChild(mk('vg-back-bl','bottom'));
-      root.appendChild(mk('vg-back-tr','top'));
+      }
+      root.appendChild(mk('vg-back-bl'));
+      root.appendChild(mk('vg-back-tr'));
     }
+    root.style.setProperty('position','fixed');
+    root.style.setProperty('inset','0');
+    root.style.setProperty('z-index','2147483647');
+    root.style.setProperty('pointer-events','none');
+    root.style.setProperty('display','block');
+    root.style.setProperty('visibility','visible');
+    root.style.setProperty('opacity','1');
+    var bl=document.getElementById('vg-back-bl');
+    var tr=document.getElementById('vg-back-tr');
+    function styleBtn(el, where){
+      if(!el) return;
+      el.href=HREF; el.title=LABEL; el.textContent=LABEL;
+      el.style.pointerEvents='auto';
+      el.style.position='fixed';
+      el.style.display='inline-flex';
+      el.style.visibility='visible';
+      el.style.opacity='1';
+      el.style.zIndex='2147483647';
+      if(where==='bl'){
+        el.style.left='max(12px, env(safe-area-inset-left))';
+        el.style.right='auto';
+        el.style.top='auto';
+        el.style.bottom='max(calc(30% + 16px), 72px)';
+      } else {
+        el.style.right='max(12px, env(safe-area-inset-right))';
+        el.style.top='max(12px, env(safe-area-inset-top))';
+        el.style.left='auto';
+        el.style.bottom='auto';
+      }
+    }
+    styleBtn(bl,'bl'); styleBtn(tr,'tr');
     if(root.parentNode!==document.body) document.body.appendChild(root);
     else if(document.body.lastElementChild!==root) document.body.appendChild(root);
+  }
+  function ensureCardLinks(){
+    document.querySelectorAll('.card').forEach(function(card){
+      var top = card.querySelector(':scope > a.vg-catalog, :scope > a[data-vg-catalog]');
+      if(!top || card.firstElementChild!==top){
+        var link = top || mkLink();
+        card.insertBefore(link, card.firstChild);
+      }
+      var play=card.querySelector('button.play,button#go,button#startBtn');
+      if(play){
+        var next=play.nextElementSibling;
+        if(!next || !(next.matches && (next.matches('a.vg-catalog') || next.matches('a[data-vg-catalog]')))){
+          play.insertAdjacentElement('afterend', mkLink());
+        }
+      }
+    });
+    var copy=document.querySelector('[data-end-copy-panel], .ec-copy-panel');
+    if(copy && !copy.querySelector('[data-vg-catalog]')){
+      var top=mkLink();
+      top.style.cssText='display:inline-flex!important;align-items:center;justify-content:center;margin:0 0 12px;min-height:52px;padding:14px 22px;border-radius:999px;font:800 17px/1.2 sans-serif;text-decoration:none!important;border:2px solid #E8A33A;background:#0a0a12;color:#E8A33A!important;width:100%;max-width:320px;box-sizing:border-box;pointer-events:auto;position:relative;z-index:20';
+      copy.insertBefore(top, copy.firstChild);
+    }
+    var acts=document.getElementById('ecActs');
+    if(acts && !acts.querySelector('[data-vg-catalog]')){
+      var under=mkLink();
+      under.style.cssText='display:inline-flex!important;align-items:center;justify-content:center;margin:12px 0 0;min-height:52px;padding:14px 22px;border-radius:999px;font:800 17px/1.2 sans-serif;text-decoration:none!important;border:2px solid #E8A33A;background:#0a0a12;color:#E8A33A!important;width:100%;max-width:320px;box-sizing:border-box;pointer-events:auto;position:relative;z-index:20';
+      acts.appendChild(under);
+    }
+    var end=document.getElementById('end');
+    if(end && end.style && end.style.display==='block'){
+      end.style.pointerEvents='auto';
+    }
+  }
+  function ensure(){
+    if(locking) return;
+    locking=true;
+    try{ ensureFixed(); ensureCardLinks(); }catch(e){}
+    locking=false;
+  }
+  function schedule(){
+    if(scheduled) return;
+    scheduled=setTimeout(function(){ scheduled=null; ensure(); }, 80);
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',ensure);
   else ensure();
   setTimeout(ensure,0);
   setTimeout(ensure,500);
   setTimeout(ensure,2000);
+  setInterval(ensure,2000);
+  try{
+    new MutationObserver(schedule).observe(document.documentElement,{childList:true,subtree:true});
+  }catch(e){}
+  document.addEventListener('click',function(){ setTimeout(ensure,60); },true);
 })();
 </script>
 </body>
