@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-HK">
+<head>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/><meta http-equiv="Pragma" content="no-cache"/><meta http-equiv="Expires" content="0"/>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
+<title>後巷夜診 · Alley Clinic — Vincent Games Studio</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:#08040c;color:#ffe8f0;font-family:"Noto Sans TC",system-ui,sans-serif;overflow:hidden;touch-action:none;user-select:none}
+canvas{display:block;width:100%;height:100%}
+#hud{position:fixed;left:0;right:0;top:0;padding:calc(10px + env(safe-area-inset-top)) 16px 0;padding-right:160px;display:flex;justify-content:space-between;pointer-events:none;z-index:2;font-weight:700;text-shadow:0 2px 10px #000}
+#hud .l{color:#ff4da6}#hud .r{color:#40f0ff;text-align:right}
+#hud small{display:block;font-family:Syne,sans-serif;font-size:11px;opacity:.7;letter-spacing:.06em}
+#overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(8,4,12,.88);z-index:3;padding:24px;overflow-y:auto}
+#overlay.hidden{display:none}
+.card{max-width:440px;width:100%;background:linear-gradient(165deg,#1a0820,#0a0612);border:1px solid #ff4da655;border-radius:20px;padding:28px 24px;text-align:center;box-shadow:0 0 48px #ff4da633}
+.card h1{font-family:Syne,sans-serif;font-size:1.85rem;font-weight:800;background:linear-gradient(90deg,#ff4da6,#40f0ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.card .sub{margin-top:6px;color:#ffb0d0;font-size:13px;letter-spacing:.08em}
+.card p{margin-top:14px;color:#c8a8b8;font-size:14px;line-height:1.55;text-align:left}
+button.play{margin-top:20px;min-height:48px;padding:0 28px;border:0;border-radius:999px;background:linear-gradient(90deg,#ff4da6,#7a2cff);color:#fff;font-weight:900;font-size:16px;cursor:pointer;font-family:inherit;box-shadow:0 8px 24px #ff4da655}
+button.play:active{transform:scale(.97)}
+#touch{position:fixed;left:0;right:0;bottom:0;height:32%;display:none;z-index:2}
+#touch.on{display:flex;pointer-events:auto}
+#touch button{flex:1;background:transparent;border:0;opacity:0}
+#cross{position:fixed;left:50%;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border:1px solid #ff4da688;border-radius:50%;pointer-events:none;z-index:2;opacity:0}
+#cross.on{opacity:1}
+#vg-back-root{position:fixed;inset:0;z-index:2147483647;pointer-events:none}
+#vg-back-root a.vg-back-btn{pointer-events:auto;position:fixed;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:12px 18px;border-radius:14px;font:800 16px/1.2 "Noto Sans TC",system-ui,sans-serif;text-decoration:none;letter-spacing:.02em;border:2px solid #ff4da6;background:#08040c;color:#ff4da6;box-shadow:0 6px 28px rgba(0,0,0,.65)}
+#vg-back-tr{right:max(12px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));left:auto;bottom:auto;font-size:15px!important;min-height:44px;padding:10px 14px;opacity:.95}
+</style>
+</head>
+<body>
+<div id="hud"><div class="l"><small>ALLEY CLINIC</small><span id="msg">收集 3 支血清 · 避開「病人」</span></div><div class="r"><small>SERUM</small><span id="serum">0 / 3</span></div></div>
+<div id="cross"></div>
+<div id="overlay"><div class="card">
+  <h1>後巷夜診</h1>
+  <div class="sub">ALLEY CLINIC · 3D HORROR</div>
+  <p>霓虹照亮後巷診所，地磚上的血還沒乾。走廊盡頭傳來拖行聲——那些「病人」已經不再是病人。你要在手術燈下搶走<strong>三支血清</strong>，打開緊急出口逃出這間非法診所。</p>
+  <p style="margin-top:10px;font-size:13px;opacity:.85">電腦：WASD 移動 · 滑鼠環視 · E 拾取<br/>手機：虛擬方向鍵 · 拖曳畫面轉身</p>
+  <button class="play" id="btnStart">推門進去</button>
+</div></div>
+<div id="touch"><button id="tL"></button><button id="tF"></button><button id="tR"></button><button id="tB"></button></div>
+<div id="vg-back-root" aria-label="catalog"><a id="vg-back-tr" class="vg-back-btn" href="/vincent-games-studio/games" title="← 返回遊戲目錄">← 返回遊戲目錄</a></div>
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js"}}</script>
+<script type="module">
+import * as THREE from 'three';
+
+const overlay=document.getElementById('overlay');
+const btn=document.getElementById('btnStart');
+const msgEl=document.getElementById('msg');
+const serumEl=document.getElementById('serum');
+const cross=document.getElementById('cross');
+const touch=document.getElementById('touch');
+const isTouch=('ontouchstart' in window)||navigator.maxTouchPoints>0;
+
+let playing=false, serum=0, won=false, dead=false;
+const keys={}; const touchMove={f:0,b:0,l:0,r:0};
+let yaw=Math.PI, pitch=0;
+
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x08040c);
+scene.fog=new THREE.FogExp2(0x120818,0.06);
+const camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,0.08,70);
+const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(innerWidth,innerHeight);
+document.body.appendChild(renderer.domElement);
+
+scene.add(new THREE.HemisphereLight(0xff88aa,0x100818,0.4));
+scene.add(new THREE.AmbientLight(0x2a1020,0.3));
+
+const mats={
+  wall:new THREE.MeshStandardMaterial({color:0x1a1018,roughness:0.9}),
+  tile:new THREE.MeshStandardMaterial({color:0x2a2228,roughness:0.55,metalness:0.1}),
+  blood:new THREE.MeshStandardMaterial({color:0x6a0818,roughness:0.88}),
+  neonP:new THREE.MeshStandardMaterial({color:0xff2a8a,emissive:0xff1470,emissiveIntensity:1.4}),
+  neonC:new THREE.MeshStandardMaterial({color:0x20e8ff,emissive:0x14c8ff,emissiveIntensity:1.3}),
+  metal:new THREE.MeshStandardMaterial({color:0x555560,roughness:0.35,metalness:0.9}),
+  curtain:new THREE.MeshStandardMaterial({color:0x4a1028,roughness:0.85,transparent:true,opacity:0.85}),
+  serum:new THREE.MeshStandardMaterial({color:0x66ffcc,emissive:0x22ffaa,emissiveIntensity:1.5,transparent:true,opacity:0.9}),
+  patient:new THREE.MeshStandardMaterial({color:0xc8b8a8,roughness:0.8}),
+  gown:new THREE.MeshStandardMaterial({color:0xe8e0d0,roughness:0.75}),
+  stain:new THREE.MeshStandardMaterial({color:0x8a1020,roughness:0.9}),
+  exit:new THREE.MeshStandardMaterial({color:0x40f0ff,emissive:0x2088aa,emissiveIntensity:0.5}),
+};
+
+const colliders=[];
+function box(w,h,d,x,y,z,mat,solid=true){
+  const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
+  m.position.set(x,y,z); scene.add(m);
+  if(solid) colliders.push({min:new THREE.Vector3(x-w/2,y-h/2,z-d/2),max:new THREE.Vector3(x+w/2,y+h/2,z+d/2)});
+  return m;
+}
+function light(x,y,z,c,i=1.3,d=11){
+  const L=new THREE.PointLight(c,i,d); L.position.set(x,y,z); scene.add(L); return L;
+}
+
+box(44,0.15,44,0,-0.05,0,mats.tile,false);
+box(44,0.15,44,0,3.1,0,mats.wall,false);
+
+const walls=[
+  [44,3.1,0.35,0,1.5,-22],[44,3.1,0.35,0,1.5,22],[0.35,3.1,44,-22,1.5,0],[0.35,3.1,44,22,1.5,0],
+  [0.35,3.1,16,-6,1.5,-4],[0.35,3.1,14,6,1.5,6],[0.35,3.1,12,0,1.5,-12],
+  [14,3.1,0.35,-6,1.5,6],[12,3.1,0.35,8,1.5,-6],[10,3.1,0.35,-10,1.5,14],
+  [0.35,3.1,10,-14,1.5,4],[0.35,3.1,10,14,1.5,-10],[8,3.1,0.35,12,1.5,10],
+  [10,3.1,0.35,-12,1.5,-14],[0.35,3.1,8,4,1.5,16],
+];
+walls.forEach(([w,h,d,x,y,z])=>box(w,h,d,x,y,z,mats.wall));
+
+// blood trails + neon strips
+for(let i=0;i<28;i++){
+  const x=(Math.random()-0.5)*36, z=(Math.random()-0.5)*36;
+  box(0.4+Math.random()*1.2,0.02,0.25+Math.random()*0.5,x,0.02,z,mats.blood,false);
+}
+for(let i=0;i<8;i++){
+  const z=-18+i*5;
+  box(0.08,0.12,2.5,-5.7,2.6,z,mats.neonP,false);
+  box(0.08,0.12,2.5,5.7,2.6,z+1,mats.neonC,false);
+  light(-5.5,2.5,z,0xff2a8a,1.1,9);
+  light(5.5,2.5,z+1,0x20e8ff,1.0,9);
+}
+
+// gurneys / tools
+[[-10,10],[8,-8],[-4,14],[14,4],[-16,-6]].forEach(([x,z],i)=>{
+  box(1.8,0.12,0.7,x,0.85,z,mats.metal,false);
+  box(0.08,0.85,0.08,x-0.8,0.4,z-0.25,mats.metal,false);
+  box(0.08,0.85,0.08,x+0.8,0.4,z+0.25,mats.metal,false);
+  box(0.5,0.04,0.12,x+0.3,0.95,z,mats.stain,false);
+  if(i%2===0) box(0.9,2.2,0.05,x+1.2,1.2,z,mats.curtain,false);
+});
+
+light(0,2.7,0,0xff6688,0.8,14);
+const surg=light(-10,2.8,10,0xffffff,1.8,8);
+
+// serums
+const serumMeshes=[];
+const serumSpots=[[-16,0.5,16],[16,0.5,-16],[0,0.5,18]];
+serumSpots.forEach(([x,y,z])=>{
+  const m=box(0.12,0.35,0.12,x,y,z,mats.serum,false);
+  const L=new THREE.PointLight(0x44ffcc,1.2,5); L.position.set(x,y+0.4,z); scene.add(L);
+  serumMeshes.push({mesh:m,light:L,taken:false,pos:new THREE.Vector3(x,y,z)});
+});
+
+const exitDoor=box(1.5,2.3,0.2,18,1.15,18,mats.exit,true);
+const exitPos=new THREE.Vector3(18,0,18);
+exitDoor.visible=false; // locked until 3 serums
+
+// patients (2)
+function makePatient(x,z){
+  const g=new THREE.Group();
+  const torso=new THREE.Mesh(new THREE.BoxGeometry(0.55,1.1,0.35),mats.gown); torso.position.y=0.85; g.add(torso);
+  const head=new THREE.Mesh(new THREE.BoxGeometry(0.32,0.32,0.32),mats.patient); head.position.y=1.55; g.add(head);
+  const stain=new THREE.Mesh(new THREE.BoxGeometry(0.4,0.5,0.08),mats.stain); stain.position.set(0,0.7,0.2); g.add(stain);
+  g.position.set(x,0,z); scene.add(g);
+  return {g, target:new THREE.Vector3(x,0,z), alert:0};
+}
+const patients=[makePatient(10,10), makePatient(-8,-10)];
+
+const player=new THREE.Vector3(0,1.55,-18);
+camera.position.copy(player);
+
+function blocked(nx,nz){
+  const r=0.28;
+  for(const c of colliders){
+    if(nx+r>c.min.x && nx-r<c.max.x && nz+r>c.min.z && nz-r<c.max.z && c.max.y>0.4) return true;
+  }
+  return false;
+}
+function dist2(a,b){const dx=a.x-b.x,dz=a.z-b.z;return dx*dx+dz*dz;}
+
+function tryInteract(){
+  for(const s of serumMeshes){
+    if(!s.taken && dist2(player,s.pos)<2.2){
+      s.taken=true; scene.remove(s.mesh); scene.remove(s.light);
+      serum++; serumEl.textContent=serum+' / 3';
+      if(serum>=3){
+        exitDoor.visible=true;
+        const idx=colliders.findIndex(c=>Math.abs((c.min.x+c.max.x)/2-18)<0.2 && Math.abs((c.min.z+c.max.z)/2-18)<0.2);
+        // keep solid until approach win — actually open by removing
+        if(idx>=0) colliders.splice(idx,1);
+        msgEl.textContent='血清齊了！衝向青色緊急出口';
+      } else msgEl.textContent='還差 '+(3-serum)+' 支血清';
+    }
+  }
+  if(serum>=3 && dist2(player,exitPos)<3.2){
+    won=true; playing=false; showEnd(true);
+  }
+}
+
+function showEnd(ok){
+  overlay.classList.remove('hidden');
+  cross.classList.remove('on');
+  touch.classList.remove('on');
+  document.exitPointerLock?.();
+  overlay.querySelector('.card').innerHTML=ok
+    ?`<h1>逃出診所</h1><div class="sub">SERUM SECURED</div><p>你衝出後巷，霓虹還在背後閃。血清在口袋裡發冷光——至少今晚，你不是下一個「病人」。</p><button class="play" id="btnAgain">再試一次</button>`
+    :`<h1>被拖走了</h1><div class="sub">ADMITTED</div><p>病床輪子吱呀作響。手術燈降下來的時候，你只能看見天花板上的血點。</p><button class="play" id="btnAgain">再試一次</button>`;
+  document.getElementById('btnAgain').onclick=()=>location.reload();
+}
+
+function start(){
+  overlay.classList.add('hidden'); playing=true;
+  cross.classList.add('on');
+  if(isTouch) touch.classList.add('on');
+  else renderer.domElement.requestPointerLock?.();
+}
+btn.onclick=start;
+
+addEventListener('keydown',e=>{keys[e.code]=true; if(e.code==='KeyE') tryInteract();});
+addEventListener('keyup',e=>{keys[e.code]=false;});
+addEventListener('mousemove',e=>{
+  if(!playing||document.pointerLockElement!==renderer.domElement) return;
+  yaw-=e.movementX*0.0022; pitch-=e.movementY*0.0022;
+  pitch=Math.max(-1.2,Math.min(1.2,pitch));
+});
+renderer.domElement.addEventListener('click',()=>{if(playing&&!isTouch) renderer.domElement.requestPointerLock?.();});
+
+let tx=-1,ty=-1;
+renderer.domElement.addEventListener('touchstart',e=>{
+  if(!playing) return;
+  const t=e.changedTouches[0];
+  if(t.clientY<innerHeight*0.62){tx=t.clientX;ty=t.clientY;}
+},{passive:true});
+renderer.domElement.addEventListener('touchmove',e=>{
+  if(tx<0) return;
+  const t=e.changedTouches[0];
+  yaw-=(t.clientX-tx)*0.004; pitch-=(t.clientY-ty)*0.004;
+  pitch=Math.max(-1.2,Math.min(1.2,pitch)); tx=t.clientX;ty=t.clientY;
+},{passive:true});
+renderer.domElement.addEventListener('touchend',()=>{tx=-1;},{passive:true});
+[['tF','f'],['tB','b'],['tL','l'],['tR','r']].forEach(([id,k])=>{
+  const el=document.getElementById(id);
+  const on=()=>touchMove[k]=1, off=()=>touchMove[k]=0;
+  el.addEventListener('touchstart',e=>{e.preventDefault();on();},{passive:false});
+  el.addEventListener('touchend',off); el.addEventListener('touchcancel',off);
+});
+
+let last=performance.now();
+function tick(now){
+  requestAnimationFrame(tick);
+  const dt=Math.min(0.05,(now-last)/1000); last=now;
+  surg.intensity=1.4+Math.sin(now*0.008)*0.5;
+
+  if(playing && !dead && !won){
+    const forward=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw));
+    const right=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw));
+    let mx=0,mz=0;
+    if(keys['KeyW']||keys['ArrowUp']||touchMove.f){mx+=forward.x;mz+=forward.z;}
+    if(keys['KeyS']||keys['ArrowDown']||touchMove.b){mx-=forward.x;mz-=forward.z;}
+    if(keys['KeyA']||keys['ArrowLeft']||touchMove.l){mx-=right.x;mz-=right.z;}
+    if(keys['KeyD']||keys['ArrowRight']||touchMove.r){mx+=right.x;mz+=right.z;}
+    const len=Math.hypot(mx,mz)||1; mx/=len; mz/=len;
+    const speed=3.5*dt;
+    const nx=player.x+mx*speed, nz=player.z+mz*speed;
+    if(!blocked(nx,player.z)) player.x=nx;
+    if(!blocked(player.x,nz)) player.z=nz;
+    player.x=THREE.MathUtils.clamp(player.x,-20.5,20.5);
+    player.z=THREE.MathUtils.clamp(player.z,-20.5,20.5);
+
+    camera.position.set(player.x,1.55,player.z);
+    camera.rotation.order='YXZ';
+    camera.rotation.y=yaw; camera.rotation.x=pitch;
+
+    // auto pickup near
+    for(const s of serumMeshes){
+      if(!s.taken && dist2(player,s.pos)<1.6) tryInteract();
+    }
+    if(serum>=3 && dist2(player,exitPos)<2.8) tryInteract();
+
+    patients.forEach((p,i)=>{
+      const d=Math.sqrt(dist2(player,p.g.position));
+      if(d<12){
+        const dir=new THREE.Vector3(player.x-p.g.position.x,0,player.z-p.g.position.z).normalize();
+        const sp=(d<7?3.8:2.6)*dt;
+        const bx=p.g.position.x+dir.x*sp, bz=p.g.position.z+dir.z*sp;
+        if(!blocked(bx,p.g.position.z)) p.g.position.x=bx;
+        if(!blocked(p.g.position.x,bz)) p.g.position.z=bz;
+        p.g.lookAt(player.x,1,player.z);
+        if(d<1.1){dead=true;playing=false;showEnd(false);}
+      } else {
+        if(p.g.position.distanceTo(p.target)<1) p.target.set((Math.random()-0.5)*28,0,(Math.random()-0.5)*28);
+        const dir=p.target.clone().sub(p.g.position).setY(0).normalize();
+        p.g.position.x+=dir.x*1.8*dt; p.g.position.z+=dir.z*1.8*dt;
+      }
+      // limp bob
+      p.g.position.y=Math.abs(Math.sin(now*0.006+i))*0.04;
+    });
+
+    const nearSerum=serumMeshes.find(s=>!s.taken && dist2(player,s.pos)<3);
+    if(nearSerum) msgEl.textContent='靠近／按 E 拾取血清';
+    else if(serum>=3) msgEl.textContent='衝向青色緊急出口';
+    else msgEl.textContent='收集 3 支血清 · 避開「病人」';
+  }
+  // float serums
+  serumMeshes.forEach((s,i)=>{ if(!s.taken) s.mesh.position.y=0.45+Math.sin(now*0.004+i)*0.08; });
+  renderer.render(scene,camera);
+}
+requestAnimationFrame(tick);
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+
+(function(){
+  var HREF='/vincent-games-studio/games', LABEL='← 返回遊戲目錄';
+  var scheduled=null, locking=false;
+  function ensureFixed(){
+    var root=document.getElementById('vg-back-root');
+    if(!root){ root=document.createElement('div'); root.id='vg-back-root'; root.setAttribute('aria-label','catalog'); document.body.appendChild(root); }
+    var bl=document.getElementById('vg-back-bl'); if(bl&&bl.parentNode) bl.parentNode.removeChild(bl);
+    document.querySelectorAll('a.vg-catalog, a[data-vg-catalog]').forEach(function(a){ if(a.parentNode) a.parentNode.removeChild(a); });
+    var tr=document.getElementById('vg-back-tr');
+    if(!tr){ tr=document.createElement('a'); tr.id='vg-back-tr'; tr.className='vg-back-btn'; root.appendChild(tr); }
+    else if(tr.parentNode!==root) root.appendChild(tr);
+    root.style.cssText='position:fixed;inset:0;z-index:2147483647;pointer-events:none;display:block;visibility:visible;opacity:1';
+    tr.href=HREF; tr.title=LABEL; tr.textContent=LABEL; tr.className='vg-back-btn';
+    tr.style.cssText='pointer-events:auto;position:fixed;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:12px 18px;border-radius:14px;font:800 16px/1.2 "Noto Sans TC",system-ui,sans-serif;text-decoration:none;letter-spacing:.02em;visibility:visible;opacity:1;z-index:2147483647;right:max(12px, env(safe-area-inset-right));top:max(12px, env(safe-area-inset-top));left:auto;bottom:auto;border:2px solid #ff4da6;background:#08040c;color:#ff4da6;box-shadow:0 6px 28px rgba(0,0,0,.65)';
+    if(root.parentNode!==document.body) document.body.appendChild(root);
+    else if(document.body.lastElementChild!==root) document.body.appendChild(root);
+  }
+  function ensure(){ if(locking) return; locking=true; try{ensureFixed();}catch(e){} locking=false; }
+  function schedule(){ if(scheduled) return; scheduled=setTimeout(function(){scheduled=null;ensure();},80); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',ensure); else ensure();
+  setTimeout(ensure,0); setTimeout(ensure,500); setInterval(ensure,3000);
+  try{ new MutationObserver(schedule).observe(document.documentElement,{childList:true,subtree:true}); }catch(e){}
+})();
+</script>
+</body>
+</html>

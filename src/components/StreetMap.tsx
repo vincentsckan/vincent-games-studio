@@ -34,6 +34,18 @@ const ZONES: ZoneDef[] = [
     match: (g) => g.id === 'tea-rush' || g.slug === 'tea-rush',
     fallbackSlug: 'tea-rush',
   },
+  {
+    zoneTitle: '凍肉冷庫',
+    blurb: '鉤上滴血，找鑰匙逃命。',
+    match: (g) => g.id === 'cold-hold' || g.slug === 'cold-hold',
+    fallbackSlug: 'cold-hold',
+  },
+  {
+    zoneTitle: '後巷夜診',
+    blurb: '霓虹診所，血清換命。',
+    match: (g) => g.id === 'alley-clinic' || g.slug === 'alley-clinic',
+    fallbackSlug: 'alley-clinic',
+  },
 ]
 
 function assetUrl(path: string) {

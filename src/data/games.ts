@@ -114,6 +114,108 @@ export const games: Game[] = [
     },
   },
   {
+    id: 'cold-hold',
+    slug: 'cold-hold',
+    titleZh: '凍肉倉',
+    titleEn: 'Cold Hold',
+    taglineZh: '冷氣嘶嘶，鉤上還在滴血。',
+    taglineEn: 'Freezer hiss. Hooks still drip.',
+    dimension: '3D',
+    status: 'demo',
+    year: 2026,
+    genres: ['恐怖', '生存', '第一人稱'],
+    hookZh:
+      '工業凍庫停電後只剩緊急燈。掛鉤上的肉還溫熱，走廊盡頭傳來剁骨聲。你要在屠夫巡視前找回冷藏室鑰匙，推開出口逃進夜雨。',
+    hookEn:
+      'After the blackout, only emergency lights remain. Meat on the hooks is still warm; a cleaver echoes down the corridor. Find the cold-room key before the butcher finds you.',
+    gameplayZh:
+      '第一人稱探索：WASD／觸控移動，滑鼠環視。拾取鑰匙、避開屠夫、逃出綠色出口。腳步會提高他的警覺。',
+    gameplayEn:
+      'First-person: move, look, grab the key, avoid the butcher, reach the green exit. Footsteps raise his alert.',
+    features: [
+      {
+        titleZh: '凍庫迷宮',
+        titleEn: 'Freezer maze',
+        bodyZh: '冰霧走廊、血漬與掛肉，營造壓抑工業恐怖。',
+        bodyEn: 'Icy corridors, blood trails, and hanging meat—industrial dread.',
+      },
+      {
+        titleZh: '屠夫追蹤',
+        titleEn: 'Butcher hunt',
+        bodyZh: '他會巡邏；聽到你就加速追擊。',
+        bodyEn: 'He patrols—then sprints when he hears you.',
+      },
+      {
+        titleZh: '即開即玩',
+        titleEn: 'Instant play',
+        bodyZh: '瀏覽器 3D 試玩，無需安裝。',
+        bodyEn: 'Browser 3D demo—no install.',
+      },
+    ],
+    coverImage: 'covers/cold-hold.jpg',
+    palette: {
+      from: '#020608',
+      via: '#1a2e38',
+      to: '#ff4d5e',
+      accent: '#7ec8ff',
+      pattern: 'void',
+    },
+    links: {
+      play: '/vincent-games-studio/demos/cold-hold/',
+    },
+  },
+  {
+    id: 'alley-clinic',
+    slug: 'alley-clinic',
+    titleZh: '後巷夜診',
+    titleEn: 'Alley Clinic',
+    taglineZh: '霓虹診所，血還沒乾。',
+    taglineEn: 'Neon clinic. Blood still wet.',
+    dimension: '3D',
+    status: 'demo',
+    year: 2026,
+    genres: ['恐怖', '潛行', '第一人稱'],
+    hookZh:
+      '後巷霓虹照亮非法診所。地磚上的血沒乾，那些「病人」已經起來走路。你要搶走三支血清，打開緊急出口——別被拖上病床。',
+    hookEn:
+      'Neon lights an illegal back-alley clinic. Blood on the tiles hasn’t dried; the “patients” are walking again. Steal three serums and hit the emergency exit—before they admit you.',
+    gameplayZh:
+      '第一人稱：在霓虹走廊收集三支發光血清，避開遊蕩病人，衝向青色出口。支援鍵盤與觸控。',
+    gameplayEn:
+      'First-person: collect three glowing serums in neon halls, avoid wandering patients, rush the cyan exit. Keyboard and touch.',
+    features: [
+      {
+        titleZh: '霓虹血巷',
+        titleEn: 'Neon blood alley',
+        bodyZh: '粉紅與青色燈管、手術燈與血漬，後巷醫療恐怖。',
+        bodyEn: 'Pink-cyan tubes, surgical lamps, and stains—back-alley medical horror.',
+      },
+      {
+        titleZh: '血清逃生',
+        titleEn: 'Serum escape',
+        bodyZh: '集齊三支血清才能開緊急門。',
+        bodyEn: 'Three serums unlock the emergency door.',
+      },
+      {
+        titleZh: '即開即玩',
+        titleEn: 'Instant play',
+        bodyZh: '瀏覽器 3D 試玩，無需安裝。',
+        bodyEn: 'Browser 3D demo—no install.',
+      },
+    ],
+    coverImage: 'covers/alley-clinic.jpg',
+    palette: {
+      from: '#08040c',
+      via: '#4a1028',
+      to: '#ff4da6',
+      accent: '#40f0ff',
+      pattern: 'fault',
+    },
+    links: {
+      play: '/vincent-games-studio/demos/alley-clinic/',
+    },
+  },
+  {
     id: 'neon-chase',
     slug: 'neon-chase',
     titleZh: '霓虹追蹤',
