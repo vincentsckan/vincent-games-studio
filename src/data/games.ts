@@ -63,57 +63,6 @@ The studio's aim is simple: make players stop—and hit "play again."`,
 
 export const games: Game[] = [
   {
-    id: 'neon-harbor',
-    slug: 'neon-harbor',
-    titleZh: '霓虹港戰',
-    titleEn: 'Neon Harbor Clash',
-    taglineZh: 'Frag Channel 開播——快一步，今晚先有糧。',
-    taglineEn: 'Frag Channel is live—half a step faster, tonight you eat.',
-    dimension: '3D',
-    status: 'demo',
-    year: 2026,
-    genres: ['射擊', '競技'],
-    hookZh:
-      'Frag Channel 開播——快一步，今晚先有糧。你加入 Channel 7；二十張完全唔同場景＋戰役廿關、自由混戰、佔領據點；拾取補給同額外槍械，仲有 Boss 收視戰。',
-    hookEn:
-      'Frag Channel is live—half a step faster and tonight you eat. Channel 7: twenty unique scenes, a 20-stage campaign, FFA, Hold the Point, pickups, extra firearms and boss fights.',
-    gameplayZh:
-      '瀏覽器第一人稱射擊試玩：四種角色（閃／隼／石／影）、二十張獨立地圖、三種模式（FFA／Channel 7 戰役／佔領據點）、資源拾取、額外槍械、多場 Boss。約 2.5 分鐘或先到 20 殺；戰役有擊殺／存活／佔領目標。',
-    gameplayEn:
-      'Browser FPS demo: four classes (Spark / Falcon / Rock / Shade), twenty unique maps, three modes (FFA / Channel 7 campaign / Hold), pickups, extra firearms, bosses. ~2.5 min or first to 20 kills; campaign uses kill / survive / hold objectives.',
-    features: [
-      {
-        titleZh: '港式霓虹競技場',
-        titleEn: 'Neon harbour arenas',
-        bodyZh: '二十張完全獨立場景——招牌街、小巴巷、唐樓轉角、電車、夜市、霓虹屋頂、啟德、公屋、天橋、水塔、貨櫃、廟市、茶餐廳、卸貨、塔吊、當舖街機、招牌峽谷、雙軌電車、Channel 7 片場、維港終章。',
-        bodyEn: 'Twenty fully distinct arenas from sign street to harbour finale—magenta/cyan/amber low-poly Hong Kong nights.',
-      },
-      {
-        titleZh: '四種港戰角色',
-        titleEn: 'Four harbour fighters',
-        bodyZh: '閃（AR）、隼（狙擊）、石（散彈重裝）、影（SMG 機動）。',
-        bodyEn: 'Spark AR, Falcon sniper, Rock shotgun-tank, Shade SMG mobility.',
-      },
-      {
-        titleZh: '滑跳手感',
-        titleEn: 'Slide-hop lite',
-        bodyZh: 'WASD、跳躍、蹲滑加速，即開即玩無需安裝。',
-        bodyEn: 'WASD, jump, crouch-slide boost—instant browser play.',
-      },
-    ],
-    coverImage: 'covers/neon-harbor.jpg',
-    palette: {
-      from: '#050818',
-      via: '#1a0830',
-      to: '#ff4dc8',
-      accent: '#40f0ff',
-      pattern: 'harbor',
-    },
-    links: {
-      play: '/vincent-games-studio/demos/neon-harbor/',
-    },
-  },
-  {
     id: 'midnight-estate',
     slug: 'midnight-estate',
     titleZh: '午夜屋邨',

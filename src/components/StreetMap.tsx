@@ -17,12 +17,6 @@ const ZONES: ZoneDef[] = [
     fallbackSlug: 'midnight-estate',
   },
   {
-    zoneTitle: '霓虹港灣',
-    blurb: 'Frag Channel 開播——快一步先有糧。',
-    match: (g) => g.id === 'neon-harbor' || g.slug === 'neon-harbor',
-    fallbackSlug: 'neon-harbor',
-  },
-  {
     zoneTitle: '天台夜色',
     blurb: '屋頂之間跳，捉住夜晚。',
     match: (g) => g.id === 'rooftop-cat' || g.slug === 'rooftop-cat',

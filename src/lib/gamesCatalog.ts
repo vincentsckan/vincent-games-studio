@@ -13,8 +13,8 @@ import {
 } from './supabase'
 import { resolvePlayHref } from './demoPlay'
 
-/** Vincent abandoned these demos 2026-10-31 — never show in public catalog. */
-const ABANDONED_SLUGS = new Set(['cold-hold', 'alley-clinic'])
+/** Vincent abandoned these demos — never show in public catalog (horror 2026-10-31; neon-harbor 2026-11-01). */
+const ABANDONED_SLUGS = new Set(['cold-hold', 'alley-clinic', 'neon-harbor'])
 
 function isPublicGame(g: Game): boolean {
   return !ABANDONED_SLUGS.has(g.slug) && !ABANDONED_SLUGS.has(g.id)
