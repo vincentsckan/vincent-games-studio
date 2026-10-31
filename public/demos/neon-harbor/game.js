@@ -111,8 +111,14 @@ const EXTRA_WEAPONS = [
   { id: 'revolver', nameZh: '巷口手槍', nameEn: 'Alley Pistol', damage: 55, firerate: 2.2, spread: 0.018, mag: 6, reserve: 30, reload: 1.8, pellets: 1, speedMul: 1.05 },
   { id: 'carbine', nameZh: '旺角衝鋒', nameEn: 'Mong Kok SMG', damage: 32, firerate: 7.5, spread: 0.02, mag: 25, reserve: 75, reload: 1.55, pellets: 1, speedMul: 1.02 },
   { id: 'rocket', nameZh: '貨櫃火箭', nameEn: 'Cargo Rocket', damage: 120, firerate: 0.75, spread: 0.04, mag: 1, reserve: 8, reload: 2.4, pellets: 1, speedMul: 0.88, splash: 3.2 },
-  { id: 'knife', nameZh: '霓虹刀', nameEn: 'Neon Knife', damage: 90, firerate: 2.8, spread: 0, mag: 1, reserve: 99, reload: 0.05, pellets: 1, speedMul: 1.18, melee: true, range: 2.85 },
+  // 身肉搏 — Translation-locked melee (V). Fist always; knee unarmed alt; knife stronger/longer.
+  { id: 'fist', nameZh: '拳頭', nameEn: 'Fist', damage: 28, firerate: 1 / 0.45, spread: 0, mag: 1, reserve: 99, reload: 0.05, pellets: 1, speedMul: 1.12, melee: true, range: 2.2, cone: 0.85, icon: 'refs/ui/ui-fist.jpg' },
+  { id: 'knee', nameZh: '膝撞', nameEn: 'Knee', damage: 32, firerate: 1 / 0.5, spread: 0, mag: 1, reserve: 99, reload: 0.05, pellets: 1, speedMul: 1.1, melee: true, range: 2.15, cone: 0.75, icon: 'refs/ui/ui-knee.jpg' },
+  { id: 'knife', nameZh: '霓虹刀', nameEn: 'Neon Knife', damage: 48, firerate: 1 / 0.55, spread: 0, mag: 1, reserve: 99, reload: 0.05, pellets: 1, speedMul: 1.18, melee: true, range: 2.8, cone: 0.7, icon: 'refs/ui/ui-neon-knife.jpg' },
 ];
+
+const MELEE_CYCLE = ['fist', 'knee', 'knife'];
+const MELEE_HIT_FX = 'refs/ui/fx-melee-hitspark.jpg';
 
 // 槍階亂鬥 ladder
 const GUN_LADDER = [
@@ -123,7 +129,7 @@ const GUN_LADDER = [
   { id: 'lmg', nameZh: '鐵閘機槍', damage: 18, firerate: 11, spread: 0.045, mag: 60, reserve: 120, reload: 2.8, pellets: 1, speedMul: 0.85 },
   { id: 'sniper', nameZh: '天台狙擊', damage: 95, firerate: 1.15, spread: 0.004, mag: 5, reserve: 25, reload: 2.1, pellets: 1, speedMul: 0.9 },
   { id: 'rocket', nameZh: '貨櫃火箭', damage: 120, firerate: 0.75, spread: 0.04, mag: 1, reserve: 8, reload: 2.4, pellets: 1, speedMul: 0.88, splash: 3.2 },
-  { id: 'knife', nameZh: '霓虹刀', damage: 90, firerate: 2.8, spread: 0, mag: 1, reserve: 99, reload: 0.05, pellets: 1, speedMul: 1.18, melee: true, range: 2.85 },
+  { id: 'knife', nameZh: '霓虹刀', damage: 48, firerate: 1 / 0.55, spread: 0, mag: 1, reserve: 99, reload: 0.05, pellets: 1, speedMul: 1.18, melee: true, range: 2.8, cone: 0.7, icon: 'refs/ui/ui-neon-knife.jpg' },
 ];
 
 const BOSSES = [
@@ -215,6 +221,7 @@ const state = {
   campaignLevel: 0, // 1..20 when campaign
   objective: null, // { type, target, progress, holdScore }
   weaponOverride: null, // EXTRA_WEAPONS / ladder id or null (= class gun)
+  meleeSwing: 0, // alternates fist/knee flavour when needed
   holdProgress: 0,
   team: 0, // player team for TDM
   teamKills: 0,
@@ -2450,7 +2457,10 @@ function spawnPickups(root) {
       x, z,
       mesh,
       alive: true,
-      weaponId: EXTRA_WEAPONS[i % EXTRA_WEAPONS.length].id,
+      weaponId: (() => {
+        const pool = EXTRA_WEAPONS.filter((w) => !w.melee || w.id === 'knife');
+        return pool[i % pool.length].id;
+      })(),
       respawnT: 0,
     });
   });
@@ -2608,7 +2618,18 @@ function syncGunHud() {
   const el = document.getElementById('gunHud');
   if (!el) return;
   const gstat = activeGunStats();
-  el.textContent = gstat && gstat.nameZh ? gstat.nameZh : '';
+  const icon = document.getElementById('meleeIcon');
+  if (gstat && gstat.melee) {
+    el.textContent = `身肉搏 · ${gstat.nameZh}`;
+    if (icon) {
+      icon.src = gstat.icon || 'refs/ui/ui-fist.jpg';
+      icon.alt = gstat.nameZh;
+      icon.style.display = 'inline-block';
+    }
+  } else {
+    el.textContent = gstat && gstat.nameZh ? gstat.nameZh : '';
+    if (icon) icon.style.display = 'none';
+  }
 }
 
 function syncHudObjective() {
@@ -2719,7 +2740,11 @@ function damageBot(bot, dmg, fromPlayer) {
       if (state.gameMode === 'tdm' && bot.team !== state.team) {
         state.teamKills += 1;
       }
-      feedKill(`你 擊殺了 ${bot.name}`);
+      {
+        const g = activeGunStats();
+        if (g && g.melee) feedKill(`肉搏擊倒 · ${bot.name}`);
+        else feedKill(`你 擊殺了 ${bot.name}`);
+      }
       if (bot.isBoss && bot.bossHook) feedKill(`${bot.name}——${bot.bossHook}`);
       document.getElementById('kills').textContent = String(state.kills);
       if (state.gameMode === 'gungame') {
@@ -2817,7 +2842,50 @@ function tryShoot(dt) {
   }
 
   const eye = { x: state.x, y: state.y, z: state.z };
-  const maxRange = cls.melee ? (cls.range || 2.85) : 120;
+  const maxRange = cls.melee ? (cls.range || 2.2) : 120;
+
+  // 身肉搏 — wide forward cone (not single hairline ray)
+  if (cls.melee) {
+    const { dx, dy, dz } = dirFromAngles(yaw, pitch);
+    const cone = cls.cone || 0.8;
+    let hitAny = false;
+    for (const b of bots) {
+      if (!b.alive) continue;
+      if (state.gameMode === 'tdm' && b.team === state.team) continue;
+      const bx = b.x - eye.x, by = (b.y - 0.35) - eye.y, bz = b.z - eye.z;
+      const dist = Math.hypot(bx, by, bz);
+      if (dist > maxRange || dist < 0.15) continue;
+      const inv = 1 / dist;
+      const dot = bx * inv * dx + by * inv * dy + bz * inv * dz;
+      if (dot < Math.cos(cone)) continue;
+      // soft wall block along segment
+      let blocked = false;
+      const steps = Math.max(3, Math.ceil(dist / 0.4));
+      for (let i = 1; i < steps; i++) {
+        const t = (i / steps) * dist;
+        const px = eye.x + bx * inv * t, py = eye.y + by * inv * t, pz = eye.z + bz * inv * t;
+        for (const box of solidBoxes) {
+          if (px >= box.minX && px <= box.maxX && py >= box.minY && py <= box.maxY && pz >= box.minZ && pz <= box.maxZ) {
+            blocked = true; break;
+          }
+        }
+        if (blocked) break;
+      }
+      if (blocked) continue;
+      damageBot(b, cls.damage, true);
+      hitAny = true;
+      bloodBursts.push({ x: b.x, y: b.y - 0.2, z: b.z, t: 0.2 });
+    }
+    // short swing trace for feedback
+    bulletTraces.push({
+      x0: eye.x, y0: eye.y, z0: eye.z,
+      x1: eye.x + dx * maxRange, y1: eye.y + dy * maxRange, z1: eye.z + dz * maxRange,
+      t: 0.06,
+    });
+    if (hitAny) showHit();
+    return;
+  }
+
   for (let p = 0; p < cls.pellets; p++) {
     const sy = yaw + (Math.random() - 0.5) * cls.spread * 2;
     const sp = pitch + (Math.random() - 0.5) * cls.spread * 2;
@@ -2831,7 +2899,7 @@ function tryShoot(dt) {
       });
     }
     if (hit.bot) {
-      const fall = cls.melee ? 1 : Math.max(0.55, 1 - hit.dist / 100);
+      const fall = Math.max(0.55, 1 - hit.dist / 100);
       damageBot(hit.bot, cls.damage * fall, true);
     }
     // rocket splash — nearby bots around impact
@@ -2910,6 +2978,13 @@ function updateBots(dt) {
 
     // shoot at target if LOS roughly (allies never shoot player)
     b.shootCd -= dt;
+    // close-range 身肉搏 punch when on top of player
+    if (b.shootCd <= 0 && targetIsPlayer && dist < 2.3 && !(state.gameMode === 'tdm' && b.team === state.team)) {
+      b.shootCd = 0.55;
+      damagePlayer(18, b.name);
+      bloodBursts.push({ x: state.x, y: state.y - 0.3, z: state.z, t: 0.15 });
+      continue;
+    }
     if (b.shootCd <= 0 && dist < 42 && !(state.gameMode === 'tdm' && b.team === state.team && targetIsPlayer)) {
       b.shootCd = 1 / (b.cls.firerate * 0.55) + Math.random() * 0.15;
       const ey = b.y - 0.1;
@@ -3145,18 +3220,24 @@ addEventListener('keydown', (e) => {
   keys[e.code] = true;
   if (['Space', 'KeyC', 'ControlLeft', 'ControlRight'].includes(e.code)) e.preventDefault();
   if (e.code === 'KeyR' && running) startReload();
-  // 影 · 旺角衝鋒＋霓虹刀 — V toggles knife (not in gungame)
-  if (e.code === 'KeyV' && running && state.gameMode !== 'gungame' && state.classId === 'shade') {
-    if (state.weaponOverride === 'knife') {
-      state.weaponOverride = null;
-      const cls = classById('shade');
-      applyGunLoadout(cls);
-      feedKill('切換 · 旺角衝鋒');
-    } else {
-      state.weaponOverride = 'knife';
-      const w = EXTRA_WEAPONS.find((x) => x.id === 'knife');
+  // 身肉搏 — V cycles 拳頭 → 膝撞 → 霓虹刀 → gun (disabled in gungame)
+  if (e.code === 'KeyV' && running && state.gameMode !== 'gungame') {
+    const cur = state.weaponOverride;
+    let next = null;
+    if (!cur || !MELEE_CYCLE.includes(cur)) next = 'fist';
+    else {
+      const i = MELEE_CYCLE.indexOf(cur);
+      next = i < MELEE_CYCLE.length - 1 ? MELEE_CYCLE[i + 1] : null;
+    }
+    if (next) {
+      state.weaponOverride = next;
+      const w = EXTRA_WEAPONS.find((x) => x.id === next);
       applyGunLoadout(w);
-      feedKill('切換 · 霓虹刀');
+      feedKill(next === 'knife' ? '切換 · 霓虹刀' : `身肉搏 · ${w ? w.nameZh : next}`);
+    } else {
+      state.weaponOverride = null;
+      applyGunLoadout(classById(state.classId));
+      feedKill('切換 · 槍械');
     }
     syncGunHud();
   }
@@ -3365,6 +3446,7 @@ window.__lexicon = () => ({
   ],
   ladder: GUN_LADDER.map((g) => g.nameZh),
   pickups: ['取得彈藥箱', '取得護甲片', '取得醫療包', '取得速度飲料', '取得金幣'],
+  melee: { hud: '身肉搏', fist: '拳頭', knee: '膝撞', knife: '霓虹刀', feed: '肉搏擊倒', tip: '近身可肉搏', icons: { fist: 'refs/ui/ui-fist.jpg', knee: 'refs/ui/ui-knee.jpg', knife: 'refs/ui/ui-neon-knife.jpg', fx: 'refs/ui/fx-melee-hitspark.jpg', sheet: 'refs/ui/melee-sheet.jpg' } },
   bosses: BOSSES.map((b) => ({ id: b.id, nameZh: b.nameZh, hook: b.hook, art: b.art })),
   sheets: { weapons: 'refs/ui/weapons-sheet.jpg', pickups: 'refs/ui/pickups-sheet.jpg' },
   campaignBosses: CHANNEL7.filter((l) => l.boss).map((l) => ({ level: l.level, bossId: l.bossId, nameZh: (BOSSES.find((b) => b.id === l.bossId) || {}).nameZh })),
