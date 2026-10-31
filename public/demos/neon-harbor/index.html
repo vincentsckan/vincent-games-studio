@@ -58,6 +58,18 @@ button.ghost{margin-top:10px;background:transparent;border:1px solid #40f0ff66;c
 #endStats b{display:block;font-size:1.35rem;color:#40f0ff}
 #endStats span{font-size:11px;opacity:.7}
 .hint{margin-top:10px;font-size:12px;color:#8a7a9a}
+#bossSplashStrip{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}
+#bossSplashStrip .bossCard{margin:0;background:#0a1224;border:1px solid #ff4dc855;border-radius:12px;overflow:hidden;padding:0 0 6px}
+#bossSplashStrip .bossCard img{display:block;width:100%;height:64px;object-fit:cover}
+#bossSplashStrip .bossCard figcaption{font-size:11px;font-weight:800;color:#ffd36a;padding:4px 6px 0;line-height:1.25}
+@media(max-width:480px){#bossSplashStrip{grid-template-columns:repeat(2,1fr)}}
+#bossIntro{position:fixed;inset:0;z-index:25;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity .25s;background:radial-gradient(ellipse at center,rgba(20,0,30,.72),rgba(3,4,12,.55))}
+#bossIntro.on{opacity:1}
+#bossIntro .cardish{display:flex;align-items:center;gap:14px;padding:16px 18px;border-radius:18px;border:2px solid #ff4dc8;background:linear-gradient(165deg,#1a0830ee,#081428ee);box-shadow:0 0 36px #ff4dc866;max-width:min(92vw,420px)}
+#bossIntro img{width:88px;height:88px;object-fit:cover;border-radius:14px;border:2px solid #40f0ff;box-shadow:0 0 16px #40f0ff66}
+#bossIntro .ttl{font-size:11px;letter-spacing:.12em;color:#40f0ff;font-family:Syne,sans-serif;margin-bottom:4px}
+#bossIntro .nm{font-size:22px;font-weight:900;color:#ff4dc8;text-shadow:0 0 12px #ff4dc866}
+#bossIntro .hk{margin-top:6px;font-size:13px;color:#ffd36a;line-height:1.35}
 #vg-back-root{position:fixed;inset:0;z-index:2147483647;pointer-events:none}
 #vg-back-root a.vg-back-btn{pointer-events:auto;position:fixed;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 14px;border-radius:14px;font:800 15px/1.2 "Noto Sans TC",system-ui,sans-serif;text-decoration:none;letter-spacing:.02em;border:2px solid #40f0ff;background:#05010a;color:#40f0ff;box-shadow:0 6px 28px rgba(0,0,0,.65)}
 #vg-back-tr{right:max(12px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));left:auto;bottom:auto}
@@ -97,6 +109,16 @@ button.ghost{margin-top:10px;background:transparent;border:1px solid #40f0ff66;c
   </div>
 </div>
 
+<div id="bossIntro" aria-live="polite">
+  <div class="cardish">
+    <img id="bossIntroPortrait" alt=""/>
+    <div>
+      <div class="ttl">BOSS INTRO</div>
+      <div class="nm" id="bossIntroName"></div>
+      <div class="hk" id="bossIntroHook"></div>
+    </div>
+  </div>
+</div>
 <div id="overlay">
   <div class="card">
     <div class="panel on" id="panelSplash">
@@ -106,6 +128,8 @@ button.ghost{margin-top:10px;background:transparent;border:1px solid #40f0ff66;c
       <p>跟足高速競技——多模式、多槍械、執資源、打 Boss。<br/>Frag Channel 開播——你加入 Channel 7；貨櫃區同廟市天台，打贏先有收視。</p>
       <img class="hero sheet" src="refs/ui/weapons-sheet.jpg" alt="weapons" style="max-height:110px" onerror="this.style.display='none'"/>
       <img class="hero sheet" src="refs/ui/pickups-sheet.jpg" alt="pickups" style="max-height:90px" onerror="this.style.display='none'"/>
+      <div class="sub" style="margin-top:12px">CHANNEL 7 · 八大 Boss</div>
+      <div id="bossSplashStrip" aria-label="boss portraits"></div>
       <p class="hint">WASD 移動 · 滑鼠瞄準 · Space 跳 · C／Ctrl 蹲滑 · 左鍵射擊 · R 換彈</p>
       <button class="play" id="btnEnter">進入遊戲</button>
     </div>

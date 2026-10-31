@@ -131,10 +131,10 @@ const BOSSES = [
   { id: 'sign', nameZh: '招牌鬼手', hook: '牌影裡伸手。', color: 0xff4dc8, hpBase: 300, art: 'refs/ui/boss-sign-ghosthand.jpg' },
   { id: 'tower', nameZh: '天台水塔怪', hook: '水塔爆開先出手。', color: 0x40f0ff, hpBase: 340, art: 'refs/ui/boss-watertower.jpg' },
   { id: 'cargo', nameZh: '貨櫃鐵甲', hook: '箱門打開就係槍口。', color: 0xffd36a, hpBase: 380, art: 'refs/ui/boss-container-armor.jpg' },
-  { id: 'cranearm', nameZh: '吊機鐵臂', hook: '吊臂一掃，無人企得穩。', color: 0xff8a3c, hpBase: 400, art: null },
-  { id: 'canyon', nameZh: '峽谷鬼牌', hook: '字縫裡閃過一張鬼牌。', color: 0xb388ff, hpBase: 360, art: null },
+  { id: 'cranearm', nameZh: '吊機鐵臂', hook: '吊臂一掃，無人企得穩。', color: 0xff8a3c, hpBase: 400, art: 'refs/ui/boss-crane-arm.jpg' },
+  { id: 'canyon', nameZh: '峽谷鬼牌', hook: '字縫裡閃過一張鬼牌。', color: 0xb388ff, hpBase: 360, art: 'refs/ui/boss-canyon-sign.jpg' },
   { id: 'producer', nameZh: '製片人', hook: '鏡頭一紅，全場開打。', color: 0xff6a20, hpBase: 480, art: 'refs/ui/boss-producer.jpg' },
-  { id: 'ratings', nameZh: '收視魔王', hook: '收視一爆，全城開打。', color: 0xff1040, hpBase: 560, art: null },
+  { id: 'ratings', nameZh: '收視魔王', hook: '收視一爆，全城開打。', color: 0xff1040, hpBase: 560, art: 'refs/ui/boss-ratings-king.jpg' },
 ];
 
 const CHANNEL7 = [
@@ -170,7 +170,7 @@ const GAME_MODES = [
 ];
 
 const TDM_WIN_KILLS = 25;
-const BOSS_HUNT_ROSTER = ['gate', 'sign', 'tower', 'cargo', 'producer'];
+const BOSS_HUNT_ROSTER = ['gate', 'sign', 'tower', 'cargo', 'cranearm', 'canyon', 'producer', 'ratings'];
 
 const MATCH_SECONDS = 150;
 const WIN_KILLS = 20;
@@ -358,6 +358,7 @@ document.getElementById('btnMenu').addEventListener('click', () => {
 
 fillModePicker();
 fillPickers();
+fillBossSplashStrip();
 
 function boxSolid(x, y, z, w, h, d) {
   return {
@@ -2404,11 +2405,41 @@ function showBossHud() {
   if (img) {
     if (def && def.art) { img.src = def.art; img.style.display = ''; }
     else {
-      // placeholder label tile until Multimedia art arrives
       img.removeAttribute('src');
       img.style.display = 'none';
     }
   }
+}
+
+function fillBossSplashStrip() {
+  const strip = document.getElementById('bossSplashStrip');
+  if (!strip) return;
+  strip.innerHTML = '';
+  BOSSES.forEach((b) => {
+    if (!b.art) return;
+    const fig = document.createElement('figure');
+    fig.className = 'bossCard';
+    fig.innerHTML = `<img src="${b.art}" alt="${b.nameZh}" loading="lazy"/><figcaption>${b.nameZh}</figcaption>`;
+    strip.appendChild(fig);
+  });
+}
+
+let bossIntroTimer = 0;
+function showBossIntro(def) {
+  const el = document.getElementById('bossIntro');
+  if (!el || !def) return;
+  const img = document.getElementById('bossIntroPortrait');
+  const nm = document.getElementById('bossIntroName');
+  const hk = document.getElementById('bossIntroHook');
+  if (img) {
+    if (def.art) { img.src = def.art; img.style.display = ''; }
+    else { img.removeAttribute('src'); img.style.display = 'none'; }
+  }
+  if (nm) nm.textContent = def.nameZh;
+  if (hk) hk.textContent = def.hook || '';
+  el.classList.add('on');
+  clearTimeout(bossIntroTimer);
+  bossIntroTimer = setTimeout(() => el.classList.remove('on'), 2600);
 }
 
 function syncGunHud() {
@@ -2914,6 +2945,7 @@ function startMatch(mapId, classId, opts = {}) {
   const bossBot = bots.find((b) => b.isBoss && b.alive);
   if (bossBot) feedKill(`${bossBot.name}——${bossBot.bossHook || ''}`);
   showBossHud();
+  if (bossBot && bossBot.bossId) showBossIntro(bossById(bossBot.bossId));
   syncGunHud();
 
   overlay.classList.add('hidden');

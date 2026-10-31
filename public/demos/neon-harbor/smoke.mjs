@@ -166,6 +166,7 @@ try {
   check('lexicon has 收視魔王', lex.bosses.some((b) => b.id === 'ratings' && b.nameZh === '收視魔王'), JSON.stringify(lex.bosses));
   check('lexicon has 吊機鐵臂', lex.bosses.some((b) => b.id === 'cranearm'), JSON.stringify(lex.bosses));
   check('lexicon has 峽谷鬼牌', lex.bosses.some((b) => b.id === 'canyon'), JSON.stringify(lex.bosses));
+  check('lexicon all 8 boss art', lex.bosses.length === 8 && lex.bosses.every((b) => typeof b.art === 'string' && b.art.includes('refs/ui/boss-')), JSON.stringify(lex.bosses.map((b) => [b.id, b.art])));
   check('ui weapons sheet', lex.sheets && lex.sheets.weapons.includes('weapons-sheet'), JSON.stringify(lex.sheets));
   check('campaign boss table', JSON.stringify(lex.campaignBosses) === JSON.stringify([
     {level:3,bossId:'gate',nameZh:'鐵閘阿爺'},{level:6,bossId:'sign',nameZh:'招牌鬼手'},{level:9,bossId:'tower',nameZh:'天台水塔怪'},{level:12,bossId:'cargo',nameZh:'貨櫃鐵甲'},{level:15,bossId:'cranearm',nameZh:'吊機鐵臂'},{level:17,bossId:'canyon',nameZh:'峽谷鬼牌'},{level:19,bossId:'producer',nameZh:'製片人'},{level:20,bossId:'ratings',nameZh:'收視魔王'}
