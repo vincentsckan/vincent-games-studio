@@ -78,11 +78,32 @@ export async function fetchPublishedGames(): Promise<Game[]> {
     console.warn('[gamesCatalog] Supabase fetch failed, using local fallback:', error?.message)
     return localGames
   }
-  // Merge: Supabase rows win on same slug; keep local demos not yet in DB
+  // Merge Supabase + local: prefer local Pages play/cover when present
+  // (Storage-uploaded .html often serves as text/plain and shows source.)
   const remote = (data as DbGame[]).map(dbGameToGame)
   const bySlug = new Map(remote.map((g) => [g.slug, g]))
-  for (const g of localGames) {
-    if (!bySlug.has(g.slug)) bySlug.set(g.slug, g)
+  for (const local of localGames) {
+    const remoteGame = bySlug.get(local.slug)
+    if (!remoteGame) {
+      bySlug.set(local.slug, local)
+      continue
+    }
+    bySlug.set(local.slug, {
+      ...remoteGame,
+      titleZh: remoteGame.titleZh || local.titleZh,
+      titleEn: local.titleEn || remoteGame.titleEn,
+      taglineZh: remoteGame.taglineZh || local.taglineZh,
+      taglineEn: local.taglineEn || remoteGame.taglineEn,
+      genres: local.genres.length ? local.genres : remoteGame.genres,
+      palette: local.palette ?? remoteGame.palette,
+      coverImage: local.coverImage || remoteGame.coverImage,
+      links: {
+        ...remoteGame.links,
+        play: local.links.play || remoteGame.links.play,
+        download: remoteGame.links.download || local.links.download,
+      },
+      status: local.links.play || remoteGame.links.play ? 'demo' : remoteGame.status,
+    })
   }
   const merged = Array.from(bySlug.values())
   return merged.length > 0 ? merged : localGames
@@ -104,8 +125,24 @@ export async function fetchGameBySlug(slug: string): Promise<Game | undefined> {
     console.warn('[gamesCatalog] slug fetch failed:', error.message)
     return getLocalBySlug(slug)
   }
-  if (!data) return getLocalBySlug(slug)
-  return dbGameToGame(data as DbGame)
+  const local = getLocalBySlug(slug)
+  if (!data) return local
+  const remoteGame = dbGameToGame(data as DbGame)
+  if (!local) return remoteGame
+  return {
+    ...remoteGame,
+    titleEn: local.titleEn || remoteGame.titleEn,
+    taglineEn: local.taglineEn || remoteGame.taglineEn,
+    genres: local.genres.length ? local.genres : remoteGame.genres,
+    palette: local.palette ?? remoteGame.palette,
+    coverImage: local.coverImage || remoteGame.coverImage,
+    links: {
+      ...remoteGame.links,
+      play: local.links.play || remoteGame.links.play,
+      download: remoteGame.links.download || local.links.download,
+    },
+    status: local.links.play || remoteGame.links.play ? 'demo' : remoteGame.status,
+  }
 }
 
 export function filterCatalog(
