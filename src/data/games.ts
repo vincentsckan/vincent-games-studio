@@ -45,16 +45,16 @@ export interface Game {
 }
 
 export const studio = {
-  nameZh: '簡瑞聰',
+  nameZh: 'Vincent Games Studio',
   nameEn: 'Vincent Kan',
   studioZh: 'Vincent Games Studio',
   studioEn: 'Vincent Games Studio',
   taglineZh: '以光影與敘事，鑄造難忘的獨立遊戲體驗。',
   taglineEn: 'Crafting memorable indie experiences through light, shadow, and story.',
-  aboutZh: `簡瑞聰（Vincent Kan）是一位專注於氛圍敘事與手感打磨的獨立遊戲開發者。作品橫跨 2D 與 3D，靈感常來自香港的城市肌理、港口霧氣，以及那些「差一點就說出口」的情感。
+  aboutZh: `Vincent Games Studio 專注於氛圍敘事與手感打磨的獨立遊戲。作品橫跨 2D 與 3D，靈感常來自香港的城市肌理、港口霧氣，以及那些「差一點就說出口」的情感。
 
 工作室的目標很單純：讓玩家願意停下來，再按一次「再玩一次」。`,
-  aboutEn: `Vincent Kan (簡瑞聰) is an indie developer focused on atmospheric storytelling and tactile feel. His work spans 2D and 3D, often inspired by Hong Kong's urban grain, harbour fog, and emotions that almost get said out loud.
+  aboutEn: `Vincent Games Studio is focused on atmospheric storytelling and tactile feel. The work spans 2D and 3D, often inspired by Hong Kong's urban grain, harbour fog, and emotions that almost get said out loud.
 
 The studio's aim is simple: make players stop—and hit "play again."`,
   email: 'press@vincentgames.studio',

@@ -1,6 +1,6 @@
 # Vincent Games Studio
 
-Professional indie game studio showcase for **簡瑞聰 / Vincent Kan**.
+Professional indie game studio showcase for **Vincent Games Studio**.
 
 Built with **Vite · React · TypeScript · Tailwind CSS · Framer Motion · Supabase**.  
 Traditional Chinese (HK) primary, English secondary. Dark immersive aesthetic with scroll reveals and hover previews. Respects `prefers-reduced-motion`.
