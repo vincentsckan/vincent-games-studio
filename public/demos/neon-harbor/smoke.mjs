@@ -128,7 +128,7 @@ try {
   // Nostalgic maps: signs / estate / teahouse — start + brief WASD
   for (const mid of ['signs', 'estate', 'teahouse']) {
     await page.evaluate((id) => window.__startForTest(id, 'spark'), mid);
-    await page.waitForFunction((id) => window.__dbg().map === id && window.__dbg().running, mid, { timeout: 5000 });
+    await page.waitForFunction((id) => window.__dbg().map === id && window.__dbg().running, { timeout: 8000 }, mid);
     const m0 = await page.evaluate(() => window.__dbg());
     check(`${mid} map switch`, m0.map === mid, JSON.stringify(m0));
     await page.evaluate(() => window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyW', bubbles: true })));
