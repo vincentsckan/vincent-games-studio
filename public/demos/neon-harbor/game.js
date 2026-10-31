@@ -33,7 +33,28 @@ const MAPS = [
     nameZh: '霓虹招牌街',
     nameEn: 'Neon Sign Street',
     desc: '呢度啲燈仲亮緊——不過人已經唔同。',
-    thumb: 'refs/map-neon-sign-street.jpg',
+    thumb: 'refs/map-sign-street-densify.jpg',
+  },
+  {
+    id: 'minibus',
+    nameZh: '夜間小巴巷',
+    nameEn: 'Night Minibus Alley',
+    desc: '小巴未埋站，槍火先到。',
+    thumb: 'refs/map-minibus-night.jpg',
+  },
+  {
+    id: 'tonglau',
+    nameZh: '唐樓轉角',
+    nameEn: 'Tong Lau Bend',
+    desc: '轉角有燈，轉角有槍。',
+    thumb: 'refs/map-tonglau-bend.jpg',
+  },
+  {
+    id: 'neonroof',
+    nameZh: '霓虹屋頂',
+    nameEn: 'Neon Rooftop',
+    desc: '屋頂燈火，唔見天光。',
+    thumb: 'refs/map-neon-rooftop.jpg',
   },
   {
     id: 'tram',
@@ -1421,9 +1442,9 @@ function buildWorld(mapId) {
   const root = new THREE.Group();
   scene.add(root);
   if (mapId === 'temple') buildNeonTemple(root);
-  else if (mapId === 'signs') buildNeonSignStreet(root);
-  else if (mapId === 'kaitak' || mapId === 'estate') buildKaiTakRoof(root);
-  else if (mapId === 'tram' || mapId === 'teahouse') buildTramStreet(root);
+  else if (mapId === 'signs' || mapId === 'minibus') buildNeonSignStreet(root);
+  else if (mapId === 'kaitak' || mapId === 'neonroof' || mapId === 'estate') buildKaiTakRoof(root);
+  else if (mapId === 'tram' || mapId === 'tonglau' || mapId === 'teahouse') buildTramStreet(root);
   else buildCargoPier(root);
 
   // viewmodel gun
@@ -1479,9 +1500,10 @@ function collideXZ(x, z, y, radius) {
     }
   }
   // soft bounds
-  const lim = state.mapId === 'temple' || state.mapId === 'signs' || state.mapId === 'tram' || state.mapId === 'teahouse'
-    ? 22
-    : state.mapId === 'kaitak' || state.mapId === 'estate' ? 25 : 36;
+  // soft bounds ~1.5× (Vincent: 很大地圖) — corridor / roof / pier families
+  const corridor = new Set(['temple', 'signs', 'minibus', 'tram', 'tonglau', 'teahouse']);
+  const roof = new Set(['kaitak', 'neonroof', 'estate']);
+  const lim = corridor.has(state.mapId) ? 33 : roof.has(state.mapId) ? 38 : 54;
   nx = Math.max(-lim, Math.min(lim, nx));
   nz = Math.max(-lim, Math.min(lim, nz));
   return { x: nx, z: nz };
