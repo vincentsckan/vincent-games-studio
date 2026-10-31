@@ -163,12 +163,15 @@ try {
   check('signs parallax far', signsAudit && signsAudit.atlasHit && signsAudit.atlasHit.far === true, JSON.stringify(signsAudit.atlasHit));
   check('signs parallax near', signsAudit && signsAudit.atlasHit && signsAudit.atlasHit.near === true, JSON.stringify(signsAudit.atlasHit));
 
-  // TPP camera must never sit inside translucent awning/roof parallax (Vincent visual QA)
+  // TPP camera must never sit inside translucent awning/roof parallax (Vincent visual QA / DO FAIL)
   const lookLevels = [
     { yaw: 0, pitch: 0, label: 'level-N' },
     { yaw: 0, pitch: 0.55, label: 'up-N' },
+    { yaw: 0, pitch: 0.95, label: 'up-steep-N' },
     { yaw: Math.PI * 0.5, pitch: 0.35, label: 'up-E' },
+    { yaw: Math.PI * 0.5, pitch: 0.85, label: 'up-steep-E' },
     { yaw: Math.PI, pitch: 0.45, label: 'up-S' },
+    { yaw: -Math.PI * 0.5, pitch: 0.75, label: 'up-W' },
   ];
   for (const look of lookLevels) {
     const clip = await page.evaluate((yaw, pitch) => {
@@ -176,7 +179,23 @@ try {
       return window.__cameraClipProbe && window.__cameraClipProbe();
     }, look.yaw, look.pitch);
     check(`camera clip clear ${look.label}`, !!(clip && clip.ok), JSON.stringify(clip));
+    check(`awning hidden ${look.label}`, !!(clip && clip.awningVisible === false), JSON.stringify(clip));
+    check(`cam not inside solid ${look.label}`, !!(clip && clip.camInsideSolid === false), JSON.stringify(clip));
   }
+  // Chase cam against façade — player near curb, face wall + look up
+  const wallHug = await page.evaluate(() => {
+    if (typeof window.__setPlayerXZ === 'function') window.__setPlayerXZ(2.35, 1.5);
+    else if (typeof window.__clearPlayerToCorridor === 'function') window.__clearPlayerToCorridor();
+    if (typeof window.__setCameraLook === 'function') window.__setCameraLook(Math.PI * 0.5, 0.55);
+    const a = window.__cameraClipProbe && window.__cameraClipProbe();
+    if (typeof window.__setCameraLook === 'function') window.__setCameraLook(Math.PI * 0.5, 0.95);
+    const b = window.__cameraClipProbe && window.__cameraClipProbe();
+    if (typeof window.__clearPlayerToCorridor === 'function') window.__clearPlayerToCorridor();
+    return { a, b };
+  });
+  check('wall-hug cam clip clear', !!(wallHug && wallHug.a && wallHug.a.ok), JSON.stringify(wallHug && wallHug.a));
+  check('wall-hug cam not inside solid', !!(wallHug && wallHug.a && wallHug.a.camInsideSolid === false), JSON.stringify(wallHug && wallHug.a));
+  check('wall-hug look-up cam clear', !!(wallHug && wallHug.b && wallHug.b.ok && wallHug.b.awningVisible === false), JSON.stringify(wallHug && wallHug.b));
   const whiteProbe = await page.evaluate(() => window.__whiteMeshProbe && window.__whiteMeshProbe());
   check('whiteMeshProbe 0', !!(whiteProbe && whiteProbe.ok && whiteProbe.untexturedWhite === 0), JSON.stringify(whiteProbe));
 
