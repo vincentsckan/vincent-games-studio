@@ -28,6 +28,27 @@ const MAPS = [
     desc: '廟街霓虹、窄巷檔口——近戰混戰天堂。',
     thumb: 'refs/map-mongkok.jpg',
   },
+  {
+    id: 'signs',
+    nameZh: '霓虹招牌街',
+    nameEn: 'Neon Sign Street',
+    desc: '呢度啲燈仲亮緊——不過人已經唔同。',
+    thumb: 'refs/map-neon-sign-street.jpg',
+  },
+  {
+    id: 'estate',
+    nameZh: '公屋天台',
+    nameEn: 'Estate Roof',
+    desc: '晾衫未收——天台已經係賽場。',
+    thumb: 'refs/map-estate-roof.jpg',
+  },
+  {
+    id: 'teahouse',
+    nameZh: '茶餐廳後巷',
+    nameEn: 'Cha Chaan Back',
+    desc: '花磚仲在，霓虹只剩半個字。',
+    thumb: 'refs/map-cha-chaan-back.jpg',
+  },
 ];
 
 const CLASSES = [
@@ -353,6 +374,215 @@ function buildNeonTemple(root) {
   }
 }
 
+
+function buildNeonSignStreet(root) {
+  // Narrow tong-lau alley with dense vintage neon + arcade overhangs
+  spawnPoints = [
+    [0, 0, 0], [6, 0, 10], [-6, 0, 10], [6, 0, -10],
+    [-6, 0, -10], [0, 0, 16], [0, 0, -16], [4, 0, 4],
+  ];
+  const ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(48, 52),
+    new THREE.MeshStandardMaterial({ color: 0x0c0a16, roughness: 0.35, metalness: 0.55 })
+  );
+  ground.rotation.x = -Math.PI / 2;
+  root.add(ground);
+  solidBoxes.push(boxSolid(0, -1, 0, 48, 1, 52));
+
+  // wet-ground glow strips down the alley center
+  for (let i = -5; i <= 5; i++) {
+    addBox(root, 0, 0.02, i * 4.2, 1.8, 0.04, 3.2, 0x080810, i % 2 ? 0xff2d9b : 0x00e8ff, 0.9, false);
+  }
+
+  const shopHints = [
+    0xff2d9b, 0x00e8ff, 0xffd36a, 0xff4dc8, 0x40f0ff,
+    0xffa040, 0xff2d9b, 0x00e8ff, 0xffd36a, 0xff6a8a,
+  ];
+  // two rows of tong-lau facing the alley (z-axis street, buildings at x=±)
+  const rowX = [-9.5, 9.5];
+  rowX.forEach((bx, ri) => {
+    for (let i = -4; i <= 4; i++) {
+      const z = i * 5.2;
+      const h = 7 + ((i + ri * 2) % 4) * 1.8;
+      // building mass
+      addBox(root, bx, 0, z, 6.2, h, 4.6, 0x16121c, 0x000000, 0, true);
+      // arcade / 骑楼 overhang toward street
+      const toward = bx > 0 ? -1 : 1;
+      addBox(root, bx + toward * 3.6, 3.2, z, 1.6, 0.22, 4.4, 0x1a1424, 0x000000, 0, true);
+      addBox(root, bx + toward * 4.2, 0, z - 1.8, 0.35, 3.2, 0.35, 0x2a2434, 0x000000, 0, true);
+      addBox(root, bx + toward * 4.2, 0, z + 1.8, 0.35, 3.2, 0.35, 0x2a2434, 0x000000, 0, true);
+      // dense neon panels (colored emissive boards hinting shop names)
+      const faceX = bx + toward * 3.15;
+      const c0 = shopHints[(i + 4 + ri * 5) % shopHints.length];
+      const c1 = shopHints[(i + 6 + ri * 3) % shopHints.length];
+      const c2 = shopHints[(i + 1 + ri) % shopHints.length];
+      addNeonSign(root, faceX, 4.0 + (i % 3) * 0.15, z - 0.9, 2.6 + (i % 2) * 0.4, 0.95, c0);
+      addNeonSign(root, faceX, 5.4, z + 0.85, 1.8, 0.7, c1);
+      if (h > 9) addNeonSign(root, faceX, 7.2, z, 2.2, 0.55, c2);
+      // vertical neon strip
+      addBox(root, faceX, 2.2, z + (ri ? -2.0 : 2.0), 0.12, 3.6, 0.12, 0x080810, c0, 2.4, false);
+    }
+  });
+
+  // mid-alley cover: dumpsters / phone booths / planters
+  [[-2.5, 6], [2.5, -6], [0, 12], [0, -12], [-2.2, -2], [2.2, 2]].forEach(([x, z], i) => {
+    addBox(root, x, 0, z, 1.6, 1.1 + (i % 2) * 0.4, 1.4, 0x1c2430, 0x000000, 0, true);
+    if (i % 2 === 0) addBox(root, x, 1.15, z, 1.5, 0.08, 1.3, 0x101018, i % 4 ? 0xffd36a : 0xff2d9b, 1.4, false);
+  });
+
+  // end walls of the street
+  addBox(root, 0, 0, 24, 28, 6, 1.2, 0x100c18, 0xff2d9b, 0.35, true);
+  addBox(root, 0, 0, -24, 28, 6, 1.2, 0x100c18, 0x00e8ff, 0.35, true);
+  addBox(root, 16, 0, 0, 1.2, 6, 48, 0x100c18, 0x40f0ff, 0.2, true);
+  addBox(root, -16, 0, 0, 1.2, 6, 48, 0x100c18, 0xff4dc8, 0.2, true);
+
+  // hanging cross-street neon wires
+  for (let i = -4; i <= 4; i++) {
+    addBox(root, 0, 5.2, i * 4.5, 14, 0.06, 0.06, 0x080810, 0xff4dc8, 1.8, false);
+    addBox(root, -3 + (i % 3), 4.8, i * 4.5, 0.5, 0.5, 0.12, 0x111118, i % 2 ? 0x00e8ff : 0xffd36a, 2.6, false);
+  }
+}
+
+function buildEstateRoof(root) {
+  // Open public-housing rooftop: water tanks, clothes lines, iron gates
+  spawnPoints = [
+    [0, 0, 0], [12, 0, 10], [-12, 0, 10], [12, 0, -10],
+    [-12, 0, -10], [0, 0, 16], [18, 0, 0], [-18, 0, 0],
+  ];
+  const ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(56, 56),
+    new THREE.MeshStandardMaterial({ color: 0x2a2e36, roughness: 0.95, metalness: 0.05 })
+  );
+  ground.rotation.x = -Math.PI / 2;
+  root.add(ground);
+  solidBoxes.push(boxSolid(0, -1, 0, 56, 1, 56));
+
+  // rooftop parapet walls (low, fightable sightlines)
+  addBox(root, 0, 0, 26, 52, 1.4, 0.8, 0x3a4048, 0x000000, 0, true);
+  addBox(root, 0, 0, -26, 52, 1.4, 0.8, 0x3a4048, 0x000000, 0, true);
+  addBox(root, 26, 0, 0, 0.8, 1.4, 52, 0x3a4048, 0x000000, 0, true);
+  addBox(root, -26, 0, 0, 0.8, 1.4, 52, 0x3a4048, 0x000000, 0, true);
+  // parapet glow edge
+  for (let i = -5; i <= 5; i++) {
+    addBox(root, i * 4.5, 1.35, 26, 3.5, 0.08, 0.2, 0x101018, 0xffd36a, 1.2, false);
+    addBox(root, i * 4.5, 1.35, -26, 3.5, 0.08, 0.2, 0x101018, 0x00e8ff, 1.0, false);
+  }
+
+  // stair/machine rooms
+  [[-16, -14], [14, -12], [-14, 14], [16, 12], [0, -18]].forEach(([x, z], i) => {
+    const h = 3.2 + (i % 2) * 1.2;
+    addBox(root, x, 0, z, 5.5, h, 4.5, 0x4a5058, 0x000000, 0, true);
+    addBox(root, x, h, z, 5.8, 0.25, 4.8, 0x2a3038, 0x000000, 0, true);
+    // door glow
+    addBox(root, x + (i % 2 ? 2.6 : -2.6), 0.2, z, 0.15, 2.0, 1.2, 0x101018, i % 2 ? 0xff2d9b : 0x40f0ff, 1.6, false);
+  });
+
+  // water tanks (cylindrical approximated as boxes + rim)
+  [[-8, 8], [10, 6], [-6, -8], [8, -6]].forEach(([x, z], i) => {
+    addBox(root, x, 0, z, 3.2, 2.8, 3.2, 0x5a6870, 0x000000, 0, true);
+    addBox(root, x, 2.8, z, 3.4, 0.2, 3.4, 0x3a4850, 0x40f0ff, 0.4, true);
+    addBox(root, x, 0, z, 0.5, 3.4, 0.5, 0x2a3038, 0x000000, 0, true); // pipe stub
+  });
+
+  // clothes drying racks / lines (non-solid strips + poles)
+  [[-4, 0], [4, 4], [0, -4], [-10, -2], [12, -14]].forEach(([x, z], i) => {
+    addBox(root, x - 2.5, 0, z, 0.15, 2.4, 0.15, 0x8890a0, 0x000000, 0, true);
+    addBox(root, x + 2.5, 0, z, 0.15, 2.4, 0.15, 0x8890a0, 0x000000, 0, true);
+    addBox(root, x, 2.2, z, 5.2, 0.05, 0.05, 0x101018, 0xff4dc8, 1.4, false);
+    addBox(root, x, 1.8, z, 5.2, 0.05, 0.05, 0x101018, 0x00e8ff, 1.1, false);
+    // hanging laundry panels
+    for (let k = -2; k <= 2; k++) {
+      const col = [0xff6a8a, 0x40f0ff, 0xffd36a, 0xa78bfa, 0x7dff9a][(k + 2 + i) % 5];
+      addBox(root, x + k * 0.9, 1.0, z, 0.7, 0.9, 0.06, 0x202028, col, 0.35, false);
+    }
+  });
+
+  // iron gate / fence mid cover
+  [[0, 8], [0, -10], [-18, 0], [18, 4]].forEach(([x, z], i) => {
+    addBox(root, x, 0, z, i < 2 ? 8 : 0.2, 2.2, i < 2 ? 0.2 : 8, 0x1a2030, 0x000000, 0, true);
+    addBox(root, x, 2.0, z, i < 2 ? 8.2 : 0.25, 0.12, i < 2 ? 0.25 : 8.2, 0x101018, 0xffd36a, 1.3, false);
+  });
+
+  // AC units / vent cover
+  [[6, 14], [-12, 6], [14, -4], [-4, 16], [4, -16]].forEach(([x, z], i) => {
+    addBox(root, x, 0, z, 1.8, 1.2, 1.4, 0x3a4450, 0x000000, 0, true);
+  });
+
+  // night sky glow posts
+  for (let i = -2; i <= 2; i++) {
+    addBox(root, i * 10, 0, 24.5, 0.25, 4.5, 0.25, 0x2a3038, 0x000000, 0, true);
+    addBox(root, i * 10, 4.3, 24.5, 0.8, 0.2, 0.8, 0x101018, 0xffd36a, 2.2, false);
+  }
+}
+
+function buildTeahouseBack(root) {
+  // Cha chaan teng back alley: patterned tiles, half-broken neon, trash cover
+  spawnPoints = [
+    [0, 0, 0], [5, 0, 8], [-5, 0, 8], [5, 0, -8],
+    [-5, 0, -8], [0, 0, 14], [8, 0, 0], [-8, 0, 0],
+  ];
+  const ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(40, 48),
+    new THREE.MeshStandardMaterial({ color: 0x1a1420, roughness: 0.7, metalness: 0.15 })
+  );
+  ground.rotation.x = -Math.PI / 2;
+  root.add(ground);
+  solidBoxes.push(boxSolid(0, -1, 0, 40, 1, 48));
+
+  // patterned tile glow checker on floor (花磚 hint)
+  for (let ix = -3; ix <= 3; ix++) {
+    for (let iz = -4; iz <= 4; iz++) {
+      if ((ix + iz) % 2 !== 0) continue;
+      addBox(root, ix * 2.4, 0.03, iz * 2.4, 1.1, 0.04, 1.1, 0x2a1830, (ix + iz) % 4 === 0 ? 0xff4dc8 : 0x40f0ff, 0.45, false);
+    }
+  }
+
+  // two walls of back-alley buildings
+  const wallX = [-7.5, 7.5];
+  wallX.forEach((bx, ri) => {
+    for (let i = -3; i <= 3; i++) {
+      const z = i * 5.5;
+      const h = 6 + ((i + ri) % 3) * 2;
+      addBox(root, bx, 0, z, 5.5, h, 4.8, 0x18121c, 0x000000, 0, true);
+      const toward = bx > 0 ? -1 : 1;
+      const faceX = bx + toward * 2.8;
+      const neon = [0xff2d9b, 0x00e8ff, 0xffd36a][(i + ri + 3) % 3];
+      // half neon signs (broken / leftover characters)
+      const halfW = 1.2 + (i % 2) * 0.6;
+      addNeonSign(root, faceX, 3.0 + (i % 2) * 0.4, z - 0.5, halfW, 0.85, neon);
+      if (i % 2 === 0) {
+        // dangling half sign
+        addBox(root, faceX, 4.6, z + 1.0, 0.9, 0.55, 0.12, 0x111118, neon, 1.6, false);
+        addBox(root, faceX + toward * 0.1, 5.1, z + 1.0, 0.08, 0.5, 0.08, 0x080810, neon, 1.0, false);
+      }
+      // kitchen vent glow
+      addBox(root, faceX, 1.6, z + 1.5, 1.4, 0.9, 0.2, 0x101018, 0xffa040, 0.8, false);
+    }
+  });
+
+  // trash bins / crates as cover
+  [[-2, 5], [2.2, -4], [0, 10], [-2.5, -10], [2.5, 2], [-1.5, -1], [1.8, 14], [-2, -14]].forEach(([x, z], i) => {
+    const h = 1.0 + (i % 3) * 0.35;
+    addBox(root, x, 0, z, 1.5, h, 1.3, i % 2 ? 0x2a4030 : 0x243040, 0x000000, 0, true);
+    if (i % 3 === 0) addBox(root, x, h, z, 1.55, 0.08, 1.35, 0x101018, 0xff2d9b, 0.9, false);
+  });
+
+  // back kitchen doorway / steam plume markers
+  addBox(root, 0, 0, 0, 2.2, 2.6, 0.8, 0x221828, 0xff4dc8, 0.35, true);
+  addBox(root, 0, 2.5, 0, 2.6, 0.15, 1.0, 0x101018, 0xffd36a, 1.5, false);
+
+  // alley end walls
+  addBox(root, 0, 0, 22, 24, 5, 1, 0x100c18, 0xff2d9b, 0.3, true);
+  addBox(root, 0, 0, -22, 24, 5, 1, 0x100c18, 0x00e8ff, 0.3, true);
+  addBox(root, 13, 0, 0, 1, 5, 44, 0x100c18, 0x40f0ff, 0.2, true);
+  addBox(root, -13, 0, 0, 1, 5, 44, 0x100c18, 0xff4dc8, 0.2, true);
+
+  // hanging half-lit strip lights
+  for (let i = -3; i <= 3; i++) {
+    addBox(root, 0, 4.2, i * 5, 10, 0.08, 0.08, 0x080810, i % 2 ? 0xff4dc8 : 0x40f0ff, 1.5, false);
+  }
+}
+
 function makeBotMesh(color) {
   const g = new THREE.Group();
   const body = new THREE.Mesh(
@@ -467,6 +697,9 @@ function buildWorld(mapId) {
   const root = new THREE.Group();
   scene.add(root);
   if (mapId === 'temple') buildNeonTemple(root);
+  else if (mapId === 'signs') buildNeonSignStreet(root);
+  else if (mapId === 'estate') buildEstateRoof(root);
+  else if (mapId === 'teahouse') buildTeahouseBack(root);
   else buildCargoPier(root);
 
   // viewmodel gun
@@ -522,7 +755,9 @@ function collideXZ(x, z, y, radius) {
     }
   }
   // soft bounds
-  const lim = state.mapId === 'temple' ? 24 : 36;
+  const lim = state.mapId === 'temple' || state.mapId === 'signs' || state.mapId === 'teahouse'
+    ? 22
+    : state.mapId === 'estate' ? 25 : 36;
   nx = Math.max(-lim, Math.min(lim, nx));
   nz = Math.max(-lim, Math.min(lim, nz));
   return { x: nx, z: nz };
