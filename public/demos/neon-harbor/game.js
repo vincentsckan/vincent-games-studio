@@ -648,78 +648,94 @@ function addBarberPole(group, x, z, h = 2.4) {
   return g;
 }
 
+
+/** Atlas-backed vehicle materials (static collidable props). Prefer refs/vehicles/* when present. */
+const VEHICLE_TEX = {
+  minibus: './refs/vehicles/veh-minibus-side.jpg',
+  taxi: './refs/vehicles/veh-taxi-side.jpg',
+  sedan: './refs/vehicles/veh-sedan-side.jpg',
+  motorcycle: './refs/vehicles/veh-motorcycle-side.jpg',
+};
+function paintVehicleMat(mat, urlFallbackAtlas) {
+  const tryUrls = [];
+  if (mat.userData && mat.userData.vehicleUrl) tryUrls.push(mat.userData.vehicleUrl);
+  if (urlFallbackAtlas) tryUrls.push(urlFallbackAtlas);
+  const attempt = (i) => {
+    if (i >= tryUrls.length) return;
+    const url = tryUrls[i];
+    const isVeh = /\/refs\/vehicles\//.test(url);
+    if (isVeh) {
+      // Multimedia vehicle sides are #00FF00 chroma plates — key then apply
+      loadPlayerPoseTex(url).then((tex) => {
+        if (!tex) { attempt(i + 1); return; }
+        mat.map = tex;
+        mat.transparent = true;
+        mat.alphaTest = 0.35;
+        mat.color.setHex(0xffffff);
+        mat.needsUpdate = true;
+      });
+      return;
+    }
+    loadAtlasTex(url).then((tex) => {
+      if (!tex) { attempt(i + 1); return; }
+      const m = tex.clone();
+      m.wrapS = m.wrapT = THREE.RepeatWrapping;
+      m.repeat.set(mat.userData.repX || 1.2, mat.userData.repY || 1.0);
+      m.needsUpdate = true;
+      mat.map = m;
+      mat.color.setHex(0xffffff);
+      mat.needsUpdate = true;
+    });
+  };
+  attempt(0);
+  return mat;
+}
+
+function addVehSideCard(group, url, w, h, y, zOff = 0) {
+  const mat = new THREE.MeshBasicMaterial({
+    color: 0xffffff, transparent: true, alphaTest: 0.35, side: THREE.DoubleSide, depthWrite: false, fog: true,
+  });
+  mat.userData.vehicleUrl = url;
+  paintVehicleMat(mat, null);
+  const card = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
+  card.position.set(0, y, zOff);
+  card.name = 'vehSideCard';
+  card.userData.envTextured = true;
+  group.add(card);
+  // opposite side
+  const card2 = card.clone();
+  card2.material = mat.clone();
+  card2.rotation.y = Math.PI;
+  group.add(card2);
+  return card;
+}
+
+
+
 /** 紅色手推車 / goods tricycle — curb clutter (soft or light collision). */
 function addRedHandcart(group, x, z, rotY = 0, solid = false) {
-  if (PLATE_ONLY_ARENA) {
-    if (solid) solidBoxes.push(boxSolid(x, 0, z, 1.2, 1.1, 1.8));
-    return null;
-  }
-
   const g = new THREE.Group();
   g.userData.keepVisual = true;
-  g.name = 'curbProp';
+  g.userData.vehicle = true;
+  g.name = 'vehicleProp';
   g.position.set(x, 0, z);
   g.rotation.y = rotY;
-  const bed = new THREE.Mesh(
-    new THREE.BoxGeometry(1.1, 0.45, 1.6),
-    new THREE.MeshStandardMaterial({ color: 0xc41828, roughness: 0.55, metalness: 0.2 })
-  );
-  bed.position.set(0, 0.55, 0.15);
-  g.add(bed);
-  const rail = new THREE.Mesh(
-    new THREE.BoxGeometry(1.05, 0.35, 0.06),
-    new THREE.MeshStandardMaterial({ color: 0x8b1515 })
-  );
-  rail.position.set(0, 0.85, -0.55);
-  g.add(rail);
-  // front wheel + rear pair (blocky)
-  const whMat = new THREE.MeshStandardMaterial({ color: 0x111118 });
-  [[0, -0.85], [-0.4, 0.7], [0.4, 0.7]].forEach(([wx, wz], i) => {
-    const wh = new THREE.Mesh(new THREE.BoxGeometry(i === 0 ? 0.18 : 0.16, 0.4, 0.4), whMat);
-    wh.position.set(wx, 0.22, wz);
-    g.add(wh);
-  });
-  // cargo crate on bed
-  const crate = new THREE.Mesh(
-    new THREE.BoxGeometry(0.7, 0.45, 0.9),
-    new THREE.MeshStandardMaterial({ color: 0x5a4030, roughness: 0.7 })
-  );
-  crate.position.set(0, 0.95, 0.2);
-  g.add(crate);
+  addVehSideCard(g, VEHICLE_TEX.motorcycle, 1.3, 1.0, 0.65);
   group.add(g);
   if (solid) solidBoxes.push(boxSolid(x, 0, z, 1.2, 1.1, 1.8));
   return g;
 }
 
-/** Vintage white + yellow sedan scale prop (soft cover companion to 黃的). */
+/** Vintage sedan / taxi placeholder — static collidable, atlas/vehicle textured. */
 function addVintageSedan(group, x, z, rotY = 0, color = 0xf2f0ea) {
-  if (PLATE_ONLY_ARENA) {
-    const aligned = Math.abs(rotY % Math.PI) < 0.3 || Math.abs(Math.abs(rotY % Math.PI) - Math.PI) < 0.3;
-    solidBoxes.push(boxSolid(x, 0, z, aligned ? 1.85 : 3.9, 1.4, aligned ? 3.9 : 1.85));
-    return null;
-  }
-
   const g = new THREE.Group();
   g.userData.keepVisual = true;
-  g.name = 'curbProp';
+  g.userData.vehicle = true;
+  g.name = 'vehicleProp';
   g.position.set(x, 0, z);
   g.rotation.y = rotY;
-  const bodyMat = new THREE.MeshStandardMaterial({ color, roughness: 0.55, metalness: 0.25 });
-  const darkMat = new THREE.MeshStandardMaterial({ color: 0x1a1a22, roughness: 0.4, metalness: 0.3 });
-  const body = new THREE.Mesh(new THREE.BoxGeometry(1.75, 0.5, 3.8), bodyMat);
-  body.position.y = 0.5;
-  g.add(body);
-  const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.65, 2.0), bodyMat);
-  cabin.position.set(0, 1.05, -0.1);
-  g.add(cabin);
-  const win = new THREE.Mesh(new THREE.BoxGeometry(1.45, 0.45, 1.7), darkMat);
-  win.position.set(0, 1.1, -0.1);
-  g.add(win);
-  [[-0.7, -1.15], [0.7, -1.15], [-0.7, 1.15], [0.7, 1.15]].forEach(([wx, wz]) => {
-    const wh = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.4, 0.5), darkMat);
-    wh.position.set(wx, 0.25, wz);
-    g.add(wh);
-  });
+  const url = color === 0xffd36a ? VEHICLE_TEX.taxi : VEHICLE_TEX.sedan;
+  addVehSideCard(g, url, 3.7, 1.35, 0.85);
   group.add(g);
   const aligned = Math.abs(rotY % Math.PI) < 0.3 || Math.abs(Math.abs(rotY % Math.PI) - Math.PI) < 0.3;
   solidBoxes.push(boxSolid(x, 0, z, aligned ? 1.85 : 3.9, 1.4, aligned ? 3.9 : 1.85));
@@ -756,77 +772,46 @@ function addHangSign(group, x, y, z, w, h, text, opts = {}) {
   addBox(group, x, y + h * 0.45, z, Math.max(0.35, w * 0.15), 0.06, 0.06, 0x3a3030, 0x000000, 0, false);
 }
 
-/** HK minibus — red-roof or green-roof cover with collision. */
+/** HK minibus — static collidable, atlas/vehicle textured (never pure color slab). */
 function addMinibus(group, x, z, roof = 'red', rotY = 0) {
-  if (PLATE_ONLY_ARENA) {
-    solidBoxes.push(boxSolid(x, 0, z, 2.2, 2.0, 5.4));
-    return null;
-  }
-
   const g = new THREE.Group();
   g.userData.keepVisual = true;
-  g.name = 'curbProp';
+  g.userData.vehicle = true;
+  g.name = 'vehicleProp';
   g.position.set(x, 0, z);
   g.rotation.y = rotY;
-  const bodyCol = 0xf2f0ea;
-  const roofCol = roof === 'green' ? 0x1a8f4a : 0xc41828;
-  const body = new THREE.Mesh(
-    new THREE.BoxGeometry(2.1, 1.55, 5.2),
-    new THREE.MeshStandardMaterial({ color: bodyCol, roughness: 0.55, metalness: 0.2 })
-  );
-  body.position.y = 1.05;
-  g.add(body);
-  const rf = new THREE.Mesh(
-    new THREE.BoxGeometry(2.15, 0.22, 5.25),
-    new THREE.MeshStandardMaterial({ color: roofCol, roughness: 0.5, metalness: 0.25, emissive: roofCol, emissiveIntensity: 0.15 })
-  );
-  rf.position.y = 1.95;
-  g.add(rf);
-  neonMats.push(rf.material);
-  const win = new THREE.Mesh(
-    new THREE.BoxGeometry(1.95, 0.7, 4.6),
-    new THREE.MeshStandardMaterial({ color: 0x1a2430, roughness: 0.3, metalness: 0.4 })
-  );
-  win.position.y = 1.35;
-  g.add(win);
-  [[-0.85, -1.6], [0.85, -1.6], [-0.85, 1.6], [0.85, 1.6]].forEach(([wx, wz]) => {
-    const wh = new THREE.Mesh(
-      new THREE.BoxGeometry(0.28, 0.55, 0.7),
-      new THREE.MeshStandardMaterial({ color: 0x111118 })
-    );
-    wh.position.set(wx, 0.35, wz);
-    g.add(wh);
-  });
+  // Photoreal chroma side cards only — no solid-color chassis boxes (Vincent FAIL)
+  addVehSideCard(g, VEHICLE_TEX.minibus, 5.0, 1.9, 1.15);
   group.add(g);
   const aligned = Math.abs(rotY % Math.PI) < 0.3 || Math.abs(Math.abs(rotY % Math.PI) - Math.PI) < 0.3;
   solidBoxes.push(boxSolid(x, 0, z, aligned ? 2.2 : 5.3, 2.1, aligned ? 5.3 : 2.2));
   return g;
 }
 
-/** Small delivery truck at alley far end. */
-function addSmallTruck(group, x, z, rotY = 0) {
-  if (PLATE_ONLY_ARENA) {
-    solidBoxes.push(boxSolid(x, 0, z, 2.0, 1.7, 4.6));
-    return null;
-  }
 
+/** HK motorcycle — static curb prop, chroma side plate on card + collision. */
+function addMotorcycle(group, x, z, rotY = 0) {
   const g = new THREE.Group();
   g.userData.keepVisual = true;
-  g.name = 'curbProp';
+  g.userData.vehicle = true;
+  g.name = 'vehicleProp';
   g.position.set(x, 0, z);
   g.rotation.y = rotY;
-  const cab = new THREE.Mesh(
-    new THREE.BoxGeometry(1.9, 1.5, 1.6),
-    new THREE.MeshStandardMaterial({ color: 0xd8d0c4, roughness: 0.6 })
-  );
-  cab.position.set(0, 1.0, -1.5);
-  g.add(cab);
-  const bed = new THREE.Mesh(
-    new THREE.BoxGeometry(1.85, 1.1, 2.8),
-    new THREE.MeshStandardMaterial({ color: 0x3a6088, roughness: 0.55 })
-  );
-  bed.position.set(0, 0.9, 0.7);
-  g.add(bed);
+  addVehSideCard(g, VEHICLE_TEX.motorcycle, 1.7, 1.1, 0.7);
+  group.add(g);
+  solidBoxes.push(boxSolid(x, 0, z, 0.7, 1.0, 1.9));
+  return g;
+}
+/** Small delivery truck — static collidable, atlas textured. */
+function addSmallTruck(group, x, z, rotY = 0) {
+  const g = new THREE.Group();
+  g.userData.keepVisual = true;
+  g.userData.vehicle = true;
+  g.name = 'vehicleProp';
+  g.position.set(x, 0, z);
+  g.rotation.y = rotY;
+  // Truck uses sedan side as stand-in until dedicated plate exists
+  addVehSideCard(g, VEHICLE_TEX.sedan, 4.2, 1.6, 1.0);
   group.add(g);
   solidBoxes.push(boxSolid(x, 0, z, 2.0, 1.7, 4.6));
   return g;
@@ -1852,9 +1837,9 @@ function buildHarbourFinal(root) {
 /** Photoreal TPP hero billboard from Multimedia refs/player/* (NOT low-poly chars.jpg).
  *  player-back-full = follow-cam skin; gun-pose / melee-pose swap on combat; ots is framing ref. */
 const PLAYER_TEX = {
-  back: './refs/player/player-back-full.jpg',
-  gun: './refs/player/player-gun-pose.jpg',
-  melee: './refs/player/player-melee-pose.jpg',
+  back: './refs/player/player-back-full.jpg?v=chroma2',
+  gun: './refs/player/player-gun-pose.jpg?v=chroma2',
+  melee: './refs/player/player-melee-pose.jpg?v=chroma2',
 };
 const playerTexCache = new Map(); // url -> THREE.Texture (alpha-keyed)
 
@@ -1868,29 +1853,28 @@ function chromaKeyPlayerTexture(img) {
   const px = data.data;
   const w = c.width;
   const h = c.height;
-  // Multimedia contract: solid #00FF00 plate. Key ONLY true chroma-green.
-  // Do NOT luma-key black — dark bomber/jeans must stay opaque.
+  // Multimedia contract: solid #00FF00 only. Never luma-key charcoal fabric.
   for (let i = 0; i < px.length; i += 4) {
     const r = px[i], g = px[i + 1], b = px[i + 2];
     const maxRB = Math.max(r, b);
-    // JPEG softens #00FF00 → (0,255,1); tolerate mild channel bleed
-    const greenScreen = g >= 140 && g > r + 50 && g > b + 50 && g >= maxRB * 1.7 && (r + b) < g * 0.95;
+    const greenScreen = g >= 155 && g > r + 55 && g > b + 55 && g >= maxRB * 1.85 && (r + b) < g * 0.82;
     if (greenScreen) {
-      const excess = Math.min(1, (g - maxRB) / 80);
-      px[i + 3] = excess > 0.28 ? 0 : Math.min(px[i + 3], Math.floor((1 - excess) * 35));
-      // light despill on soft edge (keep RGB from going neon-green)
+      const excess = Math.min(1, (g - maxRB) / 55);
+      px[i + 3] = excess > 0.16 ? 0 : Math.min(px[i + 3], Math.floor((1 - excess) * 18));
       if (px[i + 3] > 0 && g > maxRB) {
-        px[i + 1] = Math.min(g, maxRB + 12);
+        // hard despill — kill cyan/green fringe on shoulder edge
+        px[i + 1] = Math.min(g, maxRB + 2);
+        px[i] = Math.min(r, maxRB);
+        px[i + 2] = Math.min(b, maxRB);
       }
     }
   }
-  // Edge flood through keyed-transparent + residual near-#00FF00 fringe only (not charcoal fabric)
   const isGreenPlate = (idx) => {
     const i = idx * 4;
-    if (px[i + 3] < 10) return true;
+    if (px[i + 3] < 16) return true;
     const r = px[i], g = px[i + 1], b = px[i + 2];
     const maxRB = Math.max(r, b);
-    return g >= 120 && g > r + 40 && g > b + 40 && g >= maxRB * 1.55;
+    return g >= 130 && g > r + 45 && g > b + 45 && g >= maxRB * 1.65;
   };
   const n = w * h;
   const seen = new Uint8Array(n);
@@ -1911,6 +1895,26 @@ function chromaKeyPlayerTexture(img) {
     const x = idx % w;
     const y = (idx / w) | 0;
     push(x + 1, y); push(x - 1, y); push(x, y + 1); push(x, y - 1);
+  }
+  // 1px alpha erode on fringe next to keyed transparency (kills residual halo)
+  const alphaCopy = new Uint8ClampedArray(px.length);
+  alphaCopy.set(px);
+  for (let y = 1; y < h - 1; y++) {
+    for (let x = 1; x < w - 1; x++) {
+      const idx = y * w + x;
+      const a = alphaCopy[idx * 4 + 3];
+      if (a < 8 || a > 220) continue;
+      let nearClear = false;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        if (alphaCopy[((y + dy) * w + (x + dx)) * 4 + 3] < 12) { nearClear = true; break; }
+      }
+      if (nearClear) {
+        px[idx * 4 + 3] = 0;
+        // despill leftover fringe RGB
+        const maxRB = Math.max(px[idx * 4], px[idx * 4 + 2]);
+        if (px[idx * 4 + 1] > maxRB + 8) px[idx * 4 + 1] = maxRB;
+      }
+    }
   }
   ctx.putImageData(data, 0, 0);
   const tex = new THREE.CanvasTexture(c);
@@ -1958,7 +1962,7 @@ function makePlayerMesh() {
     color: 0xffffff,
     transparent: true,
     depthWrite: false,
-    alphaTest: 0.12,
+    alphaTest: 0.35,
     fog: true,
   });
   const sprite = new THREE.Sprite(mat);
@@ -2005,35 +2009,155 @@ function syncPlayerPoseBillboard() {
   else loadPlayerPoseTex(url).then(apply);
 }
 
-function makeBotMesh(color) {
+/** Multimedia bot back plates (#00FF00). Fallback: player-back-full until refs land. */
+
+/** Civilian NPC greenscreen plates (Multimedia). Moving walkers alongside combat bots. */
+const NPC_TEX = [
+  './refs/npcs/npc-civilian-a.jpg?v=npc1',
+  './refs/npcs/npc-civilian-b.jpg?v=npc1',
+  './refs/npcs/npc-civilian-c.jpg?v=npc1',
+];
+let streetNpcs = [];
+
+function makeNpcMesh(texUrl) {
+  const g = new THREE.Group();
+  g.name = 'npcActor';
+  g.userData.npc = true;
+  g.userData.keepVisual = true;
+  const stub = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.18, 0.2, 1.5, 8),
+    new THREE.MeshStandardMaterial({ color: 0x141820, transparent: true, opacity: 0.2 })
+  );
+  stub.position.y = 0.85;
+  stub.name = 'npcStub';
+  g.add(stub);
+  const mat = new THREE.SpriteMaterial({
+    color: 0xffffff, transparent: true, depthWrite: false, alphaTest: 0.35, fog: true,
+  });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(0.85, 1.65, 1);
+  sprite.position.y = 0.88;
+  sprite.visible = false;
+  g.add(sprite);
+  g.userData.billboard = sprite;
+  g.userData.stub = stub;
+  const apply = (tex) => {
+    if (!tex) return;
+    sprite.material.map = tex;
+    sprite.material.needsUpdate = true;
+    sprite.visible = true;
+    stub.visible = false;
+  };
+  loadPlayerPoseTex(texUrl).then((tex) => {
+    if (tex) apply(tex);
+    else loadPlayerPoseTex(PLAYER_TEX.back).then(apply);
+  });
+  return g;
+}
+
+function spawnStreetNpcs(root) {
+  streetNpcs.forEach((n) => { try { root.remove(n.mesh); } catch (_) {} });
+  streetNpcs = [];
+  if (!root) return;
+  const spots = [[-2.2, -10], [2.3, 11], [-1.8, 7], [2.0, -5], [-2.4, 2]];
+  spots.forEach((sp, i) => {
+    const url = NPC_TEX[i % NPC_TEX.length];
+    const mesh = makeNpcMesh(url);
+    const cleared = resolveBotClear(sp[0], sp[1], PLAYER_HEIGHT, 0.4);
+    mesh.position.set(cleared.x, 0, cleared.z);
+    root.add(mesh);
+    streetNpcs.push({
+      mesh, x: cleared.x, z: cleared.z, y: PLAYER_HEIGHT,
+      heading: Math.random() * Math.PI * 2,
+      speed: 1.1 + Math.random() * 0.6,
+      turnT: 1 + Math.random() * 2,
+      alive: true,
+    });
+  });
+}
+
+function updateStreetNpcs(dt) {
+  for (const n of streetNpcs) {
+    if (!n || !n.alive) continue;
+    n.turnT -= dt;
+    if (n.turnT <= 0) {
+      n.heading += (Math.random() - 0.5) * 1.4;
+      n.turnT = 1.2 + Math.random() * 2.5;
+    }
+    // wander corridor, avoid deep façades
+    let wx = Math.sin(n.heading), wz = Math.cos(n.heading);
+    if (Math.abs(n.x) > 2.3) wx += -Math.sign(n.x) * 0.8;
+    const len = Math.hypot(wx, wz) || 1;
+    const nx = n.x + (wx / len) * n.speed * dt;
+    const nz = n.z + (wz / len) * n.speed * dt;
+    const c = collideXZ(nx, nz, n.y, 0.35);
+    const moved = Math.hypot(c.x - n.x, c.z - n.z);
+    if (moved < n.speed * dt * 0.15) n.heading += Math.PI * 0.6;
+    n.x = Math.max(-2.6, Math.min(2.6, c.x));
+    n.z = Math.max(-18, Math.min(18, c.z));
+    if (n.mesh) n.mesh.position.set(n.x, 0, n.z);
+  }
+}
+
+const BOT_TEX = {
+  spark: './refs/bots/bot-spark-back.jpg?v=chroma2',
+  shade: './refs/bots/bot-shade-back.jpg?v=chroma2',
+  rock: './refs/bots/bot-rock-back.jpg?v=chroma2',
+};
+
+function makeBotMesh(color, classId = 'spark') {
   const g = new THREE.Group();
   g.name = 'botActor';
-  // Dark muted capsule body — never bright cyan/magenta emissive slabs in near FOV
-  const body = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.28, 0.3, 1.15, 10),
-    new THREE.MeshStandardMaterial({ color: 0x1a1e28, emissive: 0x101018, emissiveIntensity: 0.15, roughness: 0.75 })
+  // Soft stub until chroma billboard resolves — never leave navy capsule as the look
+  const stub = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.2, 0.24, 1.55, 8),
+    new THREE.MeshStandardMaterial({ color: 0x141820, transparent: true, opacity: 0.25, roughness: 0.85 })
   );
-  body.position.y = 0.95;
-  g.add(body);
-  const head = new THREE.Mesh(
-    new THREE.SphereGeometry(0.22, 10, 8),
-    new THREE.MeshStandardMaterial({ color: 0x12161e, emissive: 0x182028, emissiveIntensity: 0.2, roughness: 0.65 })
+  stub.position.y = 0.9;
+  stub.name = 'botStub';
+  g.add(stub);
+
+  const mat = new THREE.SpriteMaterial({
+    color: 0xffffff,
+    transparent: true,
+    depthWrite: false,
+    alphaTest: 0.35,
+    fog: true,
+  });
+  const sprite = new THREE.Sprite(mat);
+  sprite.name = 'botBillboard';
+  sprite.scale.set(0.92, 1.78, 1);
+  sprite.position.y = 0.92;
+  sprite.visible = false;
+  g.add(sprite);
+  g.userData.billboard = sprite;
+  g.userData.stub = stub;
+  g.userData.teamColor = color;
+  g.userData.classId = classId;
+
+  // tiny team pip (kept after billboard — readable ally/foe cue, not a slab)
+  const pip = new THREE.Mesh(
+    new THREE.SphereGeometry(0.06, 8, 6),
+    new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.7, roughness: 0.35 })
   );
-  head.position.y = 1.72;
-  g.add(head);
-  // tiny team tint — small, not a façade slab
-  const tint = new THREE.Mesh(
-    new THREE.SphereGeometry(0.07, 8, 6),
-    new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.55, roughness: 0.4 })
-  );
-  tint.position.set(0, 1.72, 0.2);
-  g.add(tint);
-  const gun = new THREE.Mesh(
-    new THREE.BoxGeometry(0.1, 0.1, 0.55),
-    new THREE.MeshStandardMaterial({ color: 0x222830, metalness: 0.6, roughness: 0.4 })
-  );
-  gun.position.set(0.32, 1.1, -0.3);
-  g.add(gun);
+  pip.position.set(0, 1.78, 0.12);
+  pip.name = 'botTeamPip';
+  g.add(pip);
+
+  const prefer = BOT_TEX[classId] || BOT_TEX.spark;
+  const applyTex = (tex) => {
+    if (!tex || !g.userData.billboard) return false;
+    g.userData.billboard.material.map = tex;
+    g.userData.billboard.material.needsUpdate = true;
+    g.userData.billboard.visible = true;
+    if (g.userData.stub) g.userData.stub.visible = false;
+    return true;
+  };
+  loadPlayerPoseTex(prefer).then((tex) => {
+    if (applyTex(tex)) return;
+    // Multimedia bot plates not on disk yet — photoreal player back as stand-in
+    loadPlayerPoseTex(PLAYER_TEX.back).then(applyTex);
+  });
   return g;
 }
 
@@ -2042,8 +2166,14 @@ function classById(id) {
 }
 
 function randomSpawn() {
-  const p = spawnPoints[(Math.random() * spawnPoints.length) | 0] || [0, 0, 0];
-  return { x: p[0] + (Math.random() - 0.5) * 2, y: PLAYER_HEIGHT, z: p[2] + (Math.random() - 0.5) * 2 };
+  const corridor = (spawnPoints || []).filter((p) => Math.abs(p[0]) <= 4 && Math.abs(p[2]) <= 16);
+  const pool = corridor.length ? corridor : (spawnPoints || [[0, 0, 0]]);
+  const p = pool[(Math.random() * pool.length) | 0] || [0, 0, 0];
+  let x = p[0] + (Math.random() - 0.5) * 1.4;
+  let z = p[2] + (Math.random() - 0.5) * 1.4;
+  x = Math.max(-2.6, Math.min(2.6, x));
+  z = Math.max(-16, Math.min(16, z));
+  return { x, y: PLAYER_HEIGHT, z };
 }
 
 function spawnBots(root) {
@@ -2058,7 +2188,7 @@ function spawnBots(root) {
     const cls = classPool[i % classPool.length];
     const sp = randomSpawn();
     const team = isTdm ? (i < 3 ? 0 : 1) : 1; // TDM: 3 allies + rest enemies
-    const mesh = makeBotMesh(team === 0 ? allyColor : enemyColors[i % enemyColors.length]);
+    const mesh = makeBotMesh(team === 0 ? allyColor : enemyColors[i % enemyColors.length], cls.id);
     const cleared = resolveBotClear(sp.x, sp.z, PLAYER_HEIGHT, 0.45);
     mesh.position.set(cleared.x, 0, cleared.z);
     root.add(mesh);
@@ -2161,130 +2291,288 @@ function disposeEnvGroup(root) {
   });
 }
 
-/** Apply photographic plate onto sky + ground + near side walls. Plate must dominate — no teal slabs. */
-function applyCinematicEnv(root, mapId, tex) {
+/** Multimedia mesh atlases + parallax (refs/atlas/*) — GTA-grade collidable textured city. */
+const ATLAS_URLS = {
+  wall: './refs/atlas/atlas-tonglau-wall.jpg',
+  pavement: './refs/atlas/atlas-wet-pavement.jpg',
+  gate: './refs/atlas/atlas-iron-gate.jpg',
+  neon: './refs/atlas/atlas-neon-sign-strip.jpg',
+  far: './refs/atlas/parallax-far-signs.jpg',
+  near: './refs/atlas/parallax-near-awning.jpg',
+};
+const atlasTextureCache = new Map(); // url -> THREE.Texture | null
+
+function loadAtlasTex(url) {
+  return new Promise((resolve) => {
+    if (atlasTextureCache.has(url)) {
+      resolve(atlasTextureCache.get(url));
+      return;
+    }
+    getEnvLoader().load(
+      url,
+      (tex) => {
+        tex.anisotropy = 4;
+        if (THREE.SRGBColorSpace) tex.colorSpace = THREE.SRGBColorSpace;
+        atlasTextureCache.set(url, tex);
+        resolve(tex);
+      },
+      undefined,
+      () => {
+        atlasTextureCache.set(url, null);
+        resolve(null);
+      }
+    );
+  });
+}
+
+function loadAllAtlases() {
+  return Promise.all([
+    loadAtlasTex(ATLAS_URLS.wall),
+    loadAtlasTex(ATLAS_URLS.pavement),
+    loadAtlasTex(ATLAS_URLS.gate),
+    loadAtlasTex(ATLAS_URLS.neon),
+    loadAtlasTex(ATLAS_URLS.far),
+    loadAtlasTex(ATLAS_URLS.near),
+  ]).then(([wall, pavement, gate, neon, far, near]) => ({ wall, pavement, gate, neon, far, near }));
+}
+
+function cropEnvTex(baseTex, u, v, su, sv) {
+  const t = baseTex.clone();
+  t.wrapS = THREE.ClampToEdgeWrapping;
+  t.wrapT = THREE.ClampToEdgeWrapping;
+  t.offset.set(u, v);
+  t.repeat.set(su, sv);
+  t.needsUpdate = true;
+  if (THREE.SRGBColorSpace) t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+function makeAtlasMat(map, opts = {}) {
+  const {
+    repeatX = 1, repeatY = 1, color = 0xffffff,
+    wrap = THREE.RepeatWrapping, roughness = 0.78, metalness = 0.12,
+  } = opts;
+  if (!map) {
+    return new THREE.MeshStandardMaterial({ color: 0x1a1e28, roughness, metalness, fog: true });
+  }
+  const m = map.clone();
+  m.wrapS = m.wrapT = wrap;
+  m.repeat.set(repeatX, repeatY);
+  m.needsUpdate = true;
+  return new THREE.MeshStandardMaterial({
+    map: m, color, roughness, metalness, fog: true,
+  });
+}
+
+function addEnvTexturedBox(group, x, y, z, w, h, d, mat, solid = true) {
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  mesh.position.set(x, y + h / 2, z);
+  mesh.name = 'envProp';
+  mesh.userData.envTextured = true;
+  mesh.castShadow = false;
+  mesh.receiveShadow = true;
+  group.add(mesh);
+  if (solid) solidBoxes.push(boxSolid(x, y, z, w, h, d));
+  return mesh;
+}
+
+/** Unstick player + bots after densify adds new collision. */
+function unstickActorsAfterDensify() {
+  if (typeof resolveBotClear !== 'function') return;
+  if (state && Number.isFinite(state.x)) {
+    const c = resolveBotClear(state.x, state.z, state.y || PLAYER_HEIGHT, 0.45);
+    state.x = c.x; state.z = c.z;
+    if (playerMesh) playerMesh.position.set(state.x, 0, state.z);
+  }
+  for (const b of bots) {
+    if (!b || !b.alive) continue;
+    const c = resolveBotClear(b.x, b.z, b.y || PLAYER_HEIGHT, 0.45);
+    b.x = c.x; b.z = c.z;
+    if (b.mesh) b.mesh.position.set(b.x, 0, b.z);
+  }
+}
+
+/** Sky + parallax + atlas-textured collidable city. Zero solid rainbow slabs. */
+function applyCinematicEnv(root, mapId, tex, atlas = {}) {
   if (!root || !tex || !scene) return false;
   disposeEnvGroup(root);
 
   const envGroup = new THREE.Group();
   envGroup.name = 'cinematicEnv';
+  envGroup.userData.atlas = atlas;
 
-  // Photographic sky cylinder (far)
+  // Far parallax canyon (Multimedia) behind sky plate
+  if (atlas.far) {
+    const farMat = new THREE.MeshBasicMaterial({
+      map: atlas.far, fog: false, depthWrite: false, transparent: true, opacity: 0.92,
+    });
+    const farN = new THREE.Mesh(new THREE.PlaneGeometry(160, 56), farMat);
+    farN.position.set(0, 20, -78);
+    farN.name = 'envParallaxFar';
+    farN.userData.envTextured = true;
+    farN.renderOrder = -4;
+    envGroup.add(farN);
+    const farS = farN.clone();
+    farS.material = farMat.clone();
+    farS.position.set(0, 20, 78);
+    farS.rotation.y = Math.PI;
+    farS.name = 'envParallaxFarS';
+    envGroup.add(farS);
+  }
+
   const skyMat = new THREE.MeshBasicMaterial({
-    map: tex,
-    side: THREE.BackSide,
-    fog: false,
-    depthWrite: false,
+    map: tex, side: THREE.BackSide, fog: false, depthWrite: false,
   });
   const sky = new THREE.Mesh(new THREE.CylinderGeometry(96, 96, 56, 64, 1, true), skyMat);
   sky.position.y = 18;
+  sky.name = 'envSky';
   sky.renderOrder = -2;
   envGroup.add(sky);
 
-  // Distant backdrop
-  const backdrop = new THREE.Mesh(
-    new THREE.PlaneGeometry(120, 48),
-    new THREE.MeshBasicMaterial({ map: tex, fog: false, depthWrite: false })
-  );
-  backdrop.position.set(0, 18, -70);
-  backdrop.renderOrder = -3;
-  envGroup.add(backdrop);
+  const mkBackdrop = (z, rotY, name) => {
+    const m = new THREE.Mesh(
+      new THREE.PlaneGeometry(140, 52),
+      new THREE.MeshBasicMaterial({ map: tex, fog: false, depthWrite: false, side: THREE.DoubleSide })
+    );
+    m.position.set(0, 18, z);
+    m.rotation.y = rotY;
+    m.name = name;
+    m.renderOrder = -3;
+    envGroup.add(m);
+  };
+  mkBackdrop(-72, 0, 'envBackdropN');
+  mkBackdrop(72, Math.PI, 'envBackdropS');
 
-  // Ground / road plate — env photo owns the floor (not skybox-only)
-  const groundPlate = new THREE.Mesh(
-    new THREE.PlaneGeometry(78, 78),
-    new THREE.MeshBasicMaterial({ map: tex, fog: true })
-  );
+  // Wet pavement atlas ONLY — never stretch full env plate onto ground (Vincent: 巨大字／人影 FAIL)
+  let groundMat;
+  if (atlas.pavement) {
+    const groundMap = atlas.pavement.clone();
+    groundMap.wrapS = groundMap.wrapT = THREE.RepeatWrapping;
+    groundMap.repeat.set(14, 14);
+    groundMap.anisotropy = 4;
+    groundMap.needsUpdate = true;
+    groundMat = new THREE.MeshStandardMaterial({
+      map: groundMap, color: 0xc8ccd0, roughness: 0.88, metalness: 0.1, fog: true,
+    });
+  } else {
+    // Fail-closed: dark wet asphalt, zero env photo
+    groundMat = new THREE.MeshStandardMaterial({
+      color: 0x1a1e24, roughness: 0.92, metalness: 0.06, fog: true,
+    });
+  }
+  const groundPlate = new THREE.Mesh(new THREE.PlaneGeometry(90, 90), groundMat);
   groundPlate.rotation.x = -Math.PI / 2;
   groundPlate.position.y = 0.01;
   groundPlate.name = 'envGroundPlate';
+  groundPlate.userData.asphalt = true;
+  groundPlate.userData.roadCrop = true;
+  groundPlate.userData.pavementAtlas = !!atlas.pavement;
   groundPlate.renderOrder = -1;
   envGroup.add(groundPlate);
 
-  // Near side wall plates — walking-in-photo city, not procedural boxes
-  const wallMatL = new THREE.MeshBasicMaterial({ map: tex, fog: true, side: THREE.DoubleSide });
-  const wallMatR = new THREE.MeshBasicMaterial({ map: tex, fog: true, side: THREE.DoubleSide });
-  const wallMatF = new THREE.MeshBasicMaterial({ map: tex, fog: true, side: THREE.DoubleSide });
-  const wallMatB = new THREE.MeshBasicMaterial({ map: tex, fog: true, side: THREE.DoubleSide });
-  const sideL = new THREE.Mesh(new THREE.PlaneGeometry(70, 30), wallMatL);
-  sideL.position.set(-8.8, 13, 0);
+  // Far side plates — pushed out so near FOV is atlas buildings, not flat env quads in the road
+  const wallBillboard = () => new THREE.MeshBasicMaterial({ map: tex, fog: true, side: THREE.DoubleSide });
+  const sideL = new THREE.Mesh(new THREE.PlaneGeometry(90, 40), wallBillboard());
+  sideL.position.set(-22, 16, 0);
   sideL.rotation.y = Math.PI / 2;
   sideL.name = 'envWallL';
   envGroup.add(sideL);
-  const sideR = new THREE.Mesh(new THREE.PlaneGeometry(70, 30), wallMatR);
-  sideR.position.set(8.8, 13, 0);
+  const sideR = new THREE.Mesh(new THREE.PlaneGeometry(90, 40), wallBillboard());
+  sideR.position.set(22, 16, 0);
   sideR.rotation.y = -Math.PI / 2;
   sideR.name = 'envWallR';
   envGroup.add(sideR);
-  const endN = new THREE.Mesh(new THREE.PlaneGeometry(40, 28), wallMatF);
-  endN.position.set(0, 12, -26);
+  const endN = new THREE.Mesh(new THREE.PlaneGeometry(56, 36), wallBillboard());
+  endN.position.set(0, 15, -42);
   endN.name = 'envWallN';
   envGroup.add(endN);
-  const endS = new THREE.Mesh(new THREE.PlaneGeometry(40, 28), wallMatB);
-  endS.position.set(0, 12, 26);
+  const endS = new THREE.Mesh(new THREE.PlaneGeometry(56, 36), wallBillboard());
+  endS.position.set(0, 15, 42);
   endS.rotation.y = Math.PI;
   endS.name = 'envWallS';
   envGroup.add(endS);
 
-  // Thin lane marks only (do not bury the plate under asphalt slabs)
-  for (let i = -5; i <= 5; i++) {
-    const dash = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.22, 1.5),
-      new THREE.MeshBasicMaterial({ color: 0xc8b060, transparent: true, opacity: 0.55 })
-    );
-    dash.rotation.x = -Math.PI / 2;
-    dash.position.set(0, 0.03, i * 4.5);
-    envGroup.add(dash);
+  // Near awning parallax strip (scrolls slightly with camera later via userData)
+  if (atlas.near) {
+    const awnMat = new THREE.MeshBasicMaterial({
+      map: atlas.near, transparent: true, depthWrite: false, fog: true, side: THREE.DoubleSide, opacity: 0.88,
+    });
+    const awn = new THREE.Mesh(new THREE.PlaneGeometry(28, 7), awnMat);
+    awn.position.set(0, 6.2, -9.5);
+    awn.name = 'envParallaxNear';
+    awn.userData.envTextured = true;
+    awn.userData.parallaxNear = true;
+    awn.renderOrder = 2;
+    envGroup.add(awn);
   }
 
-  // Sparse curb silhouettes (plate stays the hero)
-  densifyCinematicCitySlice(envGroup, root, mapId);
+  densifyCinematicCitySlice(envGroup, root, mapId, tex, atlas);
 
-  // Soft cinematic fill
-  const neonPink = new THREE.PointLight(0xff4dc8, 0.7, 48, 2);
+  const neonPink = new THREE.PointLight(0xff4dc8, 0.5, 48, 2);
   neonPink.position.set(-12, 9, 8);
   envGroup.add(neonPink);
-  const neonCyan = new THREE.PointLight(0x40f0ff, 0.6, 48, 2);
+  const neonCyan = new THREE.PointLight(0x40f0ff, 0.4, 48, 2);
   neonCyan.position.set(14, 8, -10);
   envGroup.add(neonCyan);
-  const amberFill = new THREE.PointLight(0xffd36a, 0.45, 36, 2);
+  const amberFill = new THREE.PointLight(0xffd36a, 0.32, 36, 2);
   amberFill.position.set(0, 6, 12);
   envGroup.add(amberFill);
-  const rim = new THREE.DirectionalLight(0xff80c8, 0.28);
-  rim.position.set(-8, 22, -14);
-  envGroup.add(rim);
 
   scene.background = tex;
   scene.fog = new THREE.FogExp2(0x080e1a, 0.0048);
   root.add(envGroup);
 
-  // Hide untextured building boxes / cyclorama leftovers so plates dominate
   stripBlockyArena(root);
+  unstickActorsAfterDensify();
   return true;
 }
 
-/** DELETE procedural arena façades / teal·magenta·purple·yellow·white slabs / floating neon·ZH boards.
- *  Not hide — remove from scene + dispose. Collision AABBs kept. Whitelist: cinematicEnv, hero, bots, gun, pickups, hold. */
+/** DELETE solid-color / canvas ZH junk. Keep atlas/env-textured props, asphalt, parallax, hero/bots. */
 function stripBlockyArena(root) {
   if (!root) return;
-  // holdZone visuals DELETED — do not whitelist cyan rings / blue pads
-  const keepName = new Set(['cinematicEnv', 'playerHero', 'botActor', 'heroGun']);
+  const keepRoot = new Set(['playerHero', 'botActor', 'heroGun', 'curbProp', 'vehicleProp', 'npcActor']);
+  const keepEnvMesh = new Set([
+    'envSky', 'envBackdropN', 'envBackdropS',
+    'envGroundPlate', 'envAsphaltLane',
+    'envWallL', 'envWallR', 'envWallN', 'envWallS',
+    'envParallaxFar', 'envParallaxFarS', 'envParallaxNear',
+  ]);
   const doomed = [];
   root.traverse((obj) => {
     if (!obj.isMesh || !obj.geometry) return;
     let p = obj;
     while (p) {
-      if (keepName.has(p.name)) return;
+      if (keepRoot.has(p.name) || (p.userData && (p.userData.keepVisual || p.userData.vehicle || p.userData.npc))) return;
       p = p.parent;
     }
-    const g = obj.geometry;
-    const t = g.type;
-    const mat = obj.material;
-    const mats = Array.isArray(mat) ? mat : (mat ? [mat] : []);
+    if (keepEnvMesh.has(obj.name) || obj.name === 'envProp') return;
+    if (obj.userData && (obj.userData.asphalt || obj.userData.envTextured || obj.userData.roadCrop)) return;
+
+    const underEnv = (() => {
+      let q = obj;
+      while (q) {
+        if (q.name === 'cinematicEnv') return true;
+        q = q.parent;
+      }
+      return false;
+    })();
+
+    const t = obj.geometry.type;
+    const mats = Array.isArray(obj.material) ? obj.material : (obj.material ? [obj.material] : []);
+    const hasMap = mats.some((m) => m && m.map);
     const hasCanvas = mats.some((m) => m && m.map && m.map.isCanvasTexture);
     const neonEmit = mats.some((m) => m && (m.emissiveIntensity || 0) >= 0.5);
     const loudRing = t === 'RingGeometry' || t === 'CircleGeometry';
-    if (t === 'PlaneGeometry' || t === 'BoxGeometry' || hasCanvas || loudRing || (t === 'CylinderGeometry' && (hasCanvas || neonEmit))) {
+    const solidColor = !hasMap;
+
+    if (underEnv) {
+      if (hasMap && !hasCanvas && !loudRing) return;
+      if (solidColor || hasCanvas || loudRing) doomed.push(obj);
+      return;
+    }
+    // Kill procedural ZH canvas boards / mid-road flat sign quads (雅翠火鍋 etc.)
+    if (hasCanvas || loudRing) { doomed.push(obj); return; }
+    if (t === 'PlaneGeometry' || t === 'BoxGeometry' || (t === 'CylinderGeometry' && neonEmit)) {
       doomed.push(obj);
     }
   });
@@ -2295,12 +2583,11 @@ function stripBlockyArena(root) {
       const mats = Array.isArray(obj.material) ? obj.material : (obj.material ? [obj.material] : []);
       mats.forEach((m) => {
         if (!m) return;
-        if (m.map && m.map.dispose) m.map.dispose();
+        if (m.map && m.map.isCanvasTexture && m.map.dispose) m.map.dispose();
         if (m.dispose) m.dispose();
       });
     } catch (_) { /* soft */ }
   }
-  // Drop empty curbProp groups left after mesh delete
   const emptyGroups = [];
   root.traverse((obj) => {
     if (obj.isGroup && (obj.name === 'curbProp' || (obj.userData && obj.userData.keepVisual))) {
@@ -2312,51 +2599,164 @@ function stripBlockyArena(root) {
 
 function arenaVisualAudit(root) {
   const r = root || worldRoot;
-  let box = 0, plane = 0, canvas = 0, solidColorBoxes = 0, rings = 0, samples = [];
-  if (!r) return { box, plane, canvas, solidColorBoxes, rings, samples, solids: solidBoxes.length };
-  // pickupOrb is Sprite (not Mesh); never whitelist solid-color arena slabs / cyan hold rings
-  const keepName = new Set(['cinematicEnv', 'playerHero', 'botActor', 'heroGun']);
+  let box = 0, plane = 0, canvas = 0, solidColorBoxes = 0, rings = 0, nearFovSolid = 0, texturedCover = 0;
+  let groundMappedNeon = false;
+  let atlasHit = { wall: 0, gate: 0, neon: 0, pavement: false, far: false, near: false };
+  const samples = [];
+  if (!r) return { box, plane, canvas, solidColorBoxes, rings, nearFovSolid, texturedCover, groundMappedNeon, atlasHit, samples, solids: solidBoxes.length };
+
+  const skipNames = new Set(['playerHero', 'botActor', 'heroGun', 'npcActor', 'vehicleProp', 'curbProp']);
+  const keepEnvMesh = new Set([
+    'envSky', 'envBackdropN', 'envBackdropS',
+    'envGroundPlate', 'envAsphaltLane',
+    'envWallL', 'envWallR', 'envWallN', 'envWallS',
+    'envParallaxFar', 'envParallaxFarS', 'envParallaxNear',
+  ]);
+
   r.traverse((obj) => {
-    if (!obj.isMesh || !obj.geometry || obj.visible === false) return;
+    if (!obj.isMesh || !obj.geometry) return;
     let p = obj;
-    let kept = false;
     while (p) {
-      if (keepName.has(p.name)) { kept = true; break; }
+      if (skipNames.has(p.name) || (p.userData && (p.userData.vehicle || p.userData.npc || p.userData.keepVisual))) return;
       p = p.parent;
     }
-    if (kept) return;
-    const t = obj.geometry.type;
-    const mat = obj.material;
-    const mats = Array.isArray(mat) ? mat : (mat ? [mat] : []);
-    const hasCanvas = mats.some((m) => m && m.map && m.map.isCanvasTexture);
-    const hasMap = mats.some((m) => m && m.map);
-    if (t === 'BoxGeometry') {
-      box++;
-      if (!hasMap) solidColorBoxes++;
+    if (keepEnvMesh.has(obj.name) || obj.name === 'envProp') {
+      const mats = Array.isArray(obj.material) ? obj.material : (obj.material ? [obj.material] : []);
+      const hasMap = mats.some((m) => m && m.map);
+      if (obj.name === 'envGroundPlate' && hasMap && !(obj.userData && obj.userData.roadCrop)) groundMappedNeon = true;
+      if (obj.name === 'envGroundPlate' && hasMap) atlasHit.pavement = true;
+      if (obj.name === 'envParallaxFar' || obj.name === 'envParallaxFarS') atlasHit.far = true;
+      if (obj.name === 'envParallaxNear') atlasHit.near = true;
+      if (obj.name === 'envProp' || (obj.userData && obj.userData.envTextured)) {
+        texturedCover += 1;
+        const role = obj.userData && obj.userData.atlasRole;
+        if (role === 'wall') atlasHit.wall += 1;
+        else if (role === 'gate') atlasHit.gate += 1;
+        else if (role === 'neon') atlasHit.neon += 1;
+      }
+      return;
     }
-    if (t === 'PlaneGeometry' && !hasMap) plane++;
-    else if (t === 'PlaneGeometry') { /* textured plate ok if somehow outside env */ }
-    if (t === 'RingGeometry' || t === 'CircleGeometry') rings++;
-    if (hasCanvas) canvas++;
-    if (samples.length < 8 && (t === 'BoxGeometry' || (t === 'PlaneGeometry' && !hasMap) || hasCanvas || t === 'RingGeometry' || t === 'CircleGeometry')) {
-      const prm = obj.geometry.parameters || {};
-      samples.push({ t, w: prm.width, h: prm.height, d: prm.depth, canvas: !!hasCanvas, name: obj.name || '' });
+    if (obj.userData && (obj.userData.asphalt || obj.userData.roadCrop || obj.userData.envTextured)) {
+      texturedCover += 1;
+      return;
+    }
+
+    const t = obj.geometry.type;
+    const mats = Array.isArray(obj.material) ? obj.material : (obj.material ? [obj.material] : []);
+    const hasMap = mats.some((m) => m && m.map);
+    const hasCanvas = mats.some((m) => m && m.map && m.map.isCanvasTexture);
+    if (t === 'BoxGeometry' && !hasMap) box += 1;
+    if (t === 'PlaneGeometry' && !hasMap) plane += 1;
+    if (hasCanvas) canvas += 1;
+    if (t === 'RingGeometry' || t === 'CircleGeometry') rings += 1;
+    const loud = (!hasMap && (t === 'BoxGeometry' || t === 'PlaneGeometry')) || hasCanvas || t === 'RingGeometry' || t === 'CircleGeometry';
+    if (!hasMap && t === 'BoxGeometry') solidColorBoxes += 1;
+    // near FOV: |x|<14 |z|<18 |y|<8
+    const wp = new THREE.Vector3();
+    obj.getWorldPosition(wp);
+    if (loud && Math.abs(wp.x) < 14 && Math.abs(wp.z) < 18 && wp.y < 8) {
+      nearFovSolid += 1;
+      if (samples.length < 8) samples.push({ t, name: obj.name, x: +wp.x.toFixed(1), z: +wp.z.toFixed(1), map: !!hasMap, canvas: !!hasCanvas });
     }
   });
-  return { box, plane, canvas, solidColorBoxes, rings, samples, solids: solidBoxes.length };
+  return { box, plane, canvas, solidColorBoxes, rings, nearFovSolid, texturedCover, groundMappedNeon, atlasHit, samples, solids: solidBoxes.length };
 }
 
-/** Sparse HK curb silhouettes when env plate is live — plate stays the main visual. */
-function densifyCinematicCitySlice(envGroup, root, mapId) {
-  const seed = String(mapId || 'cargo').split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+/** Thick atlas-textured Tong Lau + gates + neon strips + cover. Playable |x|<3.8 corridor. */
+function densifyCinematicCitySlice(envGroup, root, mapId, tex, atlas = {}) {
+  if (!envGroup || !tex) return;
+  // Drop procedural mid-lane low AABBs (meshes already stripped) so corridor stays walkable
+  solidBoxes = solidBoxes.filter((b) => {
+    const cx = (b.minX + b.maxX) * 0.5;
+    const h = b.maxY - b.minY;
+    if (Math.abs(cx) < 3.3 && h < 3.2 && b.maxY < 3.5) return false;
+    return true;
+  });
+  const seed = String(mapId || 'signs').split('').reduce((a, c) => a + c.charCodeAt(0), 0);
   const rnd = (i) => {
     const x = Math.sin(seed * 12.9898 + i * 78.233) * 43758.5453;
     return x - Math.floor(x);
   };
 
-  // Plate-only densify: NO parked yellow/white vehicles, NO neon boards, NO curb color clutter.
-  // Collision cover still comes from builder solidBoxes (meshes never spawned under PLATE_ONLY_ARENA).
-  void rnd; void envGroup; void root; void mapId;
+  const wallSrc = atlas.wall || cropEnvTex(tex, 0.08, 0.22, 0.35, 0.55);
+  const gateSrc = atlas.gate || cropEnvTex(tex, 0.70, 0.05, 0.25, 0.35);
+  const neonSrc = atlas.neon || null;
+  const coverSrc = atlas.wall || cropEnvTex(tex, 0.35, 0.05, 0.3, 0.15);
+
+  const facadeMats = [0, 1, 2, 3].map((i) => makeAtlasMat(wallSrc, {
+    repeatX: 1.1 + i * 0.15, repeatY: 1.6 + (i % 2) * 0.4,
+  }));
+  const gateMat = makeAtlasMat(gateSrc, { repeatX: 1.2, repeatY: 1.0 });
+  const coverMat = makeAtlasMat(coverSrc, { repeatX: 0.8, repeatY: 0.8, color: 0xd0d4d8 });
+
+  // Buildings far enough that inner face stays |x| >= 6.2 — corridor walkable
+  const rowX = [-9.6, 9.6];
+  rowX.forEach((bx, ri) => {
+    for (let i = -4; i <= 4; i++) {
+      const z = i * 5.0 + (ri ? 1.1 : 0);
+      const h = 7.5 + ((i + ri * 3 + (seed % 5)) % 4) * 1.6;
+      const depth = 3.2 + rnd(i * 3 + ri) * 0.9;
+      const mat = facadeMats[(i + ri * 2 + 4) % facadeMats.length];
+      const mesh = addEnvTexturedBox(envGroup, bx, 0, z, 4.4, h, depth, mat, true);
+      mesh.userData.atlasRole = 'wall';
+
+      const toward = bx > 0 ? -1 : 1;
+      // Iron gate shutter on shopfront (atlas-iron-gate)
+      const gate = addEnvTexturedBox(
+        envGroup, bx + toward * 2.15, 0, z, 0.22, 2.4, depth * 0.72, gateMat, true
+      );
+      gate.userData.atlasRole = 'gate';
+
+      // Neon sign strip board on façade (not solid color)
+      if (neonSrc) {
+        const nmat = makeAtlasMat(neonSrc, {
+          repeatX: 1, repeatY: 1, wrap: THREE.ClampToEdgeWrapping, roughness: 0.45, metalness: 0.2,
+        });
+        const sign = addEnvTexturedBox(
+          envGroup, bx + toward * 2.28, 3.4 + (i % 3) * 0.35, z + (ri ? -0.55 : 0.55),
+          0.14, 0.75, 2.2, nmat, false
+        );
+        sign.userData.atlasRole = 'neon';
+      }
+    }
+  });
+
+  // Cover along curbs only (|x|>=3.4) — keep center lane free for WASD / bots / pickups
+  const covers = [
+    [-3.5, 6.5, 1.35, 1.15, 1.25], [3.5, -6.5, 1.4, 1.2, 1.3],
+    [-3.6, 12, 1.3, 1.05, 1.2], [3.6, -12, 1.35, 1.1, 1.25],
+    [-3.5, -3.5, 1.25, 1.0, 1.15], [3.5, 3.5, 1.3, 1.05, 1.2],
+    [-3.7, 17, 1.5, 1.25, 1.4], [3.7, -17, 1.5, 1.25, 1.4],
+  ];
+  covers.forEach(([x, z, w, h, d], i) => {
+    const m = addEnvTexturedBox(envGroup, x, 0, z, w, h, d, i % 2 ? gateMat : coverMat, true);
+    m.userData.atlasRole = i % 2 ? 'gate' : 'wall';
+  });
+
+  // Textured end barriers
+  [[0, 24, 24, 4.2, 1.5], [0, -24, 24, 4.2, 1.5]].forEach(([x, z, w, h, d], i) => {
+    const m = addEnvTexturedBox(envGroup, x, 0, z, w, h, d, facadeMats[i % facadeMats.length], true);
+    m.userData.atlasRole = 'wall';
+  });
+
+  // Static collidable vehicles on curbs (driveable deferred) — textured, not color slabs
+  if (typeof addMinibus === 'function') {
+    addMinibus(envGroup, 4.2, -14.5, 'red', 0.08);
+    addMinibus(envGroup, -4.2, 14.0, 'green', Math.PI - 0.05);
+  }
+  if (typeof addVintageSedan === 'function') {
+    addVintageSedan(envGroup, 4.0, 8.5, -0.12, 0xffd36a);
+    addVintageSedan(envGroup, -4.1, -8.0, Math.PI + 0.1, 0xf2f0ea);
+  }
+  if (typeof addSmallTruck === 'function') {
+    addSmallTruck(envGroup, 4.3, -19.5, Math.PI / 2);
+  }
+  if (typeof addMotorcycle === 'function') {
+    addMotorcycle(envGroup, -3.8, 5.5, 0.4);
+    addMotorcycle(envGroup, 3.9, -3.5, -0.3);
+  }
+
+  void root; void rnd;
 }
 
 function beginEnvPlateLoad(root, mapId) {
@@ -2364,9 +2764,11 @@ function beginEnvPlateLoad(root, mapId) {
   const url = envPlateUrl(mapId);
   envPlateStatus = { mapId, status: 'loading', url };
 
-  const applyIfCurrent = (tex) => {
+  const applyIfCurrent = async (tex) => {
     if (token !== envLoadToken) return;
-    if (tex && applyCinematicEnv(root, mapId, tex)) {
+    const atlas = await loadAllAtlases();
+    if (token !== envLoadToken) return;
+    if (tex && applyCinematicEnv(root, mapId, tex, atlas)) {
       envPlateStatus = { mapId, status: 'ready', url };
     } else {
       envPlateStatus = { mapId, status: 'missing', url };
@@ -2468,7 +2870,7 @@ function buildWorld(mapId) {
   gunMesh.add(barrel);
   const body = new THREE.Mesh(
     new THREE.BoxGeometry(0.14, 0.16, 0.28),
-    new THREE.MeshStandardMaterial({ color: 0x2a3040, emissive: 0x40f0ff, emissiveIntensity: 0.35 })
+    new THREE.MeshStandardMaterial({ color: 0x1a2030, emissive: 0x101418, emissiveIntensity: 0.12 })
   );
   body.position.set(0, 0, 0);
   gunMesh.add(body);
@@ -2501,17 +2903,16 @@ function collideXZ(x, z, y, radius) {
   let nx = x, nz = z;
   for (const b of solidBoxes) {
     if (y + 0.2 < b.minY || y - PLAYER_HEIGHT + 0.3 > b.maxY) continue;
-    const cx = Math.max(b.minX, Math.min(nx, b.maxX));
-    const cz = Math.max(b.minZ, Math.min(nz, b.maxZ));
-    let dx = nx - cx, dz = nz - cz;
-    const dist2 = dx * dx + dz * dz;
-    if (dist2 < radius * radius) {
-      if (dist2 < 1e-8) { dx = radius; dz = 0; }
-      const dist = Math.sqrt(dx * dx + dz * dz) || radius;
-      const push = radius - dist;
-      nx += (dx / dist) * push;
-      nz += (dz / dist) * push;
-    }
+    const minX = b.minX - radius, maxX = b.maxX + radius;
+    const minZ = b.minZ - radius, maxZ = b.maxZ + radius;
+    if (nx <= minX || nx >= maxX || nz <= minZ || nz >= maxZ) continue;
+    // Inside expanded AABB — push out via nearest face (fixes deep embed / WASD trap)
+    const dl = nx - minX, dr = maxX - nx, db = nz - minZ, dt = maxZ - nz;
+    const m = Math.min(dl, dr, db, dt);
+    if (m === dl) nx = minX;
+    else if (m === dr) nx = maxX;
+    else if (m === db) nz = minZ;
+    else nz = maxZ;
   }
   // soft bounds — larger playable envelopes per family (Vincent: 很大地圖)
   const tight = new Set(['signs', 'signcanyon', 'pawnarcade', 'teahouse', 'nightstall']);
@@ -2647,6 +3048,15 @@ function applyPlayerPhysics(dt) {
 }
 
 function updateCamera() {
+  // Mild near-awning parallax (atlas strip tracks camera slightly)
+  if (worldRoot) {
+    worldRoot.traverse((o) => {
+      if (o.name === 'envParallaxNear' && o.userData && o.userData.parallaxNear) {
+        o.position.x = (state.x || 0) * 0.12;
+        o.position.z = -9.5 + (state.z || 0) * 0.04;
+      }
+    });
+  }
   const eyeH = state.crouching || state.sliding ? CROUCH_HEIGHT : PLAYER_HEIGHT;
   const feetY = state.y - eyeH;
 
@@ -2890,7 +3300,7 @@ function spawnBoss(root, level, bossId) {
   const def = bossById(bossId || BOSS_HUNT_ROSTER[(Math.max(1, level) - 1) % BOSS_HUNT_ROSTER.length]);
   state.bossId = def.id;
   const sp = randomSpawn();
-  const mesh = makeBotMesh(def.color);
+  const mesh = makeBotMesh(def.color, def.id || 'rock');
   mesh.scale.set(1.5, 1.55, 1.5);
   mesh.position.set(sp.x, 0, sp.z);
   root.add(mesh);
@@ -3287,12 +3697,26 @@ function startReload() {
 
 function resolveBotClear(x, z, y, radius) {
   let cx = x, cz = z;
-  for (let iter = 0; iter < 6; iter++) {
+  for (let iter = 0; iter < 10; iter++) {
     const c = collideXZ(cx, cz, y, radius);
-    if (Math.hypot(c.x - cx, c.z - cz) < 1e-4) return c;
+    if (Math.hypot(c.x - cx, c.z - cz) < 1e-4) break;
     cx = c.x; cz = c.z;
   }
-  return { x: cx, z: cz };
+  // Prefer open alley corridor after densify façades
+  const candidates = [
+    [cx, cz],
+    [Math.max(-2.4, Math.min(2.4, cx)), Math.max(-17, Math.min(17, cz))],
+    [0, Math.max(-16, Math.min(16, cz))],
+    [0, 0], [1.2, 4], [-1.2, -4], [0.8, 8], [-0.8, -8],
+    [1.5, 12], [-1.5, -12], [0, 6], [0, -6],
+  ];
+  for (const [sx, sz] of candidates) {
+    const c = collideXZ(sx, sz, y, radius);
+    if (Math.hypot(c.x - sx, c.z - sz) < 0.02 && Math.abs(c.x) <= 2.8 && Math.abs(c.z) <= 18.5) {
+      return c;
+    }
+  }
+  return collideXZ(0, 0, y, radius);
 }
 
 function steerBot(b, wishX, wishZ, spd, dt) {
@@ -3640,6 +4064,7 @@ function startMatch(mapId, classId, opts = {}) {
   const cls = classById(classId);
   // set mode before buildWorld so spawnBots can team-split
   buildWorld(mapId);
+  if (typeof spawnStreetNpcs === 'function') spawnStreetNpcs(worldRoot || scene);
   // bosses for campaign / boss hunt
   if (state.gameMode === 'campaign') {
     const lv = CHANNEL7[(state.campaignLevel - 1) | 0];
@@ -3651,7 +4076,8 @@ function startMatch(mapId, classId, opts = {}) {
   resize();
 
   const sp = randomSpawn();
-  state.x = sp.x; state.y = PLAYER_HEIGHT; state.z = sp.z;
+  const cleared = resolveBotClear(sp.x, sp.z, PLAYER_HEIGHT, 0.45);
+  state.x = cleared.x; state.y = PLAYER_HEIGHT; state.z = cleared.z;
   state.vx = state.vz = state.vy = 0;
   state.hp = cls.hp;
   state.ammo = cls.mag;
@@ -3769,6 +4195,7 @@ function loop() {
     updateCamera();
     tryShoot(dt);
     updateBots(dt);
+    if (typeof updateStreetNpcs === 'function') updateStreetNpcs(dt);
     updateTraces(dt);
     updatePickups(dt);
     updateHold(dt);
@@ -3872,6 +4299,90 @@ window.__mapBuilders = () => ({
 
 // expose start helpers for automated tests
 
+
+window.__forcePickupTest = () => {
+  const p = pickups.find((x) => x.alive && x.mesh);
+  if (!p) return { ok: false, reason: 'no-pickup' };
+  const beforeKind = p.kind;
+  const beforeHp = state.hp;
+  const beforeArmor = state.armor;
+  const beforeCoins = state.coins;
+  // Teleport onto pickup and run one collect tick
+  state.x = p.x; state.z = p.z;
+  updatePickups(0.05);
+  const collected = !p.alive;
+  return {
+    ok: collected === true,
+    kind: beforeKind,
+    hpDelta: state.hp - beforeHp,
+    armorDelta: state.armor - beforeArmor,
+    coinsDelta: state.coins - beforeCoins,
+    pickupsLeft: pickups.filter((x) => x.alive).length,
+  };
+};
+
+window.__cityPropProbe = () => {
+  let vehicles = 0, npcs = 0;
+  if (worldRoot) {
+    worldRoot.traverse((o) => {
+      if (o.name === 'vehicleProp') vehicles += 1;
+      if (o.name === 'npcActor') npcs += 1;
+    });
+  }
+  const before = streetNpcs.map((n) => ({ x: n.x, z: n.z }));
+  if (typeof updateStreetNpcs === 'function') {
+    for (let i = 0; i < 20; i++) updateStreetNpcs(0.05);
+  }
+  let npcMoved = false;
+  streetNpcs.forEach((n, i) => {
+    if (!before[i]) return;
+    if (Math.hypot(n.x - before[i].x, n.z - before[i].z) > 0.25) npcMoved = true;
+  });
+  return { vehicles, npcs, npcMoved, streetNpcCount: streetNpcs.length };
+};
+
+window.__setKey = (code, down) => { keys[code] = !!down; };
+window.__forceWasdProbe = (seconds = 0.85) => {
+  if (typeof window.__clearPlayerToCorridor === 'function') window.__clearPlayerToCorridor();
+  const before = { x: state.x, z: state.z };
+  keys.KeyW = true;
+  keys.KeyD = true;
+  const steps = Math.max(12, Math.ceil(seconds / 0.05));
+  for (let i = 0; i < steps; i++) {
+    if (typeof applyPlayerPhysics === 'function') applyPlayerPhysics(0.05);
+    else break;
+  }
+  keys.KeyW = false;
+  keys.KeyD = false;
+  if (playerMesh) playerMesh.position.set(state.x, 0, state.z);
+  const d = Math.hypot(state.x - before.x, state.z - before.z);
+  return { ok: d > 0.2, d: +d.toFixed(3), before, after: { x: +state.x.toFixed(3), z: +state.z.toFixed(3) } };
+};
+window.__clearPlayerToCorridor = () => {
+  const c = resolveBotClear(0, 0, PLAYER_HEIGHT, 0.45);
+  state.x = c.x; state.z = c.z; state.y = PLAYER_HEIGHT;
+  state.vx = state.vz = 0;
+  if (playerMesh) playerMesh.position.set(state.x, 0, state.z);
+  return { x: state.x, z: state.z };
+};
+
+window.__botVisualProbe = () => {
+  let total = 0, billboards = 0, stubsHidden = 0, capsules = 0;
+  for (const b of bots) {
+    if (!b || !b.mesh) continue;
+    total += 1;
+    const bb = b.mesh.userData && b.mesh.userData.billboard;
+    const stub = b.mesh.userData && b.mesh.userData.stub;
+    if (bb && bb.visible && bb.material && bb.material.map) billboards += 1;
+    if (stub && !stub.visible) stubsHidden += 1;
+    b.mesh.traverse((o) => {
+      if (o.isMesh && o.geometry && (o.geometry.type === 'CylinderGeometry' || o.geometry.type === 'SphereGeometry') && o.visible && o.name !== 'botTeamPip') {
+        capsules += 1;
+      }
+    });
+  }
+  return { total, billboards, stubsHidden, visibleCapsules: capsules, ok: billboards >= Math.min(4, total) && billboards > 0 };
+};
 
 window.__botMotionProbe = (seconds = 0.85) => {
   const alive = bots.filter((b) => b.alive);
