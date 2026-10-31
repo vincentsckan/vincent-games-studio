@@ -63,6 +63,159 @@ The studio's aim is simple: make players stop—and hit "play again."`,
 
 export const games: Game[] = [
   {
+    id: 'neon-chase',
+    slug: 'neon-chase',
+    titleZh: '霓虹追蹤',
+    titleEn: 'Neon Chase',
+    taglineZh: '旺角夜街，無盡狂奔。',
+    taglineEn: 'Endless sprint through Mong Kok neon alleys.',
+    dimension: '2D',
+    status: 'demo',
+    year: 2026,
+    genres: ['街機', '反應'],
+    hookZh:
+      '霓虹在雨後路面拉成長影。你在旺角窄巷裡左右閃避、躍過路障，撿起時鐘爭取更遠的距離——直到撞上無法避開的障礙。',
+    hookEn:
+      'Neon streaks across wet asphalt. Dodge, jump, and grab extra time in Mong Kok alleys—until something you cannot avoid catches you.',
+    gameplayZh:
+      '無盡跑酷：左右換線、跳躍躲障礙，收集時鐘加分。速度會隨距離加快。支援鍵盤與觸控。',
+    gameplayEn:
+      'Endless runner: switch lanes, jump obstacles, collect clocks. Speed ramps up with distance. Keyboard and touch friendly.',
+    features: [
+      {
+        titleZh: '旺角霓虹巷',
+        titleEn: 'Mong Kok neon lanes',
+        bodyZh: '粉紅與青色招牌、濕地倒影，營造夜間追趕節奏。',
+        bodyEn: 'Pink-cyan signs and wet reflections set a night-chase pulse.',
+      },
+      {
+        titleZh: '漸快節奏',
+        titleEn: 'Rising tempo',
+        bodyZh: '跑得越遠，障礙越密、速度越快。',
+        bodyEn: 'The farther you go, denser hazards and higher speed.',
+      },
+      {
+        titleZh: '即開即玩',
+        titleEn: 'Instant play',
+        bodyZh: '瀏覽器單檔試玩，無需安裝。',
+        bodyEn: 'Single-file browser demo—no install.',
+      },
+    ],
+    coverImage: 'covers/neon-chase.jpg',
+    palette: {
+      from: '#120018',
+      via: '#4a0a5c',
+      to: '#ff4dc8',
+      accent: '#40f0ff',
+      pattern: 'fault',
+    },
+    links: {
+      play: '/vincent-games-studio/demos/neon-chase/',
+    },
+  },
+  {
+    id: 'rooftop-cat',
+    slug: 'rooftop-cat',
+    titleZh: '天台貓',
+    titleEn: 'Rooftop Cat',
+    taglineZh: '日落前，跳到最遠那座屋頂。',
+    taglineEn: 'Reach the far roof before the sun dips.',
+    dimension: '2D',
+    status: 'demo',
+    year: 2026,
+    genres: ['平台', '動作'],
+    hookZh:
+      '紅領巾小貓穿梭舊樓天台：水塔、天線、晾衣架都是跳板。短程平台挑戰——掉下去就重來，抵達終點旗就算過關。',
+    hookEn:
+      'A bandana kitten vaults old-building rooftops—water tanks, antennas, laundry poles. Short platform run: fall and retry, flag means clear.',
+    gameplayZh:
+      '左右移動與可變高度跳躍，從近端屋頂一路跳到遠端終點。適合手機點按操作。',
+    gameplayEn:
+      'Move and variable-height jump across rooftops to the far goal. Tap-friendly on mobile.',
+    features: [
+      {
+        titleZh: '香港天台風景',
+        titleEn: 'HK rooftop scenery',
+        bodyZh: '水塔、晾衫竹、日落天際線，一跳一景。',
+        bodyEn: 'Tanks, laundry poles, sunset skyline—each hop a postcard.',
+      },
+      {
+        titleZh: '短程通關',
+        titleEn: 'Short clear run',
+        bodyZh: '不是無盡模式：目標明確，重玩手感。',
+        bodyEn: 'Not endless—clear goal, satisfying retries.',
+      },
+      {
+        titleZh: '可變跳躍',
+        titleEn: 'Variable jump',
+        bodyZh: '短按輕跳、長按高跳，精準落點。',
+        bodyEn: 'Tap short, hold high—land where you mean to.',
+      },
+    ],
+    coverImage: 'covers/rooftop-cat.jpg',
+    palette: {
+      from: '#2a1838',
+      via: '#c05060',
+      to: '#f09050',
+      accent: '#ffd36a',
+      pattern: 'harbor',
+    },
+    links: {
+      play: '/vincent-games-studio/demos/rooftop-cat/',
+    },
+  },
+  {
+    id: 'tea-rush',
+    slug: 'tea-rush',
+    titleZh: '茶餐廳限時',
+    titleEn: 'Tea Rush',
+    taglineZh: '快單！熱茶！來不及猶豫。',
+    taglineEn: 'Fast orders. Hot tea. No time to spare.',
+    dimension: '2D',
+    status: 'demo',
+    year: 2026,
+    genres: ['反應', '休閒'],
+    hookZh:
+      '茶餐廳櫃位前訂單飛來：奶茶、西多士、菠蘿油……把正確組合點上托盤再上菜。限時內分數越高越好。',
+    hookEn:
+      'Tickets fly at the cha chaan teng counter—milk tea, French toast, pineapple buns. Match the tray and serve before time runs out.',
+    gameplayZh:
+      '點擊／輕觸菜單把餐點放上托盤，核對點單後按「上菜」。做錯扣分；做對加時。紀錄保存在本機。',
+    gameplayEn:
+      'Tap menu items onto the tray, then Serve. Misses cost points; hits add time. Best score saved locally.',
+    features: [
+      {
+        titleZh: '茶餐廳菜單',
+        titleEn: 'Cha chaan teng menu',
+        bodyZh: '奶茶、凍檸茶、鴛鴦、西多士等經典組合。',
+        bodyEn: 'Milk tea, lemon tea, yuan yang, French toast, and more.',
+      },
+      {
+        titleZh: '限時對單',
+        titleEn: 'Timed matching',
+        bodyZh: '越做越難的點單長度，考驗眼快手快。',
+        bodyEn: 'Orders grow longer—eyes and fingers race the clock.',
+      },
+      {
+        titleZh: '手機友善',
+        titleEn: 'Mobile friendly',
+        bodyZh: '大按鈕點按，無需鍵盤。',
+        bodyEn: 'Big tap targets—no keyboard required.',
+      },
+    ],
+    coverImage: 'covers/tea-rush.jpg',
+    palette: {
+      from: '#1a1008',
+      via: '#5a3018',
+      to: '#ff9a40',
+      accent: '#ffd36a',
+      pattern: 'crane',
+    },
+    links: {
+      play: '/vincent-games-studio/demos/tea-rush/',
+    },
+  },
+  {
     id: 'mist-harbor',
     slug: 'mist-harbor-lights',
     titleZh: '霧港燈影',

@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-HK">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
+<title>霓虹追蹤 · Neon Chase — Vincent Games Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:#05010a;color:#fff;font-family:"Noto Sans TC",system-ui,sans-serif;overflow:hidden;touch-action:none;user-select:none}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+canvas{display:block;width:100%;height:100%;max-width:100vw;max-height:100vh;background:#05010a}
+#hud{position:fixed;left:0;right:0;top:0;padding:calc(10px + env(safe-area-inset-top)) 16px 0;display:flex;justify-content:space-between;pointer-events:none;z-index:2;font-weight:700;text-shadow:0 2px 8px #000}
+#hud .l{color:#ff4dc8}#hud .r{color:#40f0ff;text-align:right}
+#hud small{display:block;font-family:Syne,sans-serif;font-size:11px;opacity:.7;font-weight:700;letter-spacing:.06em}
+#overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(5,1,10,.78);z-index:3;padding:24px}
+#overlay.hidden{display:none}
+.card{max-width:420px;width:100%;background:linear-gradient(160deg,#1a0828,#0a1020);border:1px solid #ff4dc855;border-radius:20px;padding:28px 24px;text-align:center;box-shadow:0 0 40px #ff4dc833}
+.card h1{font-family:Syne,sans-serif;font-size:2rem;font-weight:800;background:linear-gradient(90deg,#ff4dc8,#40f0ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.card .sub{margin-top:6px;color:#ffd36a;font-size:13px;letter-spacing:.08em}
+.card p{margin-top:14px;color:#c8b8d8;font-size:14px;line-height:1.55}
+.card .scores{margin-top:16px;display:flex;gap:12px;justify-content:center}
+.card .scores div{background:#fff1;border-radius:12px;padding:10px 16px;min-width:110px}
+.card .scores b{display:block;font-size:1.4rem;color:#40f0ff}
+.card .scores span{font-size:11px;opacity:.7}
+button.play{margin-top:20px;min-height:48px;padding:0 28px;border:0;border-radius:999px;background:linear-gradient(90deg,#ff4dc8,#7a3cff);color:#fff;font-weight:900;font-size:16px;cursor:pointer;font-family:inherit;box-shadow:0 8px 24px #ff4dc855}
+button.play:active{transform:scale(.97)}
+#touch{position:fixed;left:0;right:0;bottom:0;height:28%;display:flex;z-index:2;pointer-events:none}
+#touch.play{pointer-events:auto}
+#touch button{flex:1;background:transparent;border:0;opacity:0}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="c"></canvas></div>
+<div id="hud">
+  <div class="l"><small>DISTANCE · 距離</small><span id="dist">0</span>m</div>
+  <div class="r"><small>BEST · 最佳</small><span id="best">0</span>m</div>
+</div>
+<div id="overlay">
+  <div class="card">
+    <h1>NEON CHASE</h1>
+    <div class="sub">霓虹追蹤 · 旺角夜街</div>
+    <p>在旺角霓虹巷狂奔。左右閃避障礙、跳過路障，撿拾時鐘延長距離。<br/>← → / A D 移動 · Space / ↑ / 點按上半屏跳躍</p>
+    <div class="scores">
+      <div><b id="lastScore">0</b><span>本次距離 m</span></div>
+      <div><b id="bestScore">0</b><span>最佳紀錄 m</span></div>
+    </div>
+    <button class="play" id="startBtn">開始 START</button>
+  </div>
+</div>
+<div id="touch"><button id="tL" aria-label="left"></button><button id="tJ" aria-label="jump"></button><button id="tR" aria-label="right"></button></div>
+<script>
+(() => {
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const KEY = 'vgs-neon-chase-best';
+let best = +localStorage.getItem(KEY) || 0;
+document.getElementById('best').textContent = best;
+document.getElementById('bestScore').textContent = best;
+
+const W = 390, H = 700;
+let dpr = 1, running = false, t0 = 0, dist = 0, speed = 280;
+let player, obstacles, pickups, particles, lanes, shake = 0, dead = false, deadT = 0;
+const signs = ['夜市','旺角','美食','24H','電玩','龍城','女人街','通宵'];
+
+function resize() {
+  dpr = Math.min(devicePixelRatio || 1, 2);
+  const vw = innerWidth, vh = innerHeight;
+  const scale = Math.min(vw / W, vh / H);
+  canvas.width = Math.floor(W * dpr);
+  canvas.height = Math.floor(H * dpr);
+  canvas.style.width = (W * scale) + 'px';
+  canvas.style.height = (H * scale) + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+addEventListener('resize', resize); resize();
+
+const keys = {};
+addEventListener('keydown', e => {
+  keys[e.code] = true;
+  if (['Space','ArrowUp','ArrowLeft','ArrowRight'].includes(e.code)) e.preventDefault();
+  if (!running && (e.code === 'Space' || e.code === 'Enter')) start();
+});
+addEventListener('keyup', e => { keys[e.code] = false; });
+
+const touch = document.getElementById('touch');
+['tL','tJ','tR'].forEach(id => {
+  const el = document.getElementById(id);
+  const down = e => { e.preventDefault(); if (id==='tL') keys.KeyA=true; if (id==='tR') keys.KeyD=true; if (id==='tJ') keys.Space=true; };
+  const up = () => { if (id==='tL') keys.KeyA=false; if (id==='tR') keys.KeyD=false; if (id==='tJ') keys.Space=false; };
+  el.addEventListener('touchstart', down, {passive:false});
+  el.addEventListener('touchend', up);
+  el.addEventListener('mousedown', down);
+  el.addEventListener('mouseup', up);
+});
+canvas.addEventListener('pointerdown', e => {
+  if (!running) return;
+  const r = canvas.getBoundingClientRect();
+  const y = (e.clientY - r.top) / r.height;
+  if (y < 0.55) keys.Space = true;
+});
+canvas.addEventListener('pointerup', () => { keys.Space = false; });
+
+function laneX(i){ return W * (0.22 + i * 0.28); }
+lanes = [0,1,2];
+
+function reset() {
+  player = { lane:1, x:laneX(1), y:H*0.72, vy:0, onGround:true, w:28, h:42, inv:0 };
+  obstacles = [];
+  pickups = [];
+  particles = [];
+  dist = 0; speed = 280; shake = 0; dead = false; deadT = 0;
+  spawnTimer = 0.8; pickupTimer = 1.5;
+}
+
+let spawnTimer = 0, pickupTimer = 0;
+
+function spawnObs() {
+  const lane = (Math.random()*3)|0;
+  const kind = Math.random() < 0.45 ? 'cone' : (Math.random()<0.5?'crate':'cart');
+  obstacles.push({ lane, x:laneX(lane), y:-40, kind, w: kind==='cart'?46:32, h: kind==='cart'?36:28 });
+}
+function spawnPickup() {
+  const lane = (Math.random()*3)|0;
+  pickups.push({ lane, x:laneX(lane), y:-30, r:12, taken:false });
+}
+
+function start() {
+  reset();
+  running = true; dead = false;
+  document.getElementById('overlay').classList.add('hidden');
+  touch.classList.add('play');
+  document.getElementById('startBtn').textContent = '再玩 AGAIN';
+  t0 = performance.now();
+  requestAnimationFrame(loop);
+}
+
+document.getElementById('startBtn').onclick = start;
+
+function gameOver() {
+  dead = true; deadT = 0; shake = 10;
+  const score = Math.floor(dist);
+  if (score > best) { best = score; localStorage.setItem(KEY, best); }
+  document.getElementById('lastScore').textContent = score;
+  document.getElementById('bestScore').textContent = best;
+  document.getElementById('best').textContent = best;
+  setTimeout(() => {
+    running = false;
+    touch.classList.remove('play');
+    document.getElementById('overlay').classList.remove('hidden');
+  }, 900);
+}
+
+function loop(now) {
+  if (!running && !dead) return;
+  const dt = Math.min(0.033, (now - t0) / 1000); t0 = now;
+  update(dt);
+  draw();
+  if (running || dead) requestAnimationFrame(loop);
+}
+
+function update(dt) {
+  if (dead) { deadT += dt; return; }
+  speed = 280 + dist * 0.35;
+  dist += speed * dt * 0.08;
+
+  // move
+  let target = player.lane;
+  if (keys.ArrowLeft || keys.KeyA) { target = Math.max(0, player.lane - 1); keys.ArrowLeft=keys.KeyA=false; }
+  if (keys.ArrowRight || keys.KeyD) { target = Math.min(2, player.lane + 1); keys.ArrowRight=keys.KeyD=false; }
+  if (target !== player.lane) player.lane = target;
+  player.x += (laneX(player.lane) - player.x) * Math.min(1, dt * 14);
+
+  if ((keys.Space || keys.ArrowUp || keys.KeyW) && player.onGround) {
+    player.vy = -520; player.onGround = false; keys.Space = keys.ArrowUp = keys.KeyW = false;
+  }
+  player.vy += 1600 * dt;
+  player.y += player.vy * dt;
+  const ground = H * 0.72;
+  if (player.y >= ground) { player.y = ground; player.vy = 0; player.onGround = true; }
+
+  spawnTimer -= dt;
+  if (spawnTimer <= 0) { spawnObs(); spawnTimer = Math.max(0.45, 1.1 - dist * 0.002); }
+  pickupTimer -= dt;
+  if (pickupTimer <= 0) { spawnPickup(); pickupTimer = 2.2 + Math.random(); }
+
+  const scroll = speed * dt;
+  for (const o of obstacles) o.y += scroll;
+  for (const p of pickups) p.y += scroll;
+  obstacles = obstacles.filter(o => o.y < H + 60);
+  pickups = pickups.filter(p => p.y < H + 40 && !p.taken);
+
+  // collide
+  if (player.inv > 0) player.inv -= dt;
+  for (const o of obstacles) {
+    if (o.lane !== player.lane) continue;
+    const px = player.x, py = player.y - player.h/2;
+    if (Math.abs(px - o.x) < (player.w + o.w) * 0.38 && Math.abs(py - (o.y - o.h/2)) < (player.h + o.h) * 0.38) {
+      if (player.y < ground - 8 && o.kind === 'cone') continue; // jump over cones
+      gameOver(); return;
+    }
+  }
+  for (const p of pickups) {
+    if (p.taken || p.lane !== player.lane) continue;
+    if (Math.hypot(player.x - p.x, (player.y - player.h/2) - p.y) < 28) {
+      p.taken = true; dist += 25;
+      for (let i=0;i<10;i++) particles.push({x:p.x,y:p.y,vx:(Math.random()-0.5)*120,vy:-Math.random()*160,life:0.5,c:'#ffd36a'});
+    }
+  }
+  for (const p of particles) { p.life -= dt; p.x += p.vx*dt; p.y += p.vy*dt; }
+  particles = particles.filter(p => p.life > 0);
+  if (shake > 0) shake *= 0.9;
+  document.getElementById('dist').textContent = Math.floor(dist);
+}
+
+function draw() {
+  ctx.save();
+  if (shake > 0.5) ctx.translate((Math.random()-0.5)*shake, (Math.random()-0.5)*shake);
+  // sky
+  const g = ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#120018'); g.addColorStop(0.5,'#1a0830'); g.addColorStop(1,'#0a0612');
+  ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+
+  // wet road
+  ctx.fillStyle = '#0c0814';
+  ctx.beginPath(); ctx.moveTo(W*0.12,0); ctx.lineTo(W*0.88,0); ctx.lineTo(W*0.98,H); ctx.lineTo(W*0.02,H); ctx.fill();
+
+  // lane lines
+  ctx.strokeStyle = 'rgba(255,77,200,0.25)'; ctx.lineWidth = 2; ctx.setLineDash([18,16]);
+  const scrollY = (dist * 8) % 34;
+  for (let i=1;i<=2;i++) {
+    const x0 = W*0.12 + (W*0.76)*(i/3);
+    const x1 = W*0.02 + (W*0.96)*(i/3);
+    ctx.beginPath(); ctx.moveTo(x0, -scrollY); ctx.lineTo(x1, H); ctx.stroke();
+  }
+  ctx.setLineDash([]);
+
+  // neon building sides
+  drawBuildings(dist);
+
+  // pickups
+  for (const p of pickups) {
+    if (p.taken) continue;
+    ctx.save(); ctx.translate(p.x, p.y);
+    ctx.fillStyle = '#ffd36a'; ctx.beginPath(); ctx.arc(0,0,10,0,6.28); ctx.fill();
+    ctx.strokeStyle = '#fff8'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0,0,14,0,4.5); ctx.stroke();
+    ctx.restore();
+  }
+
+  // obstacles
+  for (const o of obstacles) drawObs(o);
+
+  // player
+  drawPlayer();
+
+  for (const p of particles) {
+    ctx.globalAlpha = Math.max(0,p.life*2); ctx.fillStyle = p.c;
+    ctx.fillRect(p.x, p.y, 3, 3); ctx.globalAlpha = 1;
+  }
+
+  if (dead) {
+    ctx.fillStyle = `rgba(255,40,80,${Math.min(0.35, deadT)})`;
+    ctx.fillRect(0,0,W,H);
+  }
+  ctx.restore();
+}
+
+function drawBuildings(d) {
+  const off = (d * 6) % 120;
+  for (let side of [-1,1]) {
+    for (let i=-1;i<8;i++) {
+      const y = i*120 - off;
+      const x = side < 0 ? 0 : W - 48;
+      ctx.fillStyle = '#0a0610';
+      ctx.fillRect(x, y, 48, 110);
+      // neon signs
+      const label = signs[(i+10)%signs.length];
+      ctx.save();
+      ctx.translate(side<0?42:W-42, y+20);
+      ctx.rotate(side<0?-0.08:0.08);
+      ctx.fillStyle = side<0 ? '#ff4dc8' : '#40f0ff';
+      ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = 12;
+      ctx.font = 'bold 11px "Noto Sans TC"';
+      ctx.textAlign = 'center';
+      for (let c=0;c<label.length;c++) ctx.fillText(label[c], 0, c*14);
+      ctx.shadowBlur = 0;
+      ctx.restore();
+      // windows
+      ctx.fillStyle = Math.random()>0.97 ? '#ffd36a' : '#1a2030';
+      for (let wy=10;wy<90;wy+=18) for (let wx=8;wx<40;wx+=14) {
+        if (((wx+wy+i)&3)===0) { ctx.fillStyle='#ff4dc855'; ctx.fillRect(x+wx,y+wy,6,8); ctx.fillStyle='#1a2030'; }
+      }
+    }
+  }
+  // reflections
+  ctx.fillStyle = 'rgba(255,77,200,0.04)';
+  ctx.fillRect(W*0.2, H*0.7, W*0.6, H*0.3);
+}
+
+function drawObs(o) {
+  ctx.save(); ctx.translate(o.x, o.y);
+  if (o.kind==='cone') {
+    ctx.fillStyle='#ff6a00'; ctx.beginPath(); ctx.moveTo(0,-o.h); ctx.lineTo(o.w/2,0); ctx.lineTo(-o.w/2,0); ctx.fill();
+    ctx.fillStyle='#fff'; ctx.fillRect(-6,-o.h*0.45,12,5);
+  } else if (o.kind==='crate') {
+    ctx.fillStyle='#3a2a18'; ctx.fillRect(-o.w/2,-o.h,o.w,o.h);
+    ctx.strokeStyle='#ffd36a88'; ctx.strokeRect(-o.w/2,-o.h,o.w,o.h);
+  } else {
+    ctx.fillStyle='#222'; ctx.fillRect(-o.w/2,-o.h,o.w,o.h*0.7);
+    ctx.fillStyle='#c0c8d0'; ctx.fillRect(-o.w/2,-o.h*0.35,o.w,o.h*0.35);
+    ctx.fillStyle='#ff4dc8'; ctx.fillRect(-o.w/2,-o.h,o.w,6);
+  }
+  ctx.restore();
+}
+
+function drawPlayer() {
+  const x = player.x, y = player.y;
+  // reflection
+  ctx.fillStyle='rgba(64,240,255,0.12)';
+  ctx.beginPath(); ctx.ellipse(x, y+8, 18, 5, 0, 0, 6.28); ctx.fill();
+  // body silhouette with neon rim
+  ctx.save(); ctx.translate(x, y);
+  ctx.fillStyle='#0a0612';
+  ctx.beginPath(); ctx.roundRect(-12,-40,24,38,6); ctx.fill();
+  ctx.strokeStyle='#40f0ff'; ctx.lineWidth=2; ctx.shadowColor='#40f0ff'; ctx.shadowBlur=10;
+  ctx.stroke();
+  ctx.fillStyle='#ff4dc8'; ctx.beginPath(); ctx.arc(0,-48,8,0,6.28); ctx.fill();
+  ctx.shadowBlur=0;
+  // legs motion
+  const swing = player.onGround ? Math.sin(dist*0.8)*8 : 4;
+  ctx.strokeStyle='#40f0ff'; ctx.lineWidth=3;
+  ctx.beginPath(); ctx.moveTo(-4,-4); ctx.lineTo(-6-swing,8); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(4,-4); ctx.lineTo(6+swing,8); ctx.stroke();
+  ctx.restore();
+}
+
+// boot
+document.getElementById('dist').textContent = '0';
+draw(); // show bg once
+})();
+</script>
+</body>
+</html>

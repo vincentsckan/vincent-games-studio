@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-HK">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
+<title>茶餐廳限時 · Tea Rush — Vincent Games Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:#1a1008;color:#fff;font-family:"Noto Sans TC",system-ui,sans-serif;overflow:hidden;touch-action:manipulation;user-select:none}
+#app{position:fixed;inset:0;display:flex;flex-direction:column;max-width:480px;margin:0 auto;background:linear-gradient(180deg,#2a1810,#1a1008)}
+header{padding:calc(12px + env(safe-area-inset-top)) 16px 8px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+header h1{font-family:Syne,sans-serif;font-size:1.15rem;font-weight:800;color:#ffd36a}
+header .sub{font-size:11px;color:#c8a080;margin-top:2px}
+.stats{display:flex;gap:8px;font-weight:700;font-size:13px}
+.stats span{background:#fff1;border:1px solid #ffd36a33;border-radius:10px;padding:6px 10px;color:#ffd36a}
+#order{margin:8px 16px;background:#0e0a06;border:2px dashed #ffd36a66;border-radius:14px;padding:12px 14px;min-height:78px}
+#order .label{font-size:11px;color:#c8a080;letter-spacing:.08em}
+#order .items{margin-top:8px;display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;background:#3a2818;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:700;border:1px solid #ffd36a44}
+.chip.done{opacity:.35;text-decoration:line-through}
+.chip .ico{font-size:16px}
+#tray{margin:4px 16px 8px;background:linear-gradient(180deg,#6a5848,#4a3a2a);border-radius:16px;padding:12px;min-height:88px;border:3px solid #8a7058;box-shadow:inset 0 2px 8px #0006}
+#tray .label{font-size:11px;color:#e8d0b0;margin-bottom:8px}
+#traySlots{display:flex;flex-wrap:wrap;gap:8px;min-height:44px}
+.trayItem{background:#2a1c10;border-radius:12px;padding:8px 10px;font-size:13px;font-weight:700;border:1px solid #ffd36a55;cursor:pointer}
+#menu{flex:1;overflow:auto;padding:4px 16px 16px;display:grid;grid-template-columns:1fr 1fr;gap:10px;align-content:start}
+.itemBtn{appearance:none;border:0;border-radius:16px;padding:14px 10px;background:linear-gradient(160deg,#3a2818,#2a1a10);color:#fff;font-family:inherit;font-weight:800;font-size:14px;cursor:pointer;border:1px solid #ffd36a33;min-height:76px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;transition:transform .08s}
+.itemBtn:active{transform:scale(.96)}
+.itemBtn .ico{font-size:28px}
+.itemBtn small{font-weight:500;color:#c8a080;font-size:11px}
+#bar{padding:8px 16px calc(12px + env(safe-area-inset-bottom));display:flex;gap:10px}
+#bar button{flex:1;min-height:48px;border:0;border-radius:999px;font-family:inherit;font-weight:900;font-size:15px;cursor:pointer}
+#serve{background:linear-gradient(90deg,#ffd36a,#ff9a40);color:#1a1008}
+#clear{background:#fff1;color:#e8d0b0;border:1px solid #fff3!important}
+#overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(10,6,2,.82);z-index:5;padding:24px}
+#overlay.hidden{display:none}
+.card{max-width:400px;width:100%;background:linear-gradient(160deg,#3a2818,#1a1008);border:1px solid #ffd36a66;border-radius:20px;padding:28px 22px;text-align:center}
+.card h2{font-family:Syne,sans-serif;font-size:1.8rem;color:#ffd36a}
+.card p{margin-top:12px;color:#e8d0b0;font-size:14px;line-height:1.55}
+.card .scores{margin-top:14px;display:flex;gap:10px;justify-content:center}
+.card .scores div{background:#fff1;border-radius:12px;padding:10px 14px;min-width:100px}
+.card .scores b{display:block;font-size:1.35rem;color:#ffd36a}
+.card .scores span{font-size:11px;opacity:.7}
+#go{margin-top:18px;min-height:48px;padding:0 28px;border:0;border-radius:999px;background:linear-gradient(90deg,#ffd36a,#ff9a40);color:#1a1008;font-weight:900;font-size:16px;cursor:pointer;font-family:inherit}
+#timerBar{height:6px;margin:0 16px;border-radius:99px;background:#fff1;overflow:hidden}
+#timerBar>i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#ff5a40,#ffd36a);transform-origin:left center;transition:transform .1s linear}
+.flash{animation:flash .25s} @keyframes flash{from{filter:brightness(1.6)}to{filter:none}}
+.miss{animation:miss .3s} @keyframes miss{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div>
+      <h1>TEA RUSH</h1>
+      <div class="sub">茶餐廳限時 · 對單上菜</div>
+    </div>
+    <div class="stats">
+      <span>分數 <b id="score">0</b></span>
+      <span>最佳 <b id="best">0</b></span>
+      <span>⏳ <b id="time">60</b>s</span>
+    </div>
+  </header>
+  <div id="timerBar"><i id="timerFill"></i></div>
+  <div id="order">
+    <div class="label">客人點單 · ORDER</div>
+    <div class="items" id="orderItems"></div>
+  </div>
+  <div id="tray">
+    <div class="label">托盤 · 點按可移除</div>
+    <div id="traySlots"></div>
+  </div>
+  <div id="menu"></div>
+  <div id="bar">
+    <button id="clear" type="button">清空 CLEAR</button>
+    <button id="serve" type="button">上菜 SERVE</button>
+  </div>
+</div>
+<div id="overlay">
+  <div class="card">
+    <h2>TEA RUSH</h2>
+    <p id="msg">茶餐廳開市！依點單點擊正確飲品與小食放上托盤，再按「上菜」。限時內盡量多完成訂單。</p>
+    <div class="scores">
+      <div><b id="lastScore">0</b><span>本次分數</span></div>
+      <div><b id="bestScore">0</b><span>最佳紀錄</span></div>
+    </div>
+    <button id="go" type="button">開始 START</button>
+  </div>
+</div>
+<script>
+(() => {
+const MENU = [
+  {id:'milktea', name:'港式奶茶', en:'Milk Tea', ico:'🧋'},
+  {id:'lemontea', name:'凍檸茶', en:'Lemon Tea', ico:'🍋'},
+  {id:'coffee', name:'鴛鴦', en:'Yuan Yang', ico:'☕'},
+  {id:'toast', name:'西多士', en:'French Toast', ico:'🍞'},
+  {id:'bolo', name:'菠蘿油', en:'Pineapple Bun', ico:'🥖'},
+  {id:'eggtart', name:'蛋撻', en:'Egg Tart', ico:'🥧'},
+  {id:'macaroni', name:'通粉', en:'Macaroni', ico:'🍝'},
+  {id:'satay', name:'沙爹牛肉麵', en:'Satay Noodle', ico:'🍜'},
+];
+const KEY='vgs-tea-rush-best';
+let best=+localStorage.getItem(KEY)||0;
+document.getElementById('best').textContent=best;
+document.getElementById('bestScore').textContent=best;
+
+const menuEl=document.getElementById('menu');
+MENU.forEach(m=>{
+  const b=document.createElement('button');
+  b.className='itemBtn'; b.type='button';
+  b.innerHTML=`<span class="ico">${m.ico}</span>${m.name}<small>${m.en}</small>`;
+  b.onclick=()=>addToTray(m.id);
+  menuEl.appendChild(b);
+});
+
+let running=false, score=0, timeLeft=60, order=[], tray=[], raf=0, last=0;
+
+function byId(id){ return MENU.find(m=>m.id===id); }
+
+function newOrder(){
+  const n = 2 + (Math.random()<0.55?1:0) + (score>80&&Math.random()<0.4?1:0);
+  const pool=[...MENU];
+  order=[];
+  for(let i=0;i<n;i++){
+    const idx=(Math.random()*pool.length)|0;
+    order.push(pool.splice(idx,1)[0].id);
+  }
+  tray=[];
+  renderOrder(); renderTray();
+}
+
+function renderOrder(){
+  const el=document.getElementById('orderItems');
+  el.innerHTML='';
+  const counts={};
+  order.forEach(id=>counts[id]=(counts[id]|0)+1);
+  const trayCounts={};
+  tray.forEach(id=>trayCounts[id]=(trayCounts[id]|0)+1);
+  Object.keys(counts).forEach(id=>{
+    const m=byId(id);
+    const chip=document.createElement('div');
+    const have=trayCounts[id]|0;
+    chip.className='chip'+(have>=counts[id]?' done':'');
+    chip.innerHTML=`<span class="ico">${m.ico}</span>${m.name}${counts[id]>1?' ×'+counts[id]:''}`;
+    el.appendChild(chip);
+  });
+}
+
+function renderTray(){
+  const el=document.getElementById('traySlots');
+  el.innerHTML='';
+  tray.forEach((id,i)=>{
+    const m=byId(id);
+    const d=document.createElement('button');
+    d.type='button'; d.className='trayItem';
+    d.textContent=`${m.ico} ${m.name}`;
+    d.onclick=()=>{ tray.splice(i,1); renderTray(); renderOrder(); };
+    el.appendChild(d);
+  });
+  if(!tray.length){
+    const s=document.createElement('span');
+    s.style.cssText='opacity:.5;font-size:13px';
+    s.textContent='（空托盤）';
+    el.appendChild(s);
+  }
+}
+
+function addToTray(id){
+  if(!running) return;
+  if(tray.length>=6){ pulse('#tray','miss'); return; }
+  tray.push(id);
+  renderTray(); renderOrder();
+  pulse('#tray','flash');
+}
+
+function sorted(a){ return [...a].sort().join(','); }
+
+function serve(){
+  if(!running) return;
+  if(sorted(tray)===sorted(order) && tray.length===order.length){
+    const pts=10+order.length*5;
+    score+=pts;
+    document.getElementById('score').textContent=score;
+    timeLeft=Math.min(60, timeLeft+2);
+    pulse('#order','flash');
+    newOrder();
+  } else {
+    score=Math.max(0, score-5);
+    document.getElementById('score').textContent=score;
+    pulse('#tray','miss');
+  }
+}
+
+function pulse(sel,cls){
+  const el=document.querySelector(sel);
+  el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls);
+}
+
+document.getElementById('serve').onclick=serve;
+document.getElementById('clear').onclick=()=>{ if(!running)return; tray=[]; renderTray(); renderOrder(); };
+
+function start(){
+  score=0; timeLeft=60; running=true;
+  document.getElementById('score').textContent='0';
+  document.getElementById('overlay').classList.add('hidden');
+  document.getElementById('go').textContent='再玩 AGAIN';
+  newOrder();
+  last=performance.now();
+  cancelAnimationFrame(raf);
+  raf=requestAnimationFrame(tick);
+}
+document.getElementById('go').onclick=start;
+
+function tick(now){
+  if(!running) return;
+  const dt=(now-last)/1000; last=now;
+  timeLeft-=dt;
+  if(timeLeft<0) timeLeft=0;
+  document.getElementById('time').textContent=Math.ceil(timeLeft);
+  document.getElementById('timerFill').style.transform=`scaleX(${timeLeft/60})`;
+  if(timeLeft<=0){ end(); return; }
+  raf=requestAnimationFrame(tick);
+}
+
+function end(){
+  running=false;
+  if(score>best){ best=score; localStorage.setItem(KEY,best); }
+  document.getElementById('lastScore').textContent=score;
+  document.getElementById('bestScore').textContent=best;
+  document.getElementById('best').textContent=best;
+  document.getElementById('msg').textContent=`打烊！你完成了 ${score} 分。${score>=100?'茶餐廳之光！':'再練練手速吧。'}`;
+  document.getElementById('overlay').classList.remove('hidden');
+}
+
+newOrder();
+})();
+</script>
+</body>
+</html>
