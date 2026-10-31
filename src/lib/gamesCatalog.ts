@@ -78,8 +78,14 @@ export async function fetchPublishedGames(): Promise<Game[]> {
     console.warn('[gamesCatalog] Supabase fetch failed, using local fallback:', error?.message)
     return localGames
   }
-  if (data.length === 0) return localGames
-  return (data as DbGame[]).map(dbGameToGame)
+  // Merge: Supabase rows win on same slug; keep local demos not yet in DB
+  const remote = (data as DbGame[]).map(dbGameToGame)
+  const bySlug = new Map(remote.map((g) => [g.slug, g]))
+  for (const g of localGames) {
+    if (!bySlug.has(g.slug)) bySlug.set(g.slug, g)
+  }
+  const merged = Array.from(bySlug.values())
+  return merged.length > 0 ? merged : localGames
 }
 
 export async function fetchGameBySlug(slug: string): Promise<Game | undefined> {
