@@ -1,6 +1,6 @@
 /**
  * 霓虹港戰 Neon Harbor Clash — Vincent Games Studio
- * Local Three.js FPS demo (Krunker-like movement + FFA vs AI)
+ * Local Three.js FPS demo (arcade movement + multi-mode vs AI)
  */
 import * as THREE from 'three';
 
@@ -39,9 +39,9 @@ const MAPS = [
 const CLASSES = [
   {
     id: 'spark',
-    nameZh: '閃 · Spark',
+    nameZh: '閃 · 港灣AR',
     nameEn: 'Spark',
-    desc: '突擊步槍 · 均衡攻防，適合大多數戰況。',
+    desc: '港灣AR · 均衡攻防，適合大多數戰況。',
     hp: 100,
     speed: 9.2,
     jump: 9.5,
@@ -55,9 +55,9 @@ const CLASSES = [
   },
   {
     id: 'falcon',
-    nameZh: '隼 · Falcon',
+    nameZh: '隼 · 天台狙擊',
     nameEn: 'Falcon',
-    desc: '狙擊步槍 · 高傷害慢射速，走位稍慢。',
+    desc: '天台狙擊 · 高傷害慢射速，走位稍慢。',
     hp: 90,
     speed: 7.6,
     jump: 9.0,
@@ -71,9 +71,9 @@ const CLASSES = [
   },
   {
     id: 'rock',
-    nameZh: '石 · Rock',
+    nameZh: '石 · 茶記散彈',
     nameEn: 'Rock',
-    desc: '散彈重裝 · 高血量、近距爆發，移動較慢。',
+    desc: '茶記散彈 · 高血量、近距爆發，移動較慢。',
     hp: 160,
     speed: 6.4,
     jump: 8.4,
@@ -87,9 +87,9 @@ const CLASSES = [
   },
   {
     id: 'shade',
-    nameZh: '影 · Shade',
+    nameZh: '影 · 旺角衝鋒＋霓虹刀',
     nameEn: 'Shade',
-    desc: '衝鋒槍 · 高機動低血量，近身掃射。',
+    desc: '旺角衝鋒＋霓虹刀 · 高機動近戰。',
     hp: 70,
     speed: 11.4,
     jump: 10.2,
@@ -104,43 +104,73 @@ const CLASSES = [
 ];
 
 
-// Extra firearms available as world pickups (Krunker-like)
+// Translation-locked firearm lexicon (exact Translation rename table)
 const EXTRA_WEAPONS = [
-  { id: 'burst', nameZh: '連發射擊槍', nameEn: 'Burst Rifle', damage: 28, firerate: 6.5, spread: 0.022, mag: 24, reserve: 72, reload: 1.5, pellets: 1, speedMul: 1 },
-  { id: 'lmg', nameZh: '輕機槍', nameEn: 'LMG', damage: 18, firerate: 11, spread: 0.045, mag: 60, reserve: 120, reload: 2.8, pellets: 1, speedMul: 0.85 },
-  { id: 'revolver', nameZh: '左輪', nameEn: 'Revolver', damage: 55, firerate: 2.2, spread: 0.018, mag: 6, reserve: 30, reload: 1.8, pellets: 1, speedMul: 1.05 },
-  { id: 'carbine', nameZh: '卡賓槍', nameEn: 'Carbine', damage: 32, firerate: 7.5, spread: 0.02, mag: 25, reserve: 75, reload: 1.55, pellets: 1, speedMul: 1.02 },
+  { id: 'burst', nameZh: '港灣AR', nameEn: 'Harbor AR', damage: 28, firerate: 6.5, spread: 0.022, mag: 24, reserve: 72, reload: 1.5, pellets: 1, speedMul: 1 },
+  { id: 'lmg', nameZh: '鐵閘機槍', nameEn: 'Gate LMG', damage: 18, firerate: 11, spread: 0.045, mag: 60, reserve: 120, reload: 2.8, pellets: 1, speedMul: 0.85 },
+  { id: 'revolver', nameZh: '巷口手槍', nameEn: 'Alley Pistol', damage: 55, firerate: 2.2, spread: 0.018, mag: 6, reserve: 30, reload: 1.8, pellets: 1, speedMul: 1.05 },
+  { id: 'carbine', nameZh: '旺角衝鋒', nameEn: 'Mong Kok SMG', damage: 32, firerate: 7.5, spread: 0.02, mag: 25, reserve: 75, reload: 1.55, pellets: 1, speedMul: 1.02 },
+  { id: 'rocket', nameZh: '貨櫃火箭', nameEn: 'Cargo Rocket', damage: 120, firerate: 0.75, spread: 0.04, mag: 1, reserve: 8, reload: 2.4, pellets: 1, speedMul: 0.88, splash: 3.2 },
+  { id: 'knife', nameZh: '霓虹刀', nameEn: 'Neon Knife', damage: 90, firerate: 2.8, spread: 0, mag: 1, reserve: 99, reload: 0.05, pellets: 1, speedMul: 1.18, melee: true, range: 2.85 },
+];
+
+// 槍階亂鬥 ladder
+const GUN_LADDER = [
+  { id: 'revolver', nameZh: '巷口手槍', damage: 55, firerate: 2.2, spread: 0.018, mag: 6, reserve: 30, reload: 1.8, pellets: 1, speedMul: 1.05 },
+  { id: 'carbine', nameZh: '旺角衝鋒', damage: 15, firerate: 13.5, spread: 0.055, mag: 35, reserve: 105, reload: 1.25, pellets: 1, speedMul: 1.1 },
+  { id: 'burst', nameZh: '港灣AR', damage: 24, firerate: 9.5, spread: 0.028, mag: 30, reserve: 90, reload: 1.45, pellets: 1, speedMul: 1 },
+  { id: 'shotgun', nameZh: '茶記散彈', damage: 18, firerate: 1.4, spread: 0.12, mag: 8, reserve: 32, reload: 2.4, pellets: 7, speedMul: 0.92 },
+  { id: 'lmg', nameZh: '鐵閘機槍', damage: 18, firerate: 11, spread: 0.045, mag: 60, reserve: 120, reload: 2.8, pellets: 1, speedMul: 0.85 },
+  { id: 'sniper', nameZh: '天台狙擊', damage: 95, firerate: 1.15, spread: 0.004, mag: 5, reserve: 25, reload: 2.1, pellets: 1, speedMul: 0.9 },
+  { id: 'rocket', nameZh: '貨櫃火箭', damage: 120, firerate: 0.75, spread: 0.04, mag: 1, reserve: 8, reload: 2.4, pellets: 1, speedMul: 0.88, splash: 3.2 },
+  { id: 'knife', nameZh: '霓虹刀', damage: 90, firerate: 2.8, spread: 0, mag: 1, reserve: 99, reload: 0.05, pellets: 1, speedMul: 1.18, melee: true, range: 2.85 },
+];
+
+const BOSSES = [
+  { id: 'gate', nameZh: '鐵閘阿爺', hook: '鐵閘一落，成巷封死。', color: 0xff2040, hpBase: 320, art: 'refs/ui/boss-gate-grandpa.jpg' },
+  { id: 'sign', nameZh: '招牌鬼手', hook: '牌影裡伸手。', color: 0xff4dc8, hpBase: 300, art: 'refs/ui/boss-sign-ghosthand.jpg' },
+  { id: 'tower', nameZh: '天台水塔怪', hook: '水塔爆開先出手。', color: 0x40f0ff, hpBase: 340, art: 'refs/ui/boss-watertower.jpg' },
+  { id: 'cargo', nameZh: '貨櫃鐵甲', hook: '箱門打開就係槍口。', color: 0xffd36a, hpBase: 380, art: 'refs/ui/boss-container-armor.jpg' },
+  { id: 'cranearm', nameZh: '吊機鐵臂', hook: '吊臂一掃，無人企得穩。', color: 0xff8a3c, hpBase: 400, art: null },
+  { id: 'canyon', nameZh: '峽谷鬼牌', hook: '字縫裡閃過一張鬼牌。', color: 0xb388ff, hpBase: 360, art: null },
+  { id: 'producer', nameZh: '製片人', hook: '鏡頭一紅，全場開打。', color: 0xff6a20, hpBase: 480, art: 'refs/ui/boss-producer.jpg' },
+  { id: 'ratings', nameZh: '收視魔王', hook: '收視一爆，全城開打。', color: 0xff1040, hpBase: 560, art: null },
 ];
 
 const CHANNEL7 = [
-  { level: 1, mapId: 'signs', mode: 'kill', target: 10, time: 150, boss: false },
-  { level: 2, mapId: 'minibus', mode: 'survive', target: 90, time: 90, boss: false },
-  { level: 3, mapId: 'tonglau', mode: 'kill', target: 15, time: 180, boss: true },
-  { level: 4, mapId: 'tram', mode: 'hold', target: 60, time: 60, boss: false },
-  { level: 5, mapId: 'nightstall', mode: 'kill', target: 12, time: 150, boss: false },
-  { level: 6, mapId: 'neonroof', mode: 'kill', target: 20, time: 180, boss: true },
-  { level: 7, mapId: 'kaitak', mode: 'survive', target: 120, time: 120, boss: false },
-  { level: 8, mapId: 'estate', mode: 'hold', target: 90, time: 90, boss: false },
-  { level: 9, mapId: 'skybridge', mode: 'kill', target: 18, time: 180, boss: true },
-  { level: 10, mapId: 'watertower', mode: 'survive', target: 90, time: 90, boss: false },
-  { level: 11, mapId: 'cargo', mode: 'kill', target: 15, time: 180, boss: false },
-  { level: 12, mapId: 'temple', mode: 'hold', target: 60, time: 60, boss: true },
-  { level: 13, mapId: 'teahouse', mode: 'kill', target: 20, time: 180, boss: false },
-  { level: 14, mapId: 'loading', mode: 'survive', target: 120, time: 120, boss: false },
-  { level: 15, mapId: 'crane', mode: 'kill', target: 25, time: 200, boss: true },
-  { level: 16, mapId: 'pawnarcade', mode: 'hold', target: 90, time: 90, boss: false },
-  { level: 17, mapId: 'signcanyon', mode: 'kill', target: 30, time: 220, boss: true },
-  { level: 18, mapId: 'doubletram', mode: 'survive', target: 150, time: 150, boss: false },
-  { level: 19, mapId: 'ch7studio', mode: 'hold', target: 120, time: 120, boss: true },
-  { level: 20, mapId: 'harbourfinal', mode: 'kill', target: 40, time: 300, boss: true },
+  { level: 1, mapId: 'signs', mode: 'kill', target: 10, time: 150, boss: false, bossId: null },
+  { level: 2, mapId: 'minibus', mode: 'survive', target: 90, time: 90, boss: false, bossId: null },
+  { level: 3, mapId: 'tonglau', mode: 'kill', target: 15, time: 180, boss: true, bossId: 'gate' },
+  { level: 4, mapId: 'tram', mode: 'hold', target: 60, time: 60, boss: false, bossId: null },
+  { level: 5, mapId: 'nightstall', mode: 'kill', target: 12, time: 150, boss: false, bossId: null },
+  { level: 6, mapId: 'neonroof', mode: 'kill', target: 20, time: 180, boss: true, bossId: 'sign' },
+  { level: 7, mapId: 'kaitak', mode: 'survive', target: 120, time: 120, boss: false, bossId: null },
+  { level: 8, mapId: 'estate', mode: 'hold', target: 90, time: 90, boss: false, bossId: null },
+  { level: 9, mapId: 'skybridge', mode: 'kill', target: 18, time: 180, boss: true, bossId: 'tower' },
+  { level: 10, mapId: 'watertower', mode: 'survive', target: 90, time: 90, boss: false, bossId: null },
+  { level: 11, mapId: 'cargo', mode: 'kill', target: 15, time: 180, boss: false, bossId: null },
+  { level: 12, mapId: 'temple', mode: 'hold', target: 60, time: 60, boss: true, bossId: 'cargo' },
+  { level: 13, mapId: 'teahouse', mode: 'kill', target: 20, time: 180, boss: false, bossId: null },
+  { level: 14, mapId: 'loading', mode: 'survive', target: 120, time: 120, boss: false, bossId: null },
+  { level: 15, mapId: 'crane', mode: 'kill', target: 25, time: 200, boss: true, bossId: 'cranearm' },
+  { level: 16, mapId: 'pawnarcade', mode: 'hold', target: 90, time: 90, boss: false, bossId: null },
+  { level: 17, mapId: 'signcanyon', mode: 'kill', target: 30, time: 220, boss: true, bossId: 'canyon' },
+  { level: 18, mapId: 'doubletram', mode: 'survive', target: 150, time: 150, boss: false, bossId: null },
+  { level: 19, mapId: 'ch7studio', mode: 'hold', target: 120, time: 120, boss: true, bossId: 'producer' },
+  { level: 20, mapId: 'harbourfinal', mode: 'kill', target: 40, time: 300, boss: true, bossId: 'ratings' },
 ];
 
 const GAME_MODES = [
-  { id: 'ffa', nameZh: '自由混戰 FFA', nameEn: 'FFA vs AI' },
-  { id: 'campaign', nameZh: 'Channel 7 戰役', nameEn: 'Channel 7 Campaign' },
-  { id: 'hold', nameZh: '佔領據點', nameEn: 'Hold the Point' },
+  { id: 'ffa', nameZh: '混戰', nameEn: 'Free-for-All' },
+  { id: 'tdm', nameZh: '團隊死鬥', nameEn: 'Team Deathmatch' },
+  { id: 'hold', nameZh: '據點爭奪', nameEn: 'Point Control' },
+  { id: 'gungame', nameZh: '槍階亂鬥', nameEn: 'Gun Ladder' },
+  { id: 'bosshunt', nameZh: 'Boss 狩獵', nameEn: 'Boss Hunt' },
+  { id: 'campaign', nameZh: 'Channel 7', nameEn: 'Channel 7 Campaign' },
 ];
 
+const TDM_WIN_KILLS = 25;
+const BOSS_HUNT_ROSTER = ['gate', 'sign', 'tower', 'cargo', 'producer'];
 
 const MATCH_SECONDS = 150;
 const WIN_KILLS = 20;
@@ -181,11 +211,19 @@ const state = {
   classId: 'spark',
   mapId: 'cargo',
   timeLeft: MATCH_SECONDS,
-  gameMode: 'ffa', // ffa | campaign | hold
+  gameMode: 'ffa', // ffa | tdm | hold | gungame | bosshunt | campaign
   campaignLevel: 0, // 1..20 when campaign
   objective: null, // { type, target, progress, holdScore }
-  weaponOverride: null, // EXTRA_WEAPONS id or null (= class gun)
+  weaponOverride: null, // EXTRA_WEAPONS / ladder id or null (= class gun)
   holdProgress: 0,
+  team: 0, // player team for TDM
+  teamKills: 0,
+  enemyTeamKills: 0,
+  gunIndex: 0, // 槍階亂鬥 ladder index
+  armor: 0,
+  speedBoost: 0,
+  coins: 0,
+  bossId: null,
 };
 
 let scene, camera, renderer, clock;
@@ -1811,12 +1849,16 @@ function randomSpawn() {
 function spawnBots(root) {
   bots.forEach((b) => root.remove(b.mesh));
   bots = [];
-  const colors = [0xff4dc8, 0x40f0ff, 0xffd36a, 0x7dff9a, 0xff6a8a, 0xa78bfa, 0xf472b6];
+  const allyColor = 0x40f0ff;
+  const enemyColors = [0xff4dc8, 0xffd36a, 0xff6a8a, 0xa78bfa, 0xf472b6, 0xff2040];
   const classPool = CLASSES;
-  for (let i = 0; i < BOT_COUNT; i++) {
+  const isTdm = state.gameMode === 'tdm';
+  const count = state.gameMode === 'bosshunt' ? 4 : BOT_COUNT;
+  for (let i = 0; i < count; i++) {
     const cls = classPool[i % classPool.length];
     const sp = randomSpawn();
-    const mesh = makeBotMesh(colors[i % colors.length]);
+    const team = isTdm ? (i < 3 ? 0 : 1) : 1; // TDM: 3 allies + rest enemies
+    const mesh = makeBotMesh(team === 0 ? allyColor : enemyColors[i % enemyColors.length]);
     mesh.position.set(sp.x, 0, sp.z);
     root.add(mesh);
     bots.push({
@@ -1826,13 +1868,17 @@ function spawnBots(root) {
       hp: cls.hp,
       maxHp: cls.hp,
       cls,
-      name: `BOT-${cls.nameEn}-${i + 1}`,
+      name: isTdm
+        ? (team === 0 ? `隊友-${cls.nameEn}-${i + 1}` : `敵隊-${cls.nameEn}-${i + 1}`)
+        : `BOT-${cls.nameEn}-${i + 1}`,
+      team,
       shootCd: 0.5 + Math.random(),
       aimYaw: 0,
       stateT: 0,
       mode: 'chase',
       alive: true,
       respawnT: 0,
+      isBoss: false,
     });
   }
 }
@@ -2033,9 +2079,10 @@ function applyPlayerPhysics(dt) {
   }
   slideTag.classList.toggle('on', state.sliding);
 
-  let targetSpeed = cls.speed;
+  const gun = activeGunStats();
+  let targetSpeed = cls.speed * (gun.speedMul || 1) * (state.speedBoost > 0 ? 1.35 : 1);
   if (state.crouching) targetSpeed *= 0.55;
-  if (state.sliding) targetSpeed = cls.speed * SLIDE_BOOST;
+  if (state.sliding) targetSpeed = cls.speed * SLIDE_BOOST * (state.speedBoost > 0 ? 1.2 : 1);
 
   if (wish.lengthSq() > 0) {
     wish.normalize();
@@ -2183,21 +2230,49 @@ function showHit() {
 
 
 function activeGunStats() {
+  if (state.gameMode === 'gungame') {
+    return GUN_LADDER[Math.min(state.gunIndex, GUN_LADDER.length - 1)] || GUN_LADDER[0];
+  }
   if (state.weaponOverride) {
-    const w = EXTRA_WEAPONS.find((x) => x.id === state.weaponOverride);
+    const w = EXTRA_WEAPONS.find((x) => x.id === state.weaponOverride)
+      || GUN_LADDER.find((x) => x.id === state.weaponOverride);
     if (w) return w;
   }
   return classById(state.classId);
 }
 
+function applyGunLoadout(gun) {
+  if (!gun) return;
+  state.ammo = gun.melee ? 1 : gun.mag;
+  state.reserve = gun.melee ? 99 : gun.reserve;
+  state.reloading = false;
+  const a = document.getElementById('ammo');
+  const r = document.getElementById('reserve');
+  if (a) a.textContent = String(state.ammo);
+  if (r) r.textContent = String(state.reserve);
+}
+
+function bossById(id) {
+  return BOSSES.find((b) => b.id === id) || BOSSES[0];
+}
+
 function spawnPickups(root) {
   pickups.forEach((p) => { if (p.mesh && p.mesh.parent) p.mesh.parent.remove(p.mesh); });
   pickups = [];
-  const spots = (spawnPoints || [[0,0,0]]).slice(0, 6);
-  const kinds = ['hp', 'ammo', 'weapon', 'hp', 'ammo', 'weapon'];
+  const spots = (spawnPoints || [[0,0,0]]).slice(0, 8);
+  // Translation pickup kinds (ammo/armor/hp/speed/coin) + occasional weapon
+  const kinds = ['ammo', 'armor', 'hp', 'speed', 'coin', 'weapon', 'ammo', 'hp'];
+  const kindColor = {
+    hp: 0x5dff9a,
+    ammo: 0xffd36a,
+    armor: 0x7ec8ff,
+    speed: 0xff9a3c,
+    coin: 0xffe566,
+    weapon: 0x40f0ff,
+  };
   spots.forEach((sp, i) => {
     const kind = kinds[i % kinds.length];
-    const col = kind === 'hp' ? 0x5dff9a : kind === 'ammo' ? 0xffd36a : 0x40f0ff;
+    const col = kindColor[kind] || 0x40f0ff;
     const mesh = new THREE.Mesh(
       new THREE.BoxGeometry(0.7, 0.7, 0.7),
       new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 1.4, roughness: 0.4 })
@@ -2237,6 +2312,7 @@ function setupHoldZone(root, mapId) {
 }
 
 function updatePickups(dt) {
+  if (state.speedBoost > 0) state.speedBoost = Math.max(0, state.speedBoost - dt);
   for (const p of pickups) {
     if (!p.alive) {
       p.respawnT -= dt;
@@ -2253,21 +2329,27 @@ function updatePickups(dt) {
         const cls = classById(state.classId);
         state.hp = Math.min(cls.hp, state.hp + 40);
         document.getElementById('hp').textContent = String(state.hp | 0);
-        feedKill('拾取 · 醫療包 +40 HP');
+        feedKill('取得醫療包');
       } else if (p.kind === 'ammo') {
         const g = activeGunStats();
-        state.reserve += g.mag;
+        state.reserve += g.melee ? 0 : g.mag;
         document.getElementById('reserve').textContent = String(state.reserve);
-        feedKill('拾取 · 彈藥補給');
-      } else if (p.kind === 'weapon') {
+        feedKill('取得彈藥箱');
+      } else if (p.kind === 'armor') {
+        state.armor = Math.min(100, state.armor + 40);
+        feedKill('取得護甲片');
+      } else if (p.kind === 'speed') {
+        state.speedBoost = Math.max(state.speedBoost, 8);
+        feedKill('取得速度飲料');
+      } else if (p.kind === 'coin') {
+        state.coins += 1;
+        feedKill('取得金幣');
+      } else if (p.kind === 'weapon' && state.gameMode !== 'gungame') {
         state.weaponOverride = p.weaponId;
         const w = EXTRA_WEAPONS.find((x) => x.id === p.weaponId);
         if (w) {
-          state.ammo = w.mag;
-          state.reserve = w.reserve;
-          document.getElementById('ammo').textContent = String(state.ammo);
-          document.getElementById('reserve').textContent = String(state.reserve);
-          feedKill(`拾取武器 · ${w.nameZh}`);
+          applyGunLoadout(w);
+          feedKill(`取得 · ${w.nameZh}`);
         }
       }
       p.alive = false;
@@ -2277,22 +2359,26 @@ function updatePickups(dt) {
   }
 }
 
-function spawnBoss(root, level) {
-  const colors = [0xff2040, 0xffd36a, 0xff4dc8];
+function spawnBoss(root, level, bossId) {
+  const def = bossById(bossId || BOSS_HUNT_ROSTER[(Math.max(1, level) - 1) % BOSS_HUNT_ROSTER.length]);
+  state.bossId = def.id;
   const sp = randomSpawn();
-  const mesh = makeBotMesh(colors[level % colors.length]);
-  mesh.scale.set(1.45, 1.45, 1.45);
+  const mesh = makeBotMesh(def.color);
+  mesh.scale.set(1.5, 1.55, 1.5);
   mesh.position.set(sp.x, 0, sp.z);
   root.add(mesh);
-  const hp = 280 + level * 35;
+  const hp = def.hpBase + Math.max(0, level) * 28;
   bots.push({
     mesh,
     x: sp.x, y: PLAYER_HEIGHT * 1.1, z: sp.z,
     vx: 0, vz: 0, vy: 0,
     hp, maxHp: hp,
-    cls: { ...CLASSES[2], speed: 7.2, damage: 28, firerate: 3.5, pellets: 1 },
-    name: `BOSS-收視狂魔-L${level}`,
-    shootCd: 0.4,
+    cls: { ...CLASSES[2], speed: 7.4, damage: 30, firerate: 3.8, pellets: 1 },
+    name: def.nameZh,
+    bossHook: def.hook,
+    bossId: def.id,
+    team: 1,
+    shootCd: 0.35,
     aimYaw: 0,
     stateT: 0,
     mode: 'chase',
@@ -2300,21 +2386,74 @@ function spawnBoss(root, level) {
     respawnT: 0,
     isBoss: true,
   });
+  return def;
+}
+
+function showBossHud() {
+  const wrap = document.getElementById('bossHud');
+  const img = document.getElementById('bossPortrait');
+  const nm = document.getElementById('bossNameHud');
+  const hk = document.getElementById('bossHookHud');
+  if (!wrap) return;
+  const boss = bots.find((b) => b.isBoss && b.alive);
+  if (!boss) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'flex';
+  if (nm) nm.textContent = boss.name;
+  if (hk) hk.textContent = boss.bossHook || '';
+  const def = boss.bossId ? bossById(boss.bossId) : null;
+  if (img) {
+    if (def && def.art) { img.src = def.art; img.style.display = ''; }
+    else {
+      // placeholder label tile until Multimedia art arrives
+      img.removeAttribute('src');
+      img.style.display = 'none';
+    }
+  }
+}
+
+function syncGunHud() {
+  const el = document.getElementById('gunHud');
+  if (!el) return;
+  const gstat = activeGunStats();
+  el.textContent = gstat && gstat.nameZh ? gstat.nameZh : '';
 }
 
 function syncHudObjective() {
   const el = document.getElementById('objHud');
   if (!el) return;
+  showBossHud();
+  syncGunHud();
   const o = state.objective;
-  if (!o) { el.textContent = state.gameMode === 'ffa' ? 'FFA · 先到 20 殺' : '佔領據點'; return; }
+  if (!o) {
+    if (state.gameMode === 'ffa') el.textContent = '混戰 · 先到 20 殺';
+    else if (state.gameMode === 'tdm') el.textContent = `團隊 ${state.teamKills}/${TDM_WIN_KILLS}`;
+    else if (state.gameMode === 'gungame') el.textContent = `槍階 ${state.gunIndex + 1}/${GUN_LADDER.length}`;
+    else if (state.gameMode === 'bosshunt') el.textContent = 'Boss 狩獵';
+    else el.textContent = '據點爭奪';
+    return;
+  }
   if (o.type === 'kill') el.textContent = `擊殺 ${state.kills}/${o.target}`;
   else if (o.type === 'survive') el.textContent = `存活 ${formatTime(state.timeLeft)}`;
-  else if (o.type === 'hold') el.textContent = `佔領 ${Math.floor(state.holdProgress)}/${o.target}s`;
+  else if (o.type === 'hold') el.textContent = `據點 ${Math.floor(state.holdProgress)}/${o.target}s`;
+  else if (o.type === 'tdm') el.textContent = `團隊 ${state.teamKills}/${o.target} · 敵 ${state.enemyTeamKills}`;
+  else if (o.type === 'gungame') {
+    const g = GUN_LADDER[Math.min(state.gunIndex, GUN_LADDER.length - 1)];
+    el.textContent = `槍階 ${state.gunIndex + 1}/${GUN_LADDER.length} · ${g ? g.nameZh : ''}`;
+  } else if (o.type === 'boss') {
+    const alive = bots.some((b) => b.isBoss && b.alive);
+    el.textContent = alive ? `狩獵 · ${state.bossId ? bossById(state.bossId).nameZh : 'Boss'}` : 'Boss 倒下';
+  }
 }
 
 function configureObjectiveForMatch() {
   state.holdProgress = 0;
   state.weaponOverride = null;
+  state.teamKills = 0;
+  state.enemyTeamKills = 0;
+  state.gunIndex = 0;
+  state.armor = 0;
+  state.speedBoost = 0;
+  state.coins = 0;
   if (state.gameMode === 'campaign') {
     const lv = CHANNEL7[(state.campaignLevel - 1) | 0] || CHANNEL7[0];
     state.objective = { type: lv.mode, target: lv.target };
@@ -2322,6 +2461,17 @@ function configureObjectiveForMatch() {
   } else if (state.gameMode === 'hold') {
     state.objective = { type: 'hold', target: 90 };
     state.timeLeft = 150;
+  } else if (state.gameMode === 'tdm') {
+    state.objective = { type: 'tdm', target: TDM_WIN_KILLS };
+    state.timeLeft = MATCH_SECONDS;
+  } else if (state.gameMode === 'gungame') {
+    state.objective = { type: 'gungame', target: GUN_LADDER.length };
+    state.timeLeft = 240;
+    state.weaponOverride = GUN_LADDER[0].id;
+    applyGunLoadout(GUN_LADDER[0]);
+  } else if (state.gameMode === 'bosshunt') {
+    state.objective = { type: 'boss', target: 1 };
+    state.timeLeft = 240;
   } else {
     state.objective = { type: 'kill', target: WIN_KILLS };
     state.timeLeft = MATCH_SECONDS;
@@ -2340,6 +2490,12 @@ function checkObjectives() {
   if (o.type === 'kill' && state.kills >= o.target) endMatch(true);
   if (o.type === 'survive' && state.timeLeft <= 0) endMatch(true);
   if (o.type === 'hold' && state.holdProgress >= o.target) endMatch(true);
+  if (o.type === 'tdm' && state.teamKills >= o.target) endMatch(true);
+  if (o.type === 'gungame' && state.gunIndex >= GUN_LADDER.length) endMatch(true);
+  if (o.type === 'boss') {
+    const bosses = bots.filter((b) => b.isBoss);
+    if (bosses.length && bosses.every((b) => !b.alive)) endMatch(true);
+  }
 }
 
 function updateHold(dt) {
@@ -2356,18 +2512,34 @@ function updateHold(dt) {
 
 function damageBot(bot, dmg, fromPlayer) {
   if (!bot.alive) return;
+  // no friendly fire on TDM allies
+  if (fromPlayer && state.gameMode === 'tdm' && bot.team === state.team) return;
   bot.hp -= dmg;
   showHit();
-  // blood burst
   bloodBursts.push({ x: bot.x, y: bot.y - 0.2, z: bot.z, t: 0.25 });
   if (bot.hp <= 0) {
     bot.alive = false;
-    bot.respawnT = 1.6;
+    bot.respawnT = bot.isBoss ? 9999 : 1.6;
     bot.mesh.visible = false;
     if (fromPlayer) {
       state.kills += 1;
+      if (state.gameMode === 'tdm' && bot.team !== state.team) {
+        state.teamKills += 1;
+      }
       feedKill(`你 擊殺了 ${bot.name}`);
+      if (bot.isBoss && bot.bossHook) feedKill(`${bot.name}——${bot.bossHook}`);
       document.getElementById('kills').textContent = String(state.kills);
+      if (state.gameMode === 'gungame') {
+        state.gunIndex += 1;
+        if (state.gunIndex < GUN_LADDER.length) {
+          const g = GUN_LADDER[state.gunIndex];
+          state.weaponOverride = g.id;
+          applyGunLoadout(g);
+          feedKill(`槍階升級 · ${g.nameZh}`);
+        } else {
+          feedKill('槍階通關 · 霓虹刀收工');
+        }
+      }
       syncHudObjective();
       checkObjectives();
     }
@@ -2376,14 +2548,26 @@ function damageBot(bot, dmg, fromPlayer) {
 
 function damagePlayer(dmg, byName) {
   if (state.invuln > 0 || matchOver || !running) return;
-  state.hp -= dmg;
+  let remain = dmg;
+  if (state.armor > 0) {
+    const soak = Math.min(state.armor, remain * 0.6);
+    state.armor -= soak;
+    remain -= soak;
+  }
+  state.hp -= remain;
   dmgFlash.style.opacity = '1';
   setTimeout(() => { dmgFlash.style.opacity = '0'; }, 120);
   document.getElementById('hp').textContent = String(Math.max(0, state.hp | 0));
   if (state.hp <= 0) {
     state.deaths += 1;
+    if (state.gameMode === 'tdm') state.enemyTeamKills += 1;
     document.getElementById('deaths').textContent = String(state.deaths);
     feedKill(`${byName || 'BOT'} 擊殺了 你`);
+    syncHudObjective();
+    if (state.gameMode === 'tdm' && state.enemyTeamKills >= TDM_WIN_KILLS) {
+      endMatch(false);
+      return;
+    }
     respawnPlayer();
   }
 }
@@ -2410,34 +2594,42 @@ function tryShoot(dt) {
   if (state.reloading) {
     state.reloadT -= dt;
     if (state.reloadT <= 0) {
-      const need = cls.mag - state.ammo;
-      const take = Math.min(need, state.reserve);
-      state.ammo += take;
-      state.reserve -= take;
+      if (cls.melee) {
+        state.ammo = 1;
+      } else {
+        const need = cls.mag - state.ammo;
+        const take = Math.min(need, state.reserve);
+        state.ammo += take;
+        state.reserve -= take;
+      }
       state.reloading = false;
       document.getElementById('ammo').textContent = String(state.ammo);
       document.getElementById('reserve').textContent = String(state.reserve);
     }
     return;
   }
-  if (!(keys.Mouse0 || keys.shoot) || state.shootCd > 0 || state.ammo <= 0) {
-    if ((keys.Mouse0 || keys.shoot) && state.ammo <= 0) startReload();
+  const needAmmo = !cls.melee;
+  if (!(keys.Mouse0 || keys.shoot) || state.shootCd > 0 || (needAmmo && state.ammo <= 0)) {
+    if ((keys.Mouse0 || keys.shoot) && needAmmo && state.ammo <= 0) startReload();
     return;
   }
-  state.ammo -= 1;
-  document.getElementById('ammo').textContent = String(state.ammo);
+  if (needAmmo) {
+    state.ammo -= 1;
+    document.getElementById('ammo').textContent = String(state.ammo);
+  }
   state.shootCd = 1 / cls.firerate;
-  if (muzzleFlash) {
+  if (muzzleFlash && !cls.melee) {
     muzzleFlash.visible = true;
     setTimeout(() => { if (muzzleFlash) muzzleFlash.visible = false; }, 40);
   }
 
   const eye = { x: state.x, y: state.y, z: state.z };
+  const maxRange = cls.melee ? (cls.range || 2.85) : 120;
   for (let p = 0; p < cls.pellets; p++) {
     const sy = yaw + (Math.random() - 0.5) * cls.spread * 2;
     const sp = pitch + (Math.random() - 0.5) * cls.spread * 2;
     const { dx, dy, dz } = dirFromAngles(sy, sp);
-    const hit = rayHitscan(eye.x, eye.y, eye.z, dx, dy, dz, 120, null);
+    const hit = rayHitscan(eye.x, eye.y, eye.z, dx, dy, dz, maxRange, null);
     if (hit.point) {
       bulletTraces.push({
         x0: eye.x, y0: eye.y, z0: eye.z,
@@ -2446,15 +2638,24 @@ function tryShoot(dt) {
       });
     }
     if (hit.bot) {
-      // distance falloff light
-      const fall = Math.max(0.55, 1 - hit.dist / 100);
+      const fall = cls.melee ? 1 : Math.max(0.55, 1 - hit.dist / 100);
       damageBot(hit.bot, cls.damage * fall, true);
+    }
+    // rocket splash — nearby bots around impact
+    if (cls.splash && hit.point) {
+      for (const b of bots) {
+        if (!b.alive || b === hit.bot) continue;
+        const ddx = b.x - hit.point.x, ddz = b.z - hit.point.z;
+        const d = Math.hypot(ddx, ddz);
+        if (d < cls.splash) damageBot(b, cls.damage * (1 - d / cls.splash) * 0.55, true);
+      }
     }
   }
 }
 
 function startReload() {
   const cls = activeGunStats();
+  if (cls.melee) return;
   if (state.reloading || state.ammo >= cls.mag || state.reserve <= 0) return;
   state.reloading = true;
   state.reloadT = cls.reload;
@@ -2477,8 +2678,16 @@ function updateBots(dt) {
     }
 
     b.stateT -= dt;
-    const dx = state.x - b.x;
-    const dz = state.z - b.z;
+    // TDM allies hunt enemy bots; everyone else hunts the player
+    let tx = state.x, tz = state.z;
+    let targetIsPlayer = true;
+    if (state.gameMode === 'tdm' && b.team === state.team) {
+      const foe = bots.find((o) => o.alive && o.team !== b.team && !o.isBoss) || bots.find((o) => o.alive && o.team !== b.team);
+      if (foe) { tx = foe.x; tz = foe.z; targetIsPlayer = false; }
+      else { targetIsPlayer = false; }
+    }
+    const dx = tx - b.x;
+    const dz = tz - b.z;
     const dist = Math.hypot(dx, dz) + 0.001;
     b.aimYaw = Math.atan2(-dx, -dz);
 
@@ -2506,9 +2715,9 @@ function updateBots(dt) {
     b.mesh.position.set(b.x, 0, b.z);
     b.mesh.rotation.y = b.aimYaw;
 
-    // shoot at player if LOS roughly
+    // shoot at target if LOS roughly (allies never shoot player)
     b.shootCd -= dt;
-    if (b.shootCd <= 0 && dist < 42) {
+    if (b.shootCd <= 0 && dist < 42 && !(state.gameMode === 'tdm' && b.team === state.team && targetIsPlayer)) {
       b.shootCd = 1 / (b.cls.firerate * 0.55) + Math.random() * 0.15;
       const ey = b.y - 0.1;
       const dir = dirFromAngles(b.aimYaw + (Math.random() - 0.5) * 0.08, (Math.random() - 0.5) * 0.05);
@@ -2517,25 +2726,35 @@ function updateBots(dt) {
       const len = Math.hypot(dx, pdy, dz);
       const rdx = dx / len, rdy = pdy / len, rdz = dz / len;
       const hit = rayHitscan(b.x, ey, b.z, rdx, rdy, rdz, 80, b);
-      // if nothing solid closer than player distance, hit player
-      const toPlayer = dist;
-      if (!hit.bot && hit.dist >= toPlayer - 0.5) {
-        // check wall before player
-        let blocked = false;
-        const steps = 20;
-        for (let i = 1; i < steps; i++) {
-          const t = (i / steps) * toPlayer;
-          const px = b.x + rdx * t, py = ey + rdy * t, pz = b.z + rdz * t;
-          for (const box of solidBoxes) {
-            if (px >= box.minX && px <= box.maxX && py >= box.minY && py <= box.maxY && pz >= box.minZ && pz <= box.maxZ) {
-              blocked = true; break;
+      const toTarget = dist;
+      let blocked = false;
+      const steps = 20;
+      for (let i = 1; i < steps; i++) {
+        const t = (i / steps) * toTarget;
+        const px = b.x + rdx * t, py = ey + rdy * t, pz = b.z + rdz * t;
+        for (const box of solidBoxes) {
+          if (px >= box.minX && px <= box.maxX && py >= box.minY && py <= box.maxY && pz >= box.minZ && pz <= box.maxZ) {
+            blocked = true; break;
+          }
+        }
+        if (blocked) break;
+      }
+      if (!blocked && Math.random() < 0.55) {
+        const dmg = b.cls.damage * (b.cls.pellets > 1 ? 2.2 : 1) * 0.35;
+        if (targetIsPlayer) {
+          if (!hit.bot && hit.dist >= toTarget - 0.5) damagePlayer(dmg, b.name);
+        } else if (hit.bot && hit.bot.team !== b.team) {
+          hit.bot.hp -= dmg;
+          if (hit.bot.hp <= 0) {
+            hit.bot.alive = false;
+            hit.bot.respawnT = 1.6;
+            hit.bot.mesh.visible = false;
+            if (b.team === state.team) {
+              state.teamKills += 1;
+              syncHudObjective();
+              checkObjectives();
             }
           }
-          if (blocked) break;
-        }
-        if (!blocked && Math.random() < 0.55) {
-          const dmg = b.cls.damage * (b.cls.pellets > 1 ? 2.2 : 1) * 0.35;
-          damagePlayer(dmg, b.name);
         }
       }
       bulletTraces.push({
@@ -2614,8 +2833,21 @@ function endMatch(wonByKills) {
       sub = `第 ${lv} 關未通過`;
     }
   } else if (state.gameMode === 'hold') {
-    title = wonByKills ? '據點佔領成功' : '佔領失敗';
-    sub = wonByKills ? 'HOLD COMPLETE' : 'HOLD FAILED';
+    title = wonByKills ? '據點爭奪成功' : '據點失守';
+    sub = wonByKills ? 'POINT SECURED' : 'POINT LOST';
+  } else if (state.gameMode === 'tdm') {
+    title = wonByKills ? '團隊死鬥勝利' : '團隊死鬥敗北';
+    sub = wonByKills ? `TEAM ${state.teamKills}` : `ENEMY ${state.enemyTeamKills}`;
+  } else if (state.gameMode === 'gungame') {
+    title = wonByKills ? '槍階亂鬥通關' : '槍階未完成';
+    sub = wonByKills ? 'LADDER CLEAR' : `階 ${state.gunIndex}/${GUN_LADDER.length}`;
+  } else if (state.gameMode === 'bosshunt') {
+    title = wonByKills ? 'Boss 狩獵成功' : '狩獵失敗';
+    const bn = state.bossId ? bossById(state.bossId).nameZh : 'Boss';
+    sub = wonByKills ? bn : 'BOSS ESCAPED';
+  } else if (state.gameMode === 'ffa') {
+    title = wonByKills ? '混戰勝利' : '混戰結束';
+    sub = wonByKills ? 'FIRST TO 20' : 'TIME UP';
   }
   document.getElementById('endTitle').textContent = title;
   document.getElementById('endSub').textContent = sub;
@@ -2640,11 +2872,15 @@ function startMatch(mapId, classId, opts = {}) {
   selectedMap = mapId;
   selectedClass = classId;
   const cls = classById(classId);
+  // set mode before buildWorld so spawnBots can team-split
   buildWorld(mapId);
-  // bosses for campaign
+  // bosses for campaign / boss hunt
   if (state.gameMode === 'campaign') {
     const lv = CHANNEL7[(state.campaignLevel - 1) | 0];
-    if (lv && lv.boss) spawnBoss(worldRoot || scene, lv.level);
+    if (lv && lv.boss) spawnBoss(worldRoot || scene, lv.level, lv.bossId);
+  } else if (state.gameMode === 'bosshunt') {
+    const bid = opts.bossId || BOSS_HUNT_ROSTER[(Math.random() * BOSS_HUNT_ROSTER.length) | 0];
+    spawnBoss(worldRoot || scene, 12, bid);
   }
   resize();
 
@@ -2661,6 +2897,7 @@ function startMatch(mapId, classId, opts = {}) {
   state.invuln = 1.2;
   state.sliding = false;
   state.weaponOverride = null;
+  state.team = 0;
   configureObjectiveForMatch();
   matchOver = false;
   running = true;
@@ -2674,6 +2911,10 @@ function startMatch(mapId, classId, opts = {}) {
   document.getElementById('time').textContent = formatTime(state.timeLeft);
   killfeed.innerHTML = '';
   syncHudObjective();
+  const bossBot = bots.find((b) => b.isBoss && b.alive);
+  if (bossBot) feedKill(`${bossBot.name}——${bossBot.bossHook || ''}`);
+  showBossHud();
+  syncGunHud();
 
   overlay.classList.add('hidden');
   hud.classList.add('on');
@@ -2710,6 +2951,21 @@ addEventListener('keydown', (e) => {
   keys[e.code] = true;
   if (['Space', 'KeyC', 'ControlLeft', 'ControlRight'].includes(e.code)) e.preventDefault();
   if (e.code === 'KeyR' && running) startReload();
+  // 影 · 旺角衝鋒＋霓虹刀 — V toggles knife (not in gungame)
+  if (e.code === 'KeyV' && running && state.gameMode !== 'gungame' && state.classId === 'shade') {
+    if (state.weaponOverride === 'knife') {
+      state.weaponOverride = null;
+      const cls = classById('shade');
+      applyGunLoadout(cls);
+      feedKill('切換 · 旺角衝鋒');
+    } else {
+      state.weaponOverride = 'knife';
+      const w = EXTRA_WEAPONS.find((x) => x.id === 'knife');
+      applyGunLoadout(w);
+      feedKill('切換 · 霓虹刀');
+    }
+    syncGunHud();
+  }
 });
 addEventListener('keyup', (e) => { keys[e.code] = false; });
 addEventListener('mousedown', (e) => {
@@ -2788,6 +3044,14 @@ window.__dbg = () => ({
   pickups: pickups.filter((p) => p.alive).length,
   bots: bots.length,
   bosses: bots.filter((b) => b.isBoss).length,
+  bossId: state.bossId,
+  bossName: bots.find((b) => b.isBoss)?.name || null,
+  teamKills: state.teamKills,
+  gunIndex: state.gunIndex,
+  armor: state.armor,
+  coins: state.coins,
+  allyBots: bots.filter((b) => b.team === 0 && !b.isBoss).length,
+  enemyBots: bots.filter((b) => b.team === 1 && !b.isBoss).length,
   builderUnique: true,
 });
 
@@ -2861,3 +3125,37 @@ window.__startHoldTest = (mapId, classId) => {
   startMatch(selectedMap, selectedClass, { gameMode: 'hold' });
   return window.__dbg();
 };
+
+window.__startTdmTest = (mapId, classId) => {
+  selectedMap = mapId || 'cargo';
+  selectedClass = classId || 'spark';
+  startMatch(selectedMap, selectedClass, { gameMode: 'tdm' });
+  return window.__dbg();
+};
+
+window.__startGunGameTest = (mapId, classId) => {
+  selectedMap = mapId || 'cargo';
+  selectedClass = classId || 'spark';
+  startMatch(selectedMap, selectedClass, { gameMode: 'gungame' });
+  return window.__dbg();
+};
+
+window.__startBossHuntTest = (mapId, classId, bossId) => {
+  selectedMap = mapId || 'cargo';
+  selectedClass = classId || 'spark';
+  startMatch(selectedMap, selectedClass, { gameMode: 'bosshunt', bossId: bossId || 'producer' });
+  return window.__dbg();
+};
+
+window.__lexicon = () => ({
+  modes: GAME_MODES.map((m) => m.nameZh),
+  guns: [
+    ...CLASSES.map((c) => c.nameZh),
+    ...EXTRA_WEAPONS.map((w) => w.nameZh),
+  ],
+  ladder: GUN_LADDER.map((g) => g.nameZh),
+  pickups: ['取得彈藥箱', '取得護甲片', '取得醫療包', '取得速度飲料', '取得金幣'],
+  bosses: BOSSES.map((b) => ({ id: b.id, nameZh: b.nameZh, hook: b.hook, art: b.art })),
+  sheets: { weapons: 'refs/ui/weapons-sheet.jpg', pickups: 'refs/ui/pickups-sheet.jpg' },
+  campaignBosses: CHANNEL7.filter((l) => l.boss).map((l) => ({ level: l.level, bossId: l.bossId, nameZh: (BOSSES.find((b) => b.id === l.bossId) || {}).nameZh })),
+});

@@ -56,7 +56,14 @@ try {
   await page.click('#btnEnter');
   await page.waitForSelector('#panelMode.on');
   const modeCount = await page.$$eval('#modeGrid .pick', (els) => els.length);
-  check('3 game modes', modeCount === 3, String(modeCount));
+  check('6 game modes', modeCount === 6, String(modeCount));
+  const modeLabels = await page.$$eval('#modeGrid .pick b', (els) => els.map((e) => e.textContent.trim()));
+  check('mode label 混戰', modeLabels.includes('混戰'), modeLabels.join('|'));
+  check('mode label 團隊死鬥', modeLabels.includes('團隊死鬥'), modeLabels.join('|'));
+  check('mode label 據點爭奪', modeLabels.includes('據點爭奪'), modeLabels.join('|'));
+  check('mode label 槍階亂鬥', modeLabels.includes('槍階亂鬥'), modeLabels.join('|'));
+  check('mode label Boss 狩獵', modeLabels.includes('Boss 狩獵'), modeLabels.join('|'));
+  check('mode label Channel 7', modeLabels.includes('Channel 7'), modeLabels.join('|'));
   await page.click('#modeGrid .pick[data-id="ffa"]');
   await page.click('#btnModeNext');
   await page.waitForSelector('#panelMap.on');
@@ -146,6 +153,77 @@ try {
   const h0 = await page.evaluate(() => window.__dbg());
   check('hold mode', h0.gameMode === 'hold', h0.gameMode);
   check('hold objective', h0.objective && h0.objective.type === 'hold', JSON.stringify(h0.objective));
+
+  // lexicon locked names
+  const lex = await page.evaluate(() => window.__lexicon());
+  check('lexicon modes 5+campaign', lex.modes.length === 6, JSON.stringify(lex.modes));
+  check('lexicon ladder 8 guns', lex.ladder.length === 8, lex.ladder.join('|'));
+  check('lexicon has 港灣AR', lex.ladder.includes('港灣AR'), lex.ladder.join('|'));
+  check('lexicon has 霓虹刀', lex.ladder.includes('霓虹刀'), lex.ladder.join('|'));
+  check('lexicon has 貨櫃火箭', lex.ladder.includes('貨櫃火箭'), lex.ladder.join('|'));
+  check('lexicon bosses 8', lex.bosses.length === 8, JSON.stringify(lex.bosses));
+  check('lexicon has 製片人', lex.bosses.some((b) => b.id === 'producer' && b.nameZh === '製片人'), JSON.stringify(lex.bosses));
+  check('lexicon has 收視魔王', lex.bosses.some((b) => b.id === 'ratings' && b.nameZh === '收視魔王'), JSON.stringify(lex.bosses));
+  check('lexicon has 吊機鐵臂', lex.bosses.some((b) => b.id === 'cranearm'), JSON.stringify(lex.bosses));
+  check('lexicon has 峽谷鬼牌', lex.bosses.some((b) => b.id === 'canyon'), JSON.stringify(lex.bosses));
+  check('ui weapons sheet', lex.sheets && lex.sheets.weapons.includes('weapons-sheet'), JSON.stringify(lex.sheets));
+  check('campaign boss table', JSON.stringify(lex.campaignBosses) === JSON.stringify([
+    {level:3,bossId:'gate',nameZh:'鐵閘阿爺'},{level:6,bossId:'sign',nameZh:'招牌鬼手'},{level:9,bossId:'tower',nameZh:'天台水塔怪'},{level:12,bossId:'cargo',nameZh:'貨櫃鐵甲'},{level:15,bossId:'cranearm',nameZh:'吊機鐵臂'},{level:17,bossId:'canyon',nameZh:'峽谷鬼牌'},{level:19,bossId:'producer',nameZh:'製片人'},{level:20,bossId:'ratings',nameZh:'收視魔王'}
+  ]), JSON.stringify(lex.campaignBosses));
+  check('lexicon pickup lines', lex.pickups.join('|') === '取得彈藥箱|取得護甲片|取得醫療包|取得速度飲料|取得金幣', lex.pickups.join('|'));
+
+  // TDM
+  const tdm = await page.evaluate(() => window.__startTdmTest('cargo', 'spark'));
+  await page.waitForFunction(() => window.__dbg().gameMode === 'tdm' && window.__dbg().running, { timeout: 8000 });
+  const t0 = await page.evaluate(() => window.__dbg());
+  check('tdm mode', t0.gameMode === 'tdm', t0.gameMode);
+  check('tdm objective', t0.objective && t0.objective.type === 'tdm', JSON.stringify(t0.objective));
+  check('tdm has allies', t0.allyBots >= 1, String(t0.allyBots));
+  check('tdm has enemies', t0.enemyBots >= 1, String(t0.enemyBots));
+
+  // Gun Game
+  const gg = await page.evaluate(() => window.__startGunGameTest('temple', 'shade'));
+  await page.waitForFunction(() => window.__dbg().gameMode === 'gungame' && window.__dbg().running, { timeout: 8000 });
+  const g0 = await page.evaluate(() => window.__dbg());
+  check('gungame mode', g0.gameMode === 'gungame', g0.gameMode);
+  check('gungame obj', g0.objective && g0.objective.type === 'gungame', JSON.stringify(g0.objective));
+  check('gungame starts rung 0', g0.gunIndex === 0, String(g0.gunIndex));
+  check('gungame weaponOverride revolver', g0.weaponOverride === 'revolver', String(g0.weaponOverride));
+
+  // Boss Hunt
+  const bh = await page.evaluate(() => window.__startBossHuntTest('harbourfinal', 'rock', 'producer'));
+  await page.waitForFunction(() => window.__dbg().gameMode === 'bosshunt' && window.__dbg().running, { timeout: 8000 });
+  const b0 = await page.evaluate(() => window.__dbg());
+  check('bosshunt mode', b0.gameMode === 'bosshunt', b0.gameMode);
+  check('bosshunt has boss', b0.bosses >= 1, String(b0.bosses));
+  check('bosshunt 製片人', b0.bossName === '製片人', String(b0.bossName));
+
+  // campaign L19 製片人 / L20 收視魔王
+  await page.evaluate(() => window.__startCampaignTest(19, 'falcon'));
+  await page.waitForFunction(() => window.__dbg().campaignLevel === 19 && window.__dbg().running, { timeout: 8000 });
+  const c19 = await page.evaluate(() => window.__dbg());
+  check('campaign L19 boss 製片人', c19.bossName === '製片人', String(c19.bossName));
+
+  const campFin = await page.evaluate(() => window.__startCampaignTest(20, 'falcon'));
+  await page.waitForFunction(() => window.__dbg().campaignLevel === 20 && window.__dbg().running, { timeout: 8000 });
+  const cf = await page.evaluate(() => window.__dbg());
+  check('campaign L20 boss 收視魔王', cf.bossName === '收視魔王', String(cf.bossName));
+
+  // campaign L3 鐵閘阿爺 / L12 貨櫃鐵甲 / L15 吊機鐵臂
+  await page.evaluate(() => window.__startCampaignTest(3, 'spark'));
+  await page.waitForFunction(() => window.__dbg().campaignLevel === 3 && window.__dbg().running, { timeout: 8000 });
+  const c3b = await page.evaluate(() => window.__dbg());
+  check('campaign L3 boss 鐵閘阿爺', c3b.bossName === '鐵閘阿爺', String(c3b.bossName));
+
+  await page.evaluate(() => window.__startCampaignTest(12, 'rock'));
+  await page.waitForFunction(() => window.__dbg().campaignLevel === 12 && window.__dbg().running, { timeout: 8000 });
+  const c12 = await page.evaluate(() => window.__dbg());
+  check('campaign L12 boss 貨櫃鐵甲', c12.bossName === '貨櫃鐵甲', String(c12.bossName));
+
+  await page.evaluate(() => window.__startCampaignTest(15, 'shade'));
+  await page.waitForFunction(() => window.__dbg().campaignLevel === 15 && window.__dbg().running, { timeout: 8000 });
+  const c15 = await page.evaluate(() => window.__dbg());
+  check('campaign L15 boss 吊機鐵臂', c15.bossName === '吊機鐵臂', String(c15.bossName));
 
   check('no pageerror', pageErrors.length === 0, pageErrors.join(' | '));
   const critical = errors.filter((e) => !/favicon/i.test(e));
