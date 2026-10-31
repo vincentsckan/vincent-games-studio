@@ -58,6 +58,9 @@ button.ghost{margin-top:10px;background:transparent;border:1px solid #40f0ff66;c
 #endStats b{display:block;font-size:1.35rem;color:#40f0ff}
 #endStats span{font-size:11px;opacity:.7}
 .hint{margin-top:10px;font-size:12px;color:#8a7a9a}
+.splash-line{margin-top:12px;line-height:1.55;font-weight:800}
+.splash-line.primary{color:#ffd36a;font-size:15px;text-shadow:0 0 18px #ff4dc855}
+.splash-line.secondary{color:#40f0ff;font-size:14px;margin-top:6px;text-shadow:0 0 14px #40f0ff44}
 #bossSplashStrip{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}
 #bossSplashStrip .bossCard{margin:0;background:#0a1224;border:1px solid #ff4dc855;border-radius:12px;overflow:hidden;padding:0 0 6px}
 #bossSplashStrip .bossCard img{display:block;width:100%;height:64px;object-fit:cover}
@@ -125,7 +128,9 @@ button.ghost{margin-top:10px;background:transparent;border:1px solid #40f0ff66;c
       <h1>NEON HARBOR CLASH</h1>
       <div class="sub">霓虹港戰 · Vincent Games Studio</div>
       <img class="hero" src="refs/hero.jpg" alt="Neon Harbor" onerror="this.style.display='none'"/>
-      <p>跟足高速競技——多模式、多槍械、執資源、打 Boss。<br/>Frag Channel 開播——你加入 Channel 7；貨櫃區同廟市天台，打贏先有收視。</p>
+      <p id="splashPrimary" class="splash-line primary">霓虹未熄，港灣已開打——鏡頭一開就係戰場。</p>
+      <p id="splashSecondary" class="splash-line secondary">Channel 7 開波，今晚收視你話事。</p>
+      <p class="hint" style="margin-top:8px">跟足高速競技——多模式、多槍械、執資源、打 Boss。貨櫃區同廟市天台，打贏先有收視。</p>
       <img class="hero sheet" src="refs/ui/weapons-sheet.jpg" alt="weapons" style="max-height:110px" onerror="this.style.display='none'"/>
       <img class="hero sheet" src="refs/ui/pickups-sheet.jpg" alt="pickups" style="max-height:90px" onerror="this.style.display='none'"/>
       <div class="sub" style="margin-top:12px">CHANNEL 7 · 八大 Boss</div>
@@ -137,6 +142,8 @@ button.ghost{margin-top:10px;background:transparent;border:1px solid #40f0ff66;c
     <div class="panel" id="panelMode">
       <h1>選擇模式</h1>
       <div class="sub">混戰｜團隊死鬥｜據點爭奪｜槍階亂鬥｜Boss 狩獵｜Channel 7</div>
+      <p id="modeSplashPrimary" class="splash-line primary">霓虹未熄，港灣已開打——鏡頭一開就係戰場。</p>
+      <p id="modeSplashSecondary" class="splash-line secondary">Channel 7 開波，今晚收視你話事。</p>
       <img class="hero sheet" src="refs/ui/weapons-sheet.jpg" alt="guns" style="max-height:88px" onerror="this.style.display='none'"/>
       <div class="grid" id="modeGrid"></div>
       <button class="play" id="btnModeNext" disabled>下一步</button>
