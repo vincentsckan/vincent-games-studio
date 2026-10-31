@@ -7,542 +7,501 @@
 <title>夜班冷藏 · Night Cold Hold — Vincent Games Studio</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;background:#0a1820;color:#e8f4ff;font-family:system-ui,"PingFang HK","Noto Sans TC",sans-serif;overflow:hidden;touch-action:none;user-select:none}
-canvas#view{position:relative;z-index:0;display:block;width:100%;height:100%;background:#1a3548;outline:none}
-#hud{position:fixed;left:0;right:0;top:0;z-index:3;padding:calc(10px + env(safe-area-inset-top)) 14px 0;padding-right:150px;display:flex;justify-content:space-between;pointer-events:none;font-weight:800;text-shadow:0 2px 8px #000}
-#hud .l{color:#9ad8ff}#hud .r{color:#ff8a6a;text-align:right}
-#hud small{display:block;font-size:11px;opacity:.75;letter-spacing:.05em}
-#check{position:fixed;left:12px;top:calc(58px + env(safe-area-inset-top));z-index:3;padding:8px 12px;border-radius:12px;background:rgba(0,0,0,.72);border:1px solid #7ec8ff55;font-size:12px;font-weight:800;line-height:1.55;pointer-events:none}
-#check .ok{color:#5dff9a}#check .todo{color:#9ad0ff}#check .warn{color:#ffcc66}
-#goal{position:fixed;left:50%;top:calc(58px + env(safe-area-inset-top));transform:translateX(-50%);z-index:3;padding:8px 14px;border-radius:999px;background:rgba(0,0,0,.75);border:1px solid #7ec8ff66;font-size:13px;font-weight:800;pointer-events:none;max-width:70vw;text-align:center}
-#hint{position:fixed;left:50%;bottom:calc(26% + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:4;max-width:92vw;padding:10px 14px;border-radius:12px;background:rgba(0,0,0,.78);border:1px solid #7ec8ff55;font-size:13px;font-weight:700;text-align:center;display:none}
-#hint.on{display:block}
-#bat{position:fixed;right:12px;top:calc(58px + env(safe-area-inset-top));z-index:3;width:110px;pointer-events:none}
-#bat .lab{font-size:11px;font-weight:800;color:#9ad0ff;margin-bottom:4px;text-align:right;text-shadow:0 2px 6px #000}
-#bat .bar{height:10px;border-radius:6px;background:#123;border:1px solid #7ec8ff66;overflow:hidden}
-#bat .fill{height:100%;background:linear-gradient(90deg,#2a9,#ffcc44,#ff4d5e);width:100%;transition:width .15s}
-#stam{position:fixed;right:12px;top:calc(96px + env(safe-area-inset-top));z-index:3;width:110px;pointer-events:none}
-#stam .lab{font-size:11px;font-weight:800;color:#ffcc66;margin-bottom:4px;text-align:right;text-shadow:0 2px 6px #000}
-#stam .bar{height:8px;border-radius:6px;background:#123;border:1px solid #ffcc6655;overflow:hidden}
-#stam .fill{height:100%;background:#ffcc66;width:100%}
-#timer{position:fixed;left:50%;bottom:calc(18% + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:3;font:900 15px system-ui;color:#ff6a7a;text-shadow:0 2px 8px #000;pointer-events:none}
-#overlay{position:fixed;inset:0;z-index:8;display:flex;align-items:center;justify-content:center;background:rgba(6,16,24,.94);padding:20px;overflow-y:auto}
-#overlay.hidden{display:none}
-.card{max-width:460px;width:100%;background:linear-gradient(165deg,#153448,#0c2030);border:1px solid #7ec8ff88;border-radius:20px;padding:22px 18px;text-align:center}
-.card h1{font-size:1.7rem;font-weight:900;background:linear-gradient(90deg,#b8e4ff,#ff4d5e);-webkit-background-clip:text;background-clip:text;color:transparent}
-.card .sub{margin-top:6px;color:#9ad0ff;font-size:13px}
-.card ol{margin:12px 0 0;padding-left:1.15em;color:#d0e4f0;font-size:13.5px;line-height:1.6;text-align:left}
-button.play{margin-top:16px;min-height:52px;padding:0 26px;border:0;border-radius:999px;background:linear-gradient(90deg,#2a7a9c,#ff4d5e);color:#fff;font-weight:900;font-size:17px;cursor:pointer;font-family:inherit}
+html,body{height:100%;background:#040a10;color:#e8f4ff;font-family:system-ui,"PingFang HK","Noto Sans TC",sans-serif;overflow:hidden;touch-action:none;user-select:none}
+#stage{position:fixed;inset:0;overflow:hidden;background:#061018}
+#bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;pointer-events:none;filter:contrast(1.06) saturate(.95)}
+#vignette{position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at center,transparent 40%,rgba(0,0,0,.58) 100%)}
+#player{position:absolute;z-index:5;width:28px;height:48px;margin-left:-14px;transform-origin:50% 90%;pointer-events:none}
+#player .body{position:absolute;inset:0;background:linear-gradient(180deg,#1a2830 0%,#0a1218 70%,#000 100%);clip-path:polygon(35% 0,65% 0,72% 18%,78% 45%,70% 48%,72% 100%,28% 100%,30% 48%,22% 45%,28% 18%);box-shadow:0 0 12px #000a}
+#player .head{position:absolute;left:50%;top:2px;width:14px;height:14px;margin-left:-7px;border-radius:50%;background:#1a2228;border:1px solid #456}
+#player.hurt{filter:brightness(1.4) sepia(1) hue-rotate(-40deg)}
+.hotspot{position:absolute;z-index:4;border:2px solid rgba(126,200,255,.55);background:rgba(126,200,255,.12);border-radius:6px;cursor:pointer;box-shadow:0 0 14px rgba(126,200,255,.35);animation:hsPulse 1.6s ease-in-out infinite}
+.hotspot.door{border-color:rgba(255,200,80,.65);background:rgba(255,200,80,.12);box-shadow:0 0 14px rgba(255,200,80,.35)}
+.hotspot.item{border-color:rgba(120,255,140,.65);background:rgba(120,255,140,.12);box-shadow:0 0 14px rgba(120,255,140,.4)}
+.hotspot.exam{border-color:rgba(255,140,100,.55);background:rgba(255,140,100,.1)}
+.hotspot .lbl{position:absolute;left:50%;bottom:calc(100% + 4px);transform:translateX(-50%);white-space:nowrap;padding:3px 8px;border-radius:8px;background:rgba(0,0,0,.78);font-size:11px;font-weight:800;color:#fff;pointer-events:none}
+@keyframes hsPulse{0%,100%{opacity:.85}50%{opacity:1}}
+#enemy{position:absolute;z-index:6;width:40px;height:64px;margin-left:-20px;display:none;pointer-events:none}
+#enemy.on{display:block}
+#enemy .sil{position:absolute;inset:0;background:linear-gradient(180deg,#2a4050,#0a1520);clip-path:polygon(30% 0,70% 0,78% 20%,85% 50%,72% 55%,75% 100%,25% 100%,28% 55%,15% 50%,22% 20%);box-shadow:0 0 20px #7ec8ff66}
+#enemy .eyes{position:absolute;left:50%;top:10px;width:16px;height:6px;margin-left:-8px;background:#7ec8ff;border-radius:2px;box-shadow:0 0 8px #7ec8ff;animation:blink 2s infinite}
+@keyframes blink{0%,90%,100%{opacity:1}95%{opacity:.2}}
+#fade{position:fixed;inset:0;z-index:50;background:#000;opacity:0;pointer-events:none;transition:opacity .35s}
+#fade.on{opacity:1;pointer-events:auto}
+#blood{position:fixed;inset:0;z-index:45;background:radial-gradient(circle at 50% 40%,rgba(180,0,20,.85),rgba(40,0,0,.95));opacity:0;pointer-events:none;transition:opacity .2s}
+#blood.on{opacity:1}
+#hudTop{position:fixed;left:0;right:0;top:0;z-index:20;padding:calc(10px + env(safe-area-inset-top)) 14px 0;padding-right:160px;pointer-events:none}
+#objBox{display:inline-block;padding:8px 12px;border-radius:12px;background:rgba(0,0,0,.78);border:1px solid #7ec8ff55;font-size:12px;font-weight:800;line-height:1.55;text-shadow:0 1px 4px #000}
+#objBox .ok{color:#5dff9a}#objBox .todo{color:#9ad0ff}#objBox .title{color:#7ec8ff;font-size:11px;letter-spacing:.06em;margin-bottom:2px}
+#statHud{position:fixed;right:12px;top:calc(58px + env(safe-area-inset-top));z-index:20;padding:8px 10px;border-radius:10px;background:rgba(0,0,0,.78);border:1px solid #7ec8ff44;font-size:12px;font-weight:800;line-height:1.5;text-align:right;pointer-events:none;min-width:120px}
+#statHud .hp{color:#ff6a8a}#statHud .ammo{color:#ffd36a}#statHud .herb{color:#7dff9a}#statHud .bat{color:#7ec8ff}
+#msgBar{position:fixed;left:50%;top:calc(52px + env(safe-area-inset-top));transform:translateX(-50%);z-index:22;max-width:88vw;padding:8px 14px;border-radius:12px;background:rgba(0,0,0,.82);border:1px solid #7ec8ff55;font-size:13px;font-weight:800;text-align:center;display:none;pointer-events:none}
+#msgBar.on{display:block}
+#inv{position:fixed;left:50%;bottom:calc(12px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:30;display:flex;gap:6px;padding:6px;border-radius:14px;background:rgba(0,0,0,.72);border:1px solid #7ec8ff44;pointer-events:auto}
+.slot{width:52px;height:52px;border-radius:10px;border:2px solid #334455;background:rgba(8,16,24,.9);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#9ad0ff;cursor:pointer;position:relative}
+.slot.eq{border-color:#7ec8ff;box-shadow:0 0 10px #7ec8ff66}
+.slot .ic{font-size:18px;line-height:1}
+.slot .nm{font-size:9px;max-width:48px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.slot .qty{position:absolute;right:3px;bottom:2px;font-size:10px;color:#ffd36a}
 #pad{position:fixed;left:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:40;pointer-events:auto;display:grid;grid-template-columns:58px 58px 58px;grid-template-rows:58px 58px;gap:7px}
 #pad button{border:0;border-radius:16px;background:rgba(126,200,255,.45);color:#fff;font-weight:900;font-size:22px;box-shadow:0 4px 14px #0008}
 #pad button:active,#pad button.held{background:#7ec8ff;outline:3px solid #ff4d5e;transform:scale(.96)}
 #pad .x{visibility:hidden}
-#actBtn,#hideBtn,#flashBtn{position:fixed;z-index:40;display:none;min-height:52px;padding:0 14px;border:0;border-radius:14px;color:#fff;font-weight:900;font-size:14px}
-#actBtn{right:12px;bottom:calc(130px + env(safe-area-inset-bottom));min-width:100px;background:linear-gradient(180deg,#40c0ff,#2060aa)}
-#hideBtn{right:12px;bottom:calc(70px + env(safe-area-inset-bottom));min-width:100px;background:linear-gradient(180deg,#8a6040,#4a3020)}
-#flashBtn{right:12px;bottom:calc(12px + env(safe-area-inset-bottom));min-width:100px;background:linear-gradient(180deg,#ffcc66,#aa8020)}
-#actBtn.on,#hideBtn.on,#flashBtn.on{display:block}
-#hideBtn.active{outline:3px solid #7ec8ff}
-#flashBtn.off{opacity:.55}
-#looktip{position:fixed;right:12px;bottom:calc(190px + env(safe-area-inset-bottom));z-index:5;padding:7px 10px;border-radius:10px;background:rgba(0,0,0,.55);color:#9ad0ff;font-size:11px;font-weight:700;display:none}
-#looktip.on{display:block}
+#acts{position:fixed;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:40;display:flex;flex-direction:column;gap:8px;align-items:stretch}
+#acts button{min-height:48px;min-width:100px;padding:0 14px;border:0;border-radius:14px;color:#fff;font-weight:900;font-size:14px;font-family:inherit;box-shadow:0 4px 14px #0008}
+#btnExam{background:linear-gradient(180deg,#40c0ff,#2060aa)}
+#btnAtk{background:linear-gradient(180deg,#ff4d5e,#8a2030);display:none}
+#btnAtk.on{display:block}
+#btnHerb{background:linear-gradient(180deg,#5dff9a,#208050);display:none}
+#btnHerb.on{display:block}
+#btnDodge{background:linear-gradient(180deg,#ffcc66,#aa8020);display:none}
+#btnDodge.on{display:block}
+#overlay{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(4,12,20,.94);padding:20px;overflow-y:auto}
+#overlay.hidden{display:none}
+.card{max-width:480px;width:100%;background:linear-gradient(165deg,#153448,#0c2030);border:1px solid #7ec8ff88;border-radius:20px;padding:22px 18px;text-align:center}
+.card h1{font-size:1.7rem;font-weight:900;background:linear-gradient(90deg,#b8e4ff,#ff4d5e);-webkit-background-clip:text;background-clip:text;color:transparent}
+.card .sub{margin-top:6px;color:#9ad0ff;font-size:13px}
+.card ol{margin:12px 0 0;padding-left:1.15em;color:#d0e4f0;font-size:13.5px;line-height:1.6;text-align:left}
+button.play{margin-top:16px;min-height:52px;padding:0 26px;border:0;border-radius:999px;background:linear-gradient(90deg,#2a7a9c,#ff4d5e);color:#fff;font-weight:900;font-size:17px;cursor:pointer;font-family:inherit}
+#endCard h2{font-size:1.4rem;margin-bottom:8px}
 #vg-back-root{position:fixed;inset:0;z-index:2147483647;pointer-events:none}
 #vg-back-root a.vg-back-btn{pointer-events:auto;position:fixed;display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 14px;border-radius:14px;font:800 15px/1.2 "Noto Sans TC",system-ui,sans-serif;text-decoration:none;border:2px solid #7ec8ff;background:#0d1c28;color:#7ec8ff;box-shadow:0 6px 28px #000a}
 #vg-back-tr{right:max(12px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));left:auto;bottom:auto}
 </style>
 </head>
 <body>
-<canvas id="view" tabindex="0"></canvas>
-<div id="hud">
-  <div class="l"><small>NIGHT COLD HOLD</small><span id="msg">夜班冷藏</span></div>
-  <div class="r"><small>狀態</small><span id="stat">準備</span></div>
+<div id="stage">
+  <img id="bg" alt="" draggable="false"/>
+  <div id="vignette"></div>
+  <div id="player"><div class="head"></div><div class="body"></div></div>
+  <div id="enemy"><div class="sil"></div><div class="eyes"></div></div>
+  <div id="hots"></div>
 </div>
-<div id="check">
-  <div id="c1" class="todo">□ 掃描條碼 0／3</div>
-  <div id="c2" class="todo">□ 恆溫安全區</div>
-  <div id="c3" class="todo">□ 出口解鎖</div>
+<div id="fade"></div>
+<div id="blood"></div>
+<div id="hudTop">
+  <div id="objBox">
+    <div class="title">任務目標 · 夜班冷藏</div>
+    <div id="o1" class="todo">① 開應急電</div>
+    <div id="o2" class="todo">② 執同事證</div>
+    <div id="o3" class="todo">③ 開卸貨門逃出</div>
+  </div>
 </div>
-<div id="goal">完成封倉清單再逃</div>
-<div id="bat"><div class="lab">電筒電量</div><div class="bar"><div class="fill" id="batFill"></div></div></div>
-<div id="stam"><div class="lab">體力</div><div class="bar"><div class="fill" id="stamFill"></div></div></div>
-<div id="timer"></div>
-<div id="hint"></div>
-<div id="overlay"><div class="card">
-  <h1>夜班冷藏</h1>
-  <div class="sub">COLD HOLD · 唔好開第三道閘</div>
-  <ol>
-    <li>夜更清潔。凍庫停電。同事最後一個 WhatsApp：「<strong>唔好開第三道閘。</strong>」</li>
-    <li>目標：① 開應急電（掃貨架條碼）　② 執同事證（調恆溫終端）　③ 開卸貨門逃出</li>
-    <li>手電筒耗電；開燈面向敵人會加速追你。粉紅肉簾可匿（空白鍵）。Shift 衝刺有體力。</li>
-    <li>WASD／↑↓ 行 · ←→ 或 Q／E 轉身 · F 電筒</li>
-  </ol>
-  <button class="play" id="btn">進入遊戲</button>
-</div></div>
+<div id="statHud">
+  <div class="hp" id="hpLine">生命 ███░</div>
+  <div class="ammo" id="ammo9">9mm 0</div>
+  <div class="ammo" id="ammoSg">散彈 0</div>
+  <div class="herb" id="herbLine">草藥×0</div>
+  <div class="bat" id="batLine">電池 0</div>
+</div>
+<div id="msgBar"></div>
+<div id="inv"></div>
 <div id="pad">
   <button class="x" tabindex="-1"></button><button id="tF" type="button">↑</button><button class="x" tabindex="-1"></button>
   <button id="tL" type="button">←</button><button id="tB" type="button">↓</button><button id="tR" type="button">→</button>
 </div>
-<button id="actBtn" type="button">互動</button>
-<button id="hideBtn" type="button">匿藏</button>
-<button id="flashBtn" type="button">電筒</button>
-<div id="looktip">拖畫面轉頭</div>
+<div id="acts">
+  <button id="btnAtk" type="button">攻擊</button>
+  <button id="btnDodge" type="button">閃避</button>
+  <button id="btnHerb" type="button">用綠草回血</button>
+  <button id="btnExam" type="button">調查</button>
+</div>
+<div id="overlay"><div class="card" id="startCard">
+  <h1>夜班冷藏</h1>
+  <div class="sub">COLD HOLD · 唔好開第三道閘</div>
+  <ol>
+    <li>夜更清潔。凍庫停電。同事最後一個 WhatsApp：「<strong>唔好開第三道閘。</strong>」</li>
+    <li>目標：① 開應急電　② 執同事證　③ 開卸貨門逃出</li>
+    <li>固定鏡頭電影場景 · 生化危機風。↑ 前進 · ↓ 後退 · ←→ 轉身 · E／F／調查</li>
+    <li>彈藥有限，能走就走；夠近先用撬棍。</li>
+  </ol>
+  <button class="play" id="btn">進入遊戲</button>
+</div>
+<div class="card" id="endCard" style="display:none">
+  <h2 id="endTitle"></h2>
+  <p id="endBody" style="margin-top:8px;line-height:1.55;font-size:14px"></p>
+  <button class="play" id="btnRetry">再試一次</button>
+</div></div>
 <div id="vg-back-root" aria-label="catalog"><a id="vg-back-tr" class="vg-back-btn" href="/vincent-games-studio/games" title="← 返回遊戲目錄">← 返回遊戲目錄</a></div>
 <script>
 (function(){
-  const W=28,H=28,map=[];
-  for(let y=0;y<H;y++){map[y]=[];for(let x=0;x<W;x++)map[y][x]=(x===0||y===0||x===W-1||y===H-1)?1:0;}
-  // aisle racks (meat shelves as walls with gaps)
-  [[3,3,3,24],[6,2,6,12],[6,16,6,25],[10,4,10,22],[14,2,14,10],[14,14,14,25],[18,4,18,20],[22,2,22,12],[22,16,22,25],[8,8,20,8],[4,14,12,14],[16,14,24,14],[8,20,20,20]].forEach(([x0,y0,x1,y1])=>{
-    for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)if(x>0&&y>0&&x<W-1&&y<H-1)map[y][x]=1;
+'use strict';
+const keys={}; const pad={f:0,b:0,l:0,r:0};
+let running=false, transitioning=false, combatActive=false, reloading=false, msgTimer=0;
+
+const state={
+  room:'dock', x:50, y:22, ang:0, hp:100, maxHp:100,
+  inv:{crowbar:false,handgun:false,shotgun:false,ammo9:0,ammoSg:0,herb:0,battery:0,fuse:false,badge:false},
+  equip:'none',
+  flags:{powerOn:false,badgeGot:false,gateOpen:false,gateCleared:false},
+  enemy:{alive:false,hp:0,x:70,y:55,atkCd:0}
+};
+const taken=new Set();
+
+const ROOMS={
+  dock:{
+    img:'scenes/dock.jpg', name:'卸貨碼頭',
+    spawn:{x:50,y:20,ang:0}, bounds:{xmin:16,xmax:84,ymin:12,ymax:78},
+    hotspots:[
+      {id:'door_aisle',type:'door',x:52,y:70,w:14,h:16,label:'凍庫通道',to:'aisle'},
+      {id:'item_crowbar',type:'item',x:22,y:32,w:10,h:10,label:'撬棍',item:'crowbar',once:true},
+      {id:'exam_wa',type:'exam',x:70,y:40,w:12,h:10,label:'WhatsApp',text:'最後一個訊息：「唔好開第三道閘。」已讀 02:14。'},
+      {id:'exit_final',type:'exit',x:30,y:55,w:14,h:14,label:'卸貨門逃出',need:'gateOpen'}
+    ]
+  },
+  aisle:{
+    img:'scenes/aisle.jpg', name:'掛肉通道',
+    spawn:{x:50,y:18,ang:0}, bounds:{xmin:14,xmax:86,ymin:12,ymax:80},
+    hotspots:[
+      {id:'door_dock',type:'door',x:50,y:12,w:12,h:10,label:'返回碼頭',to:'dock'},
+      {id:'door_ctrl',type:'door',x:78,y:52,w:12,h:14,label:'控制室',to:'control'},
+      {id:'item_fuse',type:'item',x:30,y:50,w:11,h:11,label:'電池',item:'battery',once:true},
+      {id:'item_handgun',type:'item',x:60,y:38,w:11,h:11,label:'手槍',item:'handgun',once:true},
+      {id:'item_ammo9',type:'item',x:65,y:28,w:10,h:10,label:'9mm',item:'ammo9',qty:15,once:true},
+      {id:'item_herb',type:'item',x:20,y:60,w:10,h:10,label:'綠草',item:'herb',qty:1,once:true},
+      {id:'exam_hook',type:'exam',x:40,y:70,w:12,h:10,label:'掛鉤便條',text:'便條：「應急電箱在控制室。保險絲／電池唔好亂拋。」'}
+    ]
+  },
+  control:{
+    img:'scenes/control.jpg', name:'CCTV／控制室',
+    spawn:{x:40,y:20,ang:10}, bounds:{xmin:14,xmax:86,ymin:12,ymax:80},
+    hotspots:[
+      {id:'door_aisle2',type:'door',x:20,y:18,w:12,h:12,label:'返回通道',to:'aisle'},
+      {id:'door_gate',type:'door',x:75,y:60,w:13,h:14,label:'第三道閘',to:'gate',need:'powerOn',lockedMsg:'停電——閘鎖死。先開應急電。'},
+      {id:'panel',type:'use',x:55,y:45,w:12,h:12,label:'應急電箱',needItem:'battery',onUse:'power',lockedMsg:'電箱空的——需要電池。',doneFlag:'powerOn',doneMsg:'應急電啟動。螢幕亮起。'},
+      {id:'item_badge',type:'item',x:35,y:55,w:11,h:11,label:'同事證',item:'badge',once:true},
+      {id:'item_shotgun',type:'item',x:80,y:35,w:11,h:11,label:'散彈槍',item:'shotgun',once:true},
+      {id:'item_sg',type:'item',x:82,y:25,w:10,h:10,label:'散彈',item:'ammoSg',qty:5,once:true},
+      {id:'exam_mon',type:'exam',x:48,y:70,w:14,h:10,label:'監視器',text:'畫面閃爍：第三道閘後面有影子……同事證放在控制台旁。'}
+    ]
+  },
+  gate:{
+    img:'scenes/gate.jpg', name:'第三道閘',
+    spawn:{x:45,y:22,ang:0}, bounds:{xmin:16,xmax:84,ymin:12,ymax:82},
+    hotspots:[
+      {id:'door_ctrl2',type:'door',x:22,y:20,w:12,h:12,label:'返回控制室',to:'control'},
+      {id:'gate_panel',type:'use',x:60,y:50,w:14,h:14,label:'閘門讀卡',needItem:'badge',onUse:'gate',lockedMsg:'需要同事證刷卡。',doneFlag:'gateOpen',doneMsg:'卸貨門鎖開了——快逃。'},
+      {id:'exam_gate',type:'exam',x:40,y:40,w:12,h:10,label:'閘門告示',text:'「第三道閘 · 授權人員」。WhatsApp 叮一聲——同一個號碼。'}
+    ],
+    ambush:true
+  }
+};
+
+const el={
+  bg:document.getElementById('bg'), player:document.getElementById('player'), enemy:document.getElementById('enemy'),
+  hots:document.getElementById('hots'), fade:document.getElementById('fade'), blood:document.getElementById('blood'),
+  msg:document.getElementById('msgBar'), inv:document.getElementById('inv'), overlay:document.getElementById('overlay'),
+  o1:document.getElementById('o1'), o2:document.getElementById('o2'), o3:document.getElementById('o3'),
+  hpLine:document.getElementById('hpLine'), ammo9:document.getElementById('ammo9'), ammoSg:document.getElementById('ammoSg'),
+  herbLine:document.getElementById('herbLine'), batLine:document.getElementById('batLine'),
+  btnAtk:document.getElementById('btnAtk'), btnDodge:document.getElementById('btnDodge'),
+  btnHerb:document.getElementById('btnHerb'), btnExam:document.getElementById('btnExam')
+};
+
+function showMsg(t,ms){ el.msg.textContent=t; el.msg.classList.add('on'); clearTimeout(msgTimer); msgTimer=setTimeout(()=>el.msg.classList.remove('on'),ms||2200); }
+function hpBar(){ const n=Math.max(0,Math.round(state.hp/25)); return '█'.repeat(n)+'░'.repeat(4-n); }
+function dist(ax,ay,bx,by){ return Math.hypot(ax-bx,ay-by); }
+function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+function wait(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+function refreshHud(){
+  el.hpLine.textContent='生命 '+hpBar()+' '+Math.max(0,Math.round(state.hp));
+  el.ammo9.textContent='9mm '+state.inv.ammo9;
+  el.ammoSg.textContent='散彈 '+state.inv.ammoSg;
+  el.herbLine.textContent='草藥×'+state.inv.herb;
+  el.batLine.textContent='電池 '+(state.inv.battery?1:0);
+  el.o1.className=state.flags.powerOn?'ok':'todo';
+  el.o1.textContent=(state.flags.powerOn?'✓':'①')+' 開應急電';
+  el.o2.className=state.flags.badgeGot?'ok':'todo';
+  el.o2.textContent=(state.flags.badgeGot?'✓':'②')+' 執同事證';
+  el.o3.className=state.flags.gateOpen?'ok':'todo';
+  el.o3.textContent=(state.flags.gateOpen?'✓':'③')+' 開卸貨門逃出';
+  el.btnHerb.classList.toggle('on', state.inv.herb>0 && state.hp<state.maxHp);
+  const near=state.enemy.alive && dist(state.x,state.y,state.enemy.x,state.enemy.y)<32;
+  el.btnAtk.classList.toggle('on', near || (state.enemy.alive && combatActive));
+  el.btnDodge.classList.toggle('on', near || (state.enemy.alive && combatActive));
+  renderInv();
+}
+
+function renderInv(){
+  const slots=[], I=state.inv;
+  if(I.crowbar) slots.push({id:'crowbar',ic:'🔧',nm:'撬棍',eq:state.equip==='crowbar'});
+  if(I.handgun) slots.push({id:'handgun',ic:'🔫',nm:'手槍',eq:state.equip==='handgun',qty:I.ammo9});
+  if(I.shotgun) slots.push({id:'shotgun',ic:'💥',nm:'散彈槍',eq:state.equip==='shotgun',qty:I.ammoSg});
+  if(I.herb>0) slots.push({id:'herb',ic:'🌿',nm:'綠草',qty:I.herb});
+  if(I.battery) slots.push({id:'battery',ic:'🔋',nm:'電池'});
+  if(I.badge) slots.push({id:'badge',ic:'🪪',nm:'同事證'});
+  while(slots.length<6) slots.push({id:'',ic:'',nm:''});
+  el.inv.innerHTML=slots.slice(0,6).map(s=>{
+    if(!s.id) return '<div class="slot"></div>';
+    return `<div class="slot${s.eq?' eq':''}" data-id="${s.id}"><span class="ic">${s.ic}</span><span class="nm">${s.nm}</span>${s.qty!=null?`<span class="qty">${s.qty}</span>`:''}</div>`;
+  }).join('');
+  el.inv.querySelectorAll('.slot[data-id]').forEach(n=>{ n.onclick=()=>equipOrUse(n.dataset.id); });
+}
+
+function equipOrUse(id){
+  if(id==='crowbar'||id==='handgun'||id==='shotgun'){ state.equip=id; showMsg(id==='crowbar'?'裝備撬棍':id==='handgun'?'裝備手槍':'裝備散彈槍'); }
+  else if(id==='herb') useHerb();
+  refreshHud();
+}
+function useHerb(){
+  if(state.inv.herb<=0) return;
+  state.inv.herb--; state.hp=Math.min(state.maxHp,state.hp+45);
+  showMsg('用綠草回血'); refreshHud();
+}
+
+function placePlayer(){
+  const p=el.player, left=8+(state.x/100)*84, bottom=8+(state.y/100)*40, scale=0.75+(state.y/100)*0.55;
+  p.style.left=left+'%'; p.style.bottom=bottom+'%'; p.style.top='auto';
+  p.style.transform=`rotate(${state.ang}deg)`;
+  p.style.width=(28*scale)+'px'; p.style.height=(48*scale)+'px'; p.style.marginLeft=(-14*scale)+'px';
+}
+function placeEnemy(){
+  const e=el.enemy;
+  if(!state.enemy.alive){ e.classList.remove('on'); return; }
+  e.classList.add('on');
+  const left=8+(state.enemy.x/100)*84, bottom=8+(state.enemy.y/100)*40, scale=0.85+(state.enemy.y/100)*0.5;
+  e.style.left=left+'%'; e.style.bottom=bottom+'%'; e.style.top='auto';
+  e.style.width=(40*scale)+'px'; e.style.height=(64*scale)+'px'; e.style.marginLeft=(-20*scale)+'px';
+}
+
+function renderHots(){
+  el.hots.innerHTML='';
+  ROOMS[state.room].hotspots.forEach(h=>{
+    if(h.once && taken.has(h.id)) return;
+    if(h.doneFlag && state.flags[h.doneFlag] && h.type==='use') return;
+    if(h.type==='exit' && !state.flags.gateOpen) return;
+    const d=document.createElement('div');
+    d.className='hotspot '+(h.type==='door'||h.type==='exit'?'door':h.type==='item'?'item':'exam');
+    const left=8+(h.x/100)*84, bottom=8+(h.y/100)*40;
+    d.style.left=left+'%'; d.style.bottom=bottom+'%'; d.style.width=h.w+'%'; d.style.height=(h.h*0.55)+'vh';
+    d.style.transform='translate(-50%,0)';
+    d.innerHTML=`<span class="lbl">${h.label}</span>`;
+    d.onclick=(ev)=>{ ev.stopPropagation(); activateHotspot(h); };
+    el.hots.appendChild(d);
   });
-  [[3,8],[3,16],[6,6],[6,18],[10,10],[10,16],[14,6],[14,18],[18,8],[18,14],[22,8],[22,18],[12,8],[16,14],[10,20],[14,20]].forEach(([x,y])=>{if(map[y])map[y][x]=0;});
-  map[24][24]=2; map[24][25]=2; map[25][24]=2; map[25][25]=2;
+}
 
-  const tags=[{x:4.5,y:5.5,got:false},{x:12.5,y:11.5,got:false},{x:20.5,y:22.5,got:false}];
-  const terminal={x:8.5,y:22.5};
-  const thermo={x:20.5,y:6.5,val:0.15};
-  const curtains=[{x:5.5,y:10.5},{x:12.5,y:16.5},{x:19.5,y:12.5},{x:9.5,y:18.5}];
-  const EXIT={x:24.5,y:24.5};
-  const stalker={x:22.5,y:18.5,px:16,py:10,mode:'patrol'};
-
-  let px=4.5,py=7.5,dir=-Math.PI/2; // face open aisle + glowing tag
-  let playing=false,dead=false,won=false,hiding=false;
-  let flashOn=true,battery=100,stamina=100;
-  let scanned=0, thermoOk=false, exitOpen=false;
-  let timeLeft=180, bob=0, interactCD=0;
-  let holdThermo=0;
-
-  const canvas=document.getElementById('view');
-  const ctx=canvas.getContext('2d',{alpha:false});
-  const msg=document.getElementById('msg');
-  const stat=document.getElementById('stat');
-  const goal=document.getElementById('goal');
-  const hint=document.getElementById('hint');
-  const overlay=document.getElementById('overlay');
-  const pad=document.getElementById('pad');
-  const actBtn=document.getElementById('actBtn');
-  const hideBtn=document.getElementById('hideBtn');
-  const flashBtn=document.getElementById('flashBtn');
-  const looktip=document.getElementById('looktip');
-  const batFill=document.getElementById('batFill');
-  const stamFill=document.getElementById('stamFill');
-  const timerEl=document.getElementById('timer');
-  const c1=document.getElementById('c1'),c2=document.getElementById('c2'),c3=document.getElementById('c3');
-  const keys={}; const move={f:0,b:0,turnL:0,turnR:0};
-
-  function resize(){const d=Math.min(devicePixelRatio||1,2);canvas.width=(innerWidth*d)|0;canvas.height=(innerHeight*d)|0;}
-  resize(); addEventListener('resize',resize);
-
-  function cell(x,y){const cx=x|0,cy=y|0;if(cx<0||cy<0||cx>=W||cy>=H)return 1;return map[cy][cx];}
-  function solid(x,y){const t=cell(x,y);if(t===1)return true;if(t===2&&!exitOpen)return true;return false;}
-  function nearCurtain(){return curtains.some(c=>Math.hypot(px-c.x,py-c.y)<1.2);}
-  function nearTerm(){return Math.hypot(px-terminal.x,py-terminal.y)<1.35;}
-  function nearThermo(){return Math.hypot(px-thermo.x,py-thermo.y)<1.35;}
-  function facing(sx,sy){let a=Math.atan2(sy-py,sx-px)-dir;while(a>Math.PI)a-=Math.PI*2;while(a<-Math.PI)a+=Math.PI*2;return Math.abs(a)<0.55;}
-
-  function updateCheck(){
-    const got=tags.filter(t=>t.got).length;
-    c1.textContent=(scanned>=3?'☑':'□')+' 掃描條碼 '+scanned+'／3'+(got>scanned?'（手持 '+(got-scanned)+'）':'');
-    c1.className=scanned>=3?'ok':'todo';
-    c2.textContent=(thermoOk?'☑':'□')+' 恆溫安全區'+(thermoOk?'':'（調較中）');
-    c2.className=thermoOk?'ok':'todo';
-    exitOpen=scanned>=3&&thermoOk;
-    c3.textContent=(exitOpen?'☑':'□')+' 出口解鎖';
-    c3.className=exitOpen?'ok':'todo';
-    if(!exitOpen){
-      if(scanned<3) goal.textContent='執條碼 → 去終端掃描（'+scanned+'/3）';
-      else if(!thermoOk) goal.textContent='調恆溫掣至安全區（按住互動）';
-    } else goal.textContent='出口已開！冲綠門逃出';
+function nearestHotspot(maxD){
+  let best=null, bd=maxD||14;
+  for(const h of ROOMS[state.room].hotspots){
+    if(h.once && taken.has(h.id)) continue;
+    if(h.doneFlag && state.flags[h.doneFlag] && h.type==='use') continue;
+    if(h.type==='exit' && !state.flags.gateOpen) continue;
+    const d=dist(state.x,state.y,h.x,h.y);
+    if(d<bd){ bd=d; best=h; }
   }
+  return best;
+}
 
-  function cast(rayAng){
-    const sin=Math.sin(rayAng),cos=Math.cos(rayAng);
-    let dist=0,hit=0,side=0,x=px,y=py;
-    for(let i=0;i<520;i++){
-      x+=cos*0.022;y+=sin*0.022;dist+=0.022;
-      const t=cell(x,y);
-      if(t===1||t===2){hit=t;const fx=x-(x|0);side=(fx<0.03||fx>0.97)?0:1;break;}
+async function goRoom(id){
+  transitioning=true; el.fade.classList.add('on'); showMsg('開門…',900); await wait(450);
+  state.room=id;
+  const r=ROOMS[id];
+  el.bg.src=r.img; el.bg.alt=r.name;
+  state.x=r.spawn.x; state.y=r.spawn.y; state.ang=r.spawn.ang||0;
+  state.enemy.alive=false; combatActive=false;
+  if(id==='gate' && !state.flags.gateCleared) setTimeout(()=>spawnAmbush(),900);
+  renderHots(); placePlayer(); placeEnemy(); refreshHud(); showMsg(r.name,1400);
+  el.fade.classList.remove('on'); await wait(350); transitioning=false;
+}
+
+function spawnAmbush(){
+  if(state.room!=='gate' || state.flags.gateCleared) return;
+  state.enemy={alive:true,hp:80,x:65,y:55,atkCd:1.2}; combatActive=true;
+  placeEnemy(); showMsg('貨架後嘅影子撲出！',2500); refreshHud();
+}
+
+function pickup(h){
+  const I=state.inv; taken.add(h.id);
+  switch(h.item){
+    case 'crowbar': I.crowbar=true; state.equip='crowbar'; showMsg('取得撬棍'); break;
+    case 'handgun': I.handgun=true; state.equip='handgun'; showMsg('取得手槍'); break;
+    case 'shotgun': I.shotgun=true; state.equip='shotgun'; showMsg('取得散彈槍'); break;
+    case 'ammo9': { const n=h.qty||12; I.ammo9+=n; showMsg('取得 9mm ×'+n); break; }
+    case 'ammoSg': { const n=h.qty||4; I.ammoSg+=n; showMsg('取得散彈 ×'+n); break; }
+    case 'herb': I.herb+=(h.qty||1); showMsg('取得綠草／治療噴霧'); break;
+    case 'battery': I.battery=true; showMsg('取得電池'); break;
+    case 'badge': I.badge=true; state.flags.badgeGot=true; showMsg('取得同事證'); break;
+  }
+  renderHots(); refreshHud();
+}
+
+function activateHotspot(h){
+  if(!running||transitioning) return;
+  if(h.type==='item'){ pickup(h); return; }
+  if(h.type==='exam'){ showMsg(h.text,4000); return; }
+  if(h.type==='exit'){
+    if(!state.flags.gateOpen){ showMsg('卸貨門仍鎖着。'); return; }
+    winGame(); return;
+  }
+  if(h.type==='use'){
+    if(state.flags[h.doneFlag]){ showMsg(h.doneMsg||'已經處理過。'); return; }
+    if(h.needItem==='battery' && !state.inv.battery){ showMsg(h.lockedMsg); return; }
+    if(h.needItem==='badge' && !state.inv.badge){ showMsg(h.lockedMsg); return; }
+    if(h.onUse==='power'){ state.inv.battery=false; state.flags.powerOn=true; showMsg('應急電啟動。螢幕亮起。'); renderHots(); refreshHud(); return; }
+    if(h.onUse==='gate'){
+      if(state.enemy.alive){ showMsg('先解決跟蹤者！'); return; }
+      state.flags.gateOpen=true; showMsg('卸貨門鎖開了——快逃回碼頭。'); renderHots(); refreshHud(); return;
     }
-    return {dist:Math.max(dist,0.0001),hit,side};
+    return;
   }
-
-  function draw(){
-    const w=canvas.width,h=canvas.height;
-    const light=flashOn&&battery>0?1:0.38;
-    const bobY=Math.sin(bob)* (h*0.008);
-    // ceiling / floor — readable cold palette
-    const g=ctx.createLinearGradient(0,0,0,h);
-    g.addColorStop(0,`rgb(${(50*light+20)|0},${(80*light+30)|0},${(100*light+40)|0})`);
-    g.addColorStop(0.5,`rgb(${(25*light+10)|0},${(45*light+18)|0},${(60*light+25)|0})`);
-    g.addColorStop(1,`rgb(${(12*light+6)|0},${(28*light+10)|0},${(36*light+14)|0})`);
-    ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
-    ctx.fillStyle=`rgb(${(30*light+12)|0},${(48*light+18)|0},${(58*light+22)|0})`;
-    ctx.fillRect(0,h*0.52+bobY,w,h*0.48);
-
-    const fov=Math.PI/3, cols=Math.min(220,(w/3)|0), colW=w/cols;
-    for(let i=0;i<cols;i++){
-      const ang=dir-fov/2+(i/cols)*fov;
-      const {dist,hit,side}=cast(ang);
-      const corr=dist*Math.cos(ang-dir);
-      const wallH=Math.min(h*1.4,(h*0.95)/corr);
-      let shade=(1-Math.min(0.85,corr/14))*light; if(side) shade*=0.82;
-      let r,gg,b;
-      if(hit===2){
-        if(exitOpen){r=40*shade+30;gg=210*shade+40;b=90*shade;}
-        else{r=40*shade;gg=60*shade;b=70*shade;}
-      } else {
-        r=75*shade+25; gg=105*shade+35; b=125*shade+45;
-        if(((i*13)|0)%17===0){r+=40;gg-=10;} // blood
-      }
-      ctx.fillStyle=`rgb(${r|0},${gg|0},${b|0})`;
-      ctx.fillRect((i*colW)|0,((h-wallH)/2+bobY)|0,(colW+1)|0,wallH|0);
-      if(hit===1&&((i*7)|0)%11===0){
-        ctx.fillStyle=`rgba(140,25,40,${0.4*shade})`;
-        ctx.fillRect((i*colW)|0,(h*0.55+bobY)|0,(colW+1)|0,(wallH*0.2)|0);
-      }
-    }
-
-    curtains.forEach(c=>bill(c.x,c.y,'curtain',bobY));
-    tags.forEach(t=>{if(!t.got)bill(t.x,t.y,'tag',bobY);});
-    bill(terminal.x,terminal.y,'term',bobY);
-    bill(thermo.x,thermo.y,'thermo',bobY);
-    bill(stalker.x,stalker.y,'stalk',bobY);
-
-    // flashlight vignette cone
-    if(flashOn&&battery>0){
-      const vg=ctx.createRadialGradient(w/2,h/2,h*0.08,w/2,h/2,h*0.72);
-      vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,8,16,0.55)');
-      ctx.fillStyle=vg; ctx.fillRect(0,0,w,h);
-    } else {
-      ctx.fillStyle='rgba(0,10,20,0.45)'; ctx.fillRect(0,0,w,h);
-    }
-
-    ctx.strokeStyle='rgba(180,220,255,0.65)'; ctx.lineWidth=2;
-    ctx.beginPath(); ctx.arc(w/2,h/2,7,0,Math.PI*2); ctx.stroke();
-
-    if(hiding){
-      ctx.fillStyle='rgba(80,50,30,0.35)'; ctx.fillRect(0,0,w,h);
-      ctx.fillStyle='#ffcc99'; ctx.font='800 18px system-ui'; ctx.textAlign='center';
-      ctx.fillText('匿喺掛肉簾後面…',w/2,h*0.16);
-    }
-
-    // minimap
-    const ms=Math.min(118,w*0.13),mx=14,my=h-ms-14;
-    ctx.fillStyle='rgba(0,0,0,0.7)'; ctx.fillRect(mx-4,my-4,ms+8,ms+8);
-    for(let yy=0;yy<H;yy++)for(let xx=0;xx<W;xx++){
-      if(map[yy][xx]===1){ctx.fillStyle='#3a5060';ctx.fillRect(mx+xx*(ms/W),my+yy*(ms/H),ms/W+.4,ms/H+.4);}
-      if(map[yy][xx]===2){ctx.fillStyle=exitOpen?'#5dff9a':'#445';ctx.fillRect(mx+xx*(ms/W),my+yy*(ms/H),ms/W+.4,ms/H+.4);}
-    }
-    tags.forEach(t=>{if(!t.got){ctx.fillStyle='#ffcc44';ctx.fillRect(mx+t.x*(ms/W)-2,my+t.y*(ms/H)-2,4,4);}});
-    ctx.fillStyle='#40c0ff'; ctx.fillRect(mx+terminal.x*(ms/W)-2,my+terminal.y*(ms/H)-2,4,4);
-    ctx.fillStyle='#ff8866'; ctx.fillRect(mx+thermo.x*(ms/W)-2,my+thermo.y*(ms/H)-2,4,4);
-    ctx.fillStyle='#e03040'; ctx.beginPath(); ctx.arc(mx+stalker.x*(ms/W),my+stalker.y*(ms/H),3,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(mx+px*(ms/W),my+py*(ms/H),3,0,Math.PI*2); ctx.fill();
-    ctx.strokeStyle='#7ec8ff'; ctx.beginPath(); ctx.moveTo(mx+px*(ms/W),my+py*(ms/H));
-    ctx.lineTo(mx+px*(ms/W)+Math.cos(dir)*8,my+py*(ms/H)+Math.sin(dir)*8); ctx.stroke();
+  if(h.type==='door'){
+    if(h.need==='powerOn' && !state.flags.powerOn){ showMsg(h.lockedMsg); return; }
+    goRoom(h.to);
   }
+}
 
-  function bill(sx,sy,kind,bobY){
-    const dx=sx-px,dy=sy-py,dist=Math.hypot(dx,dy);
-    if(dist<0.12||dist>15) return;
-    let ang=Math.atan2(dy,dx)-dir;
-    while(ang>Math.PI)ang-=Math.PI*2; while(ang<-Math.PI)ang+=Math.PI*2;
-    if(Math.abs(ang)>Math.PI/3+0.22) return;
-    const hit=cast(dir+ang); if(hit.dist+0.2<dist&&hit.hit) return;
-    const w=canvas.width,h=canvas.height,fov=Math.PI/3;
-    const screenX=w/2+(ang/(fov/2))*(w/2);
-    const size=Math.min(h*0.88,(h*0.58)/dist);
-    const x=screenX-size/2,y=(h-size)/2+(bobY||0);
-    if(kind==='tag'){
-      ctx.fillStyle='rgba(255,200,60,0.35)'; ctx.beginPath(); ctx.arc(screenX,y+size*0.4,size*0.4,0,Math.PI*2); ctx.fill();
-      ctx.fillStyle='#ffcc44'; ctx.fillRect(screenX-size*0.12,y+size*0.3,size*0.24,size*0.28);
-      ctx.fillStyle='#222'; ctx.font='800 '+(size*0.1|0)+'px system-ui'; ctx.textAlign='center';
-      ctx.fillText('|||',screenX,y+size*0.48);
-    } else if(kind==='term'){
-      ctx.fillStyle='#1a4060'; ctx.fillRect(x+size*0.2,y+size*0.2,size*0.6,size*0.55);
-      ctx.fillStyle='#40c0ff'; ctx.fillRect(x+size*0.28,y+size*0.28,size*0.44,size*0.28);
-      ctx.fillStyle='#fff'; ctx.font='800 '+(size*0.1|0)+'px system-ui'; ctx.textAlign='center';
-      ctx.fillText('掃描',screenX,y+size*0.48);
-    } else if(kind==='thermo'){
-      ctx.fillStyle='#402820'; ctx.fillRect(x+size*0.25,y+size*0.2,size*0.5,size*0.55);
-      const ok=thermo.val>0.4&&thermo.val<0.65;
-      ctx.fillStyle=ok?'#5dff9a':'#ff6644';
-      ctx.fillRect(x+size*0.32,y+size*0.55-size*0.35*thermo.val,size*0.36,size*0.08);
-      ctx.fillStyle='#fff'; ctx.font='800 '+(size*0.09|0)+'px system-ui'; ctx.textAlign='center';
-      ctx.fillText('恆溫',screenX,y+size*0.35);
-    } else if(kind==='curtain'){
-      ctx.fillStyle='rgba(120,70,50,0.65)'; ctx.fillRect(x+size*0.18,y+size*0.08,size*0.64,size*0.88);
-      ctx.fillStyle='rgba(80,30,30,0.5)'; for(let i=0;i<4;i++) ctx.fillRect(x+size*(0.22+i*0.15),y+size*0.15,size*0.08,size*0.7);
-    } else {
-      ctx.fillStyle='#3a1018'; ctx.fillRect(x+size*0.28,y+size*0.2,size*0.44,size*0.65);
-      ctx.fillStyle='#c01828'; ctx.fillRect(x+size*0.3,y+size*0.38,size*0.4,size*0.3);
-      ctx.fillStyle='#2a0808'; ctx.beginPath(); ctx.arc(screenX,y+size*0.22,size*0.14,0,Math.PI*2); ctx.fill();
-    }
+function tryAttack(){
+  if(!running||!state.enemy.alive||reloading) return;
+  const d=dist(state.x,state.y,state.enemy.x,state.enemy.y);
+  const eq=state.equip, I=state.inv;
+  if(eq==='handgun'){
+    if(I.ammo9<=0){ showMsg('打空——改用撬棍或逃走'); if(I.crowbar) state.equip='crowbar'; refreshHud(); return; }
+    I.ammo9--; reloading=true; showMsg('換彈中');
+    state.enemy.hp-=(d<35?28:18); setTimeout(()=>{ reloading=false; showMsg('擊退！'); },200);
+  } else if(eq==='shotgun'){
+    if(I.ammoSg<=0){ showMsg('打空——改用撬棍或逃走'); if(I.crowbar) state.equip='crowbar'; refreshHud(); return; }
+    I.ammoSg--; state.enemy.hp-=(d<30?55:30); showMsg('擊退！');
+  } else {
+    if(d>16){ showMsg('太遠——靠近再用撬棍'); return; }
+    state.enemy.hp-=22; showMsg('擊退！');
+    const ang=Math.atan2(state.enemy.y-state.y,state.enemy.x-state.x);
+    state.enemy.x=clamp(state.enemy.x+Math.cos(ang)*8,15,85);
+    state.enemy.y=clamp(state.enemy.y+Math.sin(ang)*8,15,80);
   }
-
-  function end(ok){
-    playing=false;hiding=false;
-    overlay.classList.remove('hidden');
-    actBtn.classList.remove('on'); hideBtn.classList.remove('on'); flashBtn.classList.remove('on');
-    hint.classList.remove('on'); looktip.classList.remove('on');
-    overlay.querySelector('.card').innerHTML=ok
-      ?'<h1>封倉完成·逃出！</h1><div class="sub">CHECKLIST CLEAR</div><ol><li>條碼掃描、恆溫調妥，你喺鎖門前衝出凍房。</li></ol><button class="play" id="again">再玩一次</button>'
-      :'<h1>'+(timeLeft<=0?'封倉上鎖……':'俾影追上……')+'</h1><div class="sub">LOCKED IN</div><ol><li>用掛肉簾匿藏，關電筒慢行，完成清單再逃。</li></ol><button class="play" id="again">再試一次</button>';
-    document.getElementById('again').onclick=()=>location.reload();
+  if(state.enemy.hp<=0){
+    state.enemy.alive=false; state.flags.gateCleared=true; combatActive=false;
+    placeEnemy(); showMsg('跟蹤者倒下了……刷卡開門。',2500);
   }
+  refreshHud(); placeEnemy();
+}
 
-  function tryInteract(){
-    if(interactCD>0) return;
-    // pickup tags
-    for(const t of tags){
-      if(!t.got&&Math.hypot(px-t.x,py-t.y)<1.15){
-        t.got=true; interactCD=0.3;
-        hint.textContent='執到條碼！去青色終端掃描'; hint.classList.add('on');
-        updateCheck(); return;
-      }
-    }
-    if(nearTerm()){
-      const hold=tags.filter(t=>t.got).length;
-      if(hold>scanned){
-        scanned=hold; interactCD=0.4;
-        hint.textContent='掃描完成 '+scanned+'/3'; hint.classList.add('on');
-        updateCheck();
-      } else if(scanned<3){
-        hint.textContent='仲差條碼——跟小地圖黃點'; hint.classList.add('on');
-      } else {
-        hint.textContent='條碼齊——去調恆溫'; hint.classList.add('on');
-      }
-      return;
-    }
-    if(nearThermo()&&!thermoOk){
-      // start hold adjust — handled in tick while holding
-      holdThermo=1;
-      hint.textContent='按住互動調恆溫至綠區…'; hint.classList.add('on');
-    }
-  }
+function tryDodge(){
+  if(!state.enemy.alive) return;
+  const fr=((state.ang%360)+360)%360*Math.PI/180;
+  state.x=clamp(state.x+Math.cos(fr)*14, ROOMS[state.room].bounds.xmin, ROOMS[state.room].bounds.xmax);
+  state.y=clamp(state.y+Math.sin(fr)*10, ROOMS[state.room].bounds.ymin, ROOMS[state.room].bounds.ymax);
+  placePlayer(); showMsg('閃避！');
+}
 
-  function toggleFlash(){
-    if(battery<=0){flashOn=false;hint.textContent='電筒冇電！';hint.classList.add('on');}
-    else flashOn=!flashOn;
-    flashBtn.classList.toggle('off',!flashOn);
-    flashBtn.textContent=flashOn?'電筒 ON':'電筒 OFF';
-  }
+function winGame(){
+  running=false;
+  document.getElementById('startCard').style.display='none';
+  document.getElementById('endCard').style.display='block';
+  document.getElementById('endTitle').textContent='逃出';
+  document.getElementById('endBody').textContent='你逃出卸貨區。電話再震——係同一個號碼。';
+  el.overlay.classList.remove('hidden'); refreshHud();
+}
+function loseGame(){
+  running=false; el.blood.classList.add('on');
+  setTimeout(()=>{
+    document.getElementById('startCard').style.display='none';
+    document.getElementById('endCard').style.display='block';
+    document.getElementById('endTitle').textContent='遊戲結束';
+    document.getElementById('endBody').textContent='第三道閘後面，有人叫你個名。';
+    el.overlay.classList.remove('hidden'); el.blood.classList.remove('on');
+  },700);
+}
 
-  function setHide(v){
-    hiding=!!(v&&nearCurtain());
-    hideBtn.classList.toggle('active',hiding);
-    if(v&&!nearCurtain()){hint.textContent='要企喺掛肉簾前先可以匿！';hint.classList.add('on');}
-  }
-
-  function updateActVis(){
-    const can=tags.some(t=>!t.got&&Math.hypot(px-t.x,py-t.y)<1.2)||nearTerm()||(nearThermo()&&!thermoOk);
-    actBtn.classList.toggle('on',!!can&&playing);
-    hideBtn.classList.toggle('on',playing);
-    flashBtn.classList.toggle('on',playing);
-  }
-
-  function pressKey(e,down){
-    const c=e.code||'';
-    const k=(e.key||'').toLowerCase();
-    if(c) keys[c]=down;
-    if(k==='w'||c==='KeyW') keys.KeyW=down;
-    if(k==='a'||c==='KeyA') keys.KeyA=down;
-    if(k==='s'||c==='KeyS') keys.KeyS=down;
-    if(k==='d'||c==='KeyD') keys.KeyD=down;
-    if(k==='q'||c==='KeyQ') keys.KeyQ=down;
-    if(k==='e'||c==='KeyE') keys.KeyE=down;
-    if(k==='f'||c==='KeyF') keys.KeyF=down;
-    if(k==='arrowup') keys.ArrowUp=down;
-    if(k==='arrowdown') keys.ArrowDown=down;
-    if(k==='arrowleft') keys.ArrowLeft=down;
-    if(k==='arrowright') keys.ArrowRight=down;
-    if(k===' '||c==='Space') keys.Space=down;
-    if(k==='shift'||c==='ShiftLeft'||c==='ShiftRight') keys.Shift=down;
-  }
-
-  function start(){
-    overlay.classList.add('hidden'); playing=true; dead=false; won=false; hiding=false;
-    flashOn=true; battery=100; stamina=100; scanned=0; thermoOk=false; exitOpen=false;
-    timeLeft=180; holdThermo=0; thermo.val=0.15;
-    tags.forEach(t=>t.got=false);
-    px=4.5; py=7.5; dir=-Math.PI/2;
-    stalker.x=22.5; stalker.y=18.5; stalker.px=16; stalker.py=10; stalker.mode='patrol';
-    updateCheck();
-    hint.classList.add('on'); looktip.classList.add('on');
-    pad.style.display='grid';
-    actBtn.classList.add('on'); hideBtn.classList.add('on'); flashBtn.classList.add('on');
-    flashBtn.textContent='電筒 ON'; flashBtn.classList.remove('off');
-    hint.textContent='跟黃光條碼 · WASD 行 · ←→／Q E 轉身 · F 電筒';
-    msg.textContent='夜班冷藏';
-    try{canvas.focus({preventScroll:true});}catch(_){try{canvas.focus();}catch(e){}}
-    try{canvas.requestPointerLock&&canvas.requestPointerLock();}catch(_){}
-  }
-  document.getElementById('btn').onclick=start;
-
-  addEventListener('keydown',e=>{
-    if(!playing) return;
-    pressKey(e,true);
-    const block=['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyW','KeyA','KeyS','KeyD','KeyQ','KeyE','KeyF'];
-    if(block.includes(e.code)||['w','a','s','d','q','e','f',' '].includes((e.key||'').toLowerCase())) e.preventDefault();
-    if(e.code==='Space'||e.key===' ') setHide(true);
-    if(e.code==='KeyF'||(e.key||'').toLowerCase()==='f'){ if(!nearTerm()&&!nearThermo()&&!tags.some(t=>!t.got&&Math.hypot(px-t.x,py-t.y)<1.2)) toggleFlash(); else tryInteract(); }
+function resetGame(){
+  Object.assign(state,{
+    room:'dock',x:50,y:22,ang:0,hp:100,
+    inv:{crowbar:false,handgun:false,shotgun:false,ammo9:0,ammoSg:0,herb:0,battery:0,fuse:false,badge:false},
+    equip:'none',
+    flags:{powerOn:false,badgeGot:false,gateOpen:false,gateCleared:false},
+    enemy:{alive:false,hp:0,x:70,y:55,atkCd:0}
   });
-  addEventListener('keyup',e=>{
-    pressKey(e,false);
-    if(e.code==='Space'||e.key===' ') setHide(false);
-    if(e.code==='KeyF'||(e.key||'').toLowerCase()==='f') holdThermo=0;
-  });
+  taken.clear(); combatActive=false; el.blood.classList.remove('on');
+  document.getElementById('endCard').style.display='none';
+  document.getElementById('startCard').style.display='block';
+}
 
-  actBtn.addEventListener('mousedown',()=>{tryInteract();});
-  actBtn.addEventListener('mouseup',()=>{holdThermo=0;});
-  actBtn.addEventListener('mouseleave',()=>{holdThermo=0;});
-  actBtn.addEventListener('touchstart',e=>{e.preventDefault();tryInteract();},{passive:false});
-  actBtn.addEventListener('touchend',()=>{holdThermo=0;});
-  hideBtn.addEventListener('mousedown',()=>setHide(true));
-  hideBtn.addEventListener('mouseup',()=>setHide(false));
-  hideBtn.addEventListener('mouseleave',()=>setHide(false));
-  hideBtn.addEventListener('touchstart',e=>{e.preventDefault();setHide(true);},{passive:false});
-  hideBtn.addEventListener('touchend',()=>setHide(false));
-  flashBtn.addEventListener('click',toggleFlash);
-  flashBtn.addEventListener('touchstart',e=>{e.preventDefault();toggleFlash();},{passive:false});
+function startGame(){
+  resetGame(); el.overlay.classList.add('hidden'); running=true;
+  goRoom('dock'); window.focus();
+  showMsg('彈藥有限，能走就走；夠近先用撬棍。',3200); refreshHud();
+}
 
-  let dragging=false,lastMX=0;
-  canvas.addEventListener('mousedown',e=>{
-    if(!playing||e.button!==0) return;
-    dragging=true; lastMX=e.clientX;
-    try{canvas.focus({preventScroll:true});}catch(_){canvas.focus();}
-  });
-  addEventListener('mouseup',()=>{dragging=false;});
-  addEventListener('mousemove',e=>{
-    if(!playing) return;
-    if(document.pointerLockElement===canvas){dir+=e.movementX*0.004;return;}
-    if(dragging||e.buttons===1){dir+=(e.clientX-lastMX)*0.005;lastMX=e.clientX;}
-  });
-  canvas.addEventListener('click',()=>{
-    if(!playing) return;
-    try{canvas.focus({preventScroll:true});}catch(_){canvas.focus();}
-  });
-  let tx=-1;
-  canvas.addEventListener('touchstart',e=>{if(!playing)return;const t=e.changedTouches[0];if(t.clientX>innerWidth*0.36)tx=t.clientX;},{passive:true});
-  canvas.addEventListener('touchmove',e=>{if(tx<0)return;const t=e.changedTouches[0];dir+=(t.clientX-tx)*0.006;tx=t.clientX;},{passive:true});
-  canvas.addEventListener('touchend',()=>{tx=-1;},{passive:true});
+document.getElementById('btn').onclick=()=>startGame();
+document.getElementById('btnRetry').onclick=()=>{
+  resetGame(); el.overlay.classList.remove('hidden');
+  document.getElementById('startCard').style.display='block';
+  document.getElementById('endCard').style.display='none';
+};
+el.btnExam.onclick=()=>{ const h=nearestHotspot(16); if(h) activateHotspot(h); else showMsg('附近沒有可調查的東西。'); };
+el.btnAtk.onclick=()=>tryAttack();
+el.btnDodge.onclick=()=>tryDodge();
+el.btnHerb.onclick=()=>useHerb();
 
-  function bindPad(id,onFn,offFn){
-    const el=document.getElementById(id);
-    const on=e=>{e.preventDefault();el.classList.add('held');onFn();};
-    const off=()=>{el.classList.remove('held');offFn();};
-    el.addEventListener('touchstart',on,{passive:false});
-    el.addEventListener('touchend',off); el.addEventListener('touchcancel',off);
-    el.addEventListener('mousedown',on); el.addEventListener('mouseup',off); el.addEventListener('mouseleave',off);
-  }
-  bindPad('tF',()=>move.f=1,()=>move.f=0);
-  bindPad('tB',()=>move.b=1,()=>move.b=0);
-  bindPad('tL',()=>move.turnL=1,()=>move.turnL=0);
-  bindPad('tR',()=>move.turnR=1,()=>move.turnR=0);
+function bindPad(id,key){
+  const b=document.getElementById(id);
+  const down=e=>{ e.preventDefault(); pad[key]=1; b.classList.add('held'); };
+  const up=()=>{ pad[key]=0; b.classList.remove('held'); };
+  b.addEventListener('pointerdown',down); b.addEventListener('pointerup',up);
+  b.addEventListener('pointerleave',up); b.addEventListener('pointercancel',up);
+}
+bindPad('tF','f'); bindPad('tB','b'); bindPad('tL','l'); bindPad('tR','r');
 
-  let last=performance.now();
-  function tick(now){
-    window.__cold=()=>({px,py,dir,playing});
-  requestAnimationFrame(tick);
-    const dt=Math.min(0.05,(now-last)/1000); last=now;
-    if(interactCD>0) interactCD-=dt;
-    if(playing&&!dead&&!won){
-      timeLeft-=dt;
-      const m=Math.floor(timeLeft/60),s=Math.floor(timeLeft%60);
-      timerEl.textContent='封倉倒數 '+m+':'+(s<10?'0':'')+s;
-      if(timeLeft<=0){dead=true;end(false);return;}
+window.addEventListener('keydown',e=>{
+  keys[e.code]=true;
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault();
+  if(!running) return;
+  if(e.code==='KeyE'||e.code==='KeyF') el.btnExam.click();
+  if(e.code==='KeyR'||e.code==='Space'){ if(state.enemy.alive) tryAttack(); }
+  if(e.code==='KeyQ') tryDodge();
+  if(e.code==='KeyH') useHerb();
+  if(e.code==='Digit1'&&state.inv.crowbar){ state.equip='crowbar'; refreshHud(); }
+  if(e.code==='Digit2'&&state.inv.handgun){ state.equip='handgun'; refreshHud(); }
+  if(e.code==='Digit3'&&state.inv.shotgun){ state.equip='shotgun'; refreshHud(); }
+});
+window.addEventListener('keyup',e=>{ keys[e.code]=false; });
 
-      if(keys.KeyQ||keys.ArrowLeft||move.turnL) dir-=2.6*dt;
-      if(keys.KeyE||keys.ArrowRight||move.turnR) dir+=2.6*dt;
+let last=performance.now();
+function tick(now){
+  const dt=Math.min(0.05,(now-last)/1000); last=now;
+  if(running && !transitioning){
+    const room=ROOMS[state.room];
+    const turn=((keys.ArrowLeft||keys.KeyA||pad.l)?1:0)-((keys.ArrowRight||keys.KeyD||pad.r)?1:0);
+    state.ang+=turn*120*dt;
+    const forward=((keys.ArrowUp||keys.KeyW||pad.f)?1:0)-((keys.ArrowDown||keys.KeyS||pad.b)?1:0);
+    if(forward){
+      const face=((state.ang%360)+360)%360;
+      const fr=face*Math.PI/180;
+      state.x=clamp(state.x+Math.sin(fr)*forward*38*dt, room.bounds.xmin, room.bounds.xmax);
+      state.y=clamp(state.y+Math.cos(fr)*forward*38*dt, room.bounds.ymin, room.bounds.ymax);
+      placePlayer();
+    } else if(turn) placePlayer();
 
-      if(!hiding){
-        let f=0;
-        if(keys.KeyW||keys.ArrowUp||move.f) f+=1;
-        if(keys.KeyS||keys.ArrowDown||move.b) f-=1;
-        // A/D strafe optional
-        let s=0;
-        if(keys.KeyA) s-=1;
-        if(keys.KeyD) s+=1;
-        const sprint=!!(keys.Shift&&f>0&&stamina>5);
-        const sp=(sprint?5.2:3.2)*dt;
-        if(sprint){stamina=Math.max(0,stamina-28*dt);bob+=dt*14;}
-        else {stamina=Math.min(100,stamina+18*dt); if(f||s) bob+=dt*9; else bob*=0.9;}
-        const nx=px+Math.cos(dir)*f*sp+Math.cos(dir+Math.PI/2)*s*sp;
-        const ny=py+Math.sin(dir)*f*sp+Math.sin(dir+Math.PI/2)*s*sp;
-        if(!solid(nx,py)) px=nx;
-        if(!solid(px,ny)) py=ny;
+    if(state.enemy.alive){
+      const d=dist(state.x,state.y,state.enemy.x,state.enemy.y);
+      const spd=15*dt;
+      if(d>8){
+        state.enemy.x+=(state.x-state.enemy.x)/d*spd;
+        state.enemy.y+=(state.y-state.enemy.y)/d*spd;
+        placeEnemy();
       }
-
-      if(flashOn&&battery>0) battery=Math.max(0,battery-3.2*dt);
-      if(battery<=0) flashOn=false;
-      batFill.style.width=battery+'%';
-      stamFill.style.width=stamina+'%';
-      flashBtn.classList.toggle('off',!flashOn);
-      flashBtn.textContent=flashOn&&battery>0?'電筒 ON':'電筒 OFF';
-
-      // thermo hold adjust
-      if(holdThermo&&nearThermo()&&!thermoOk){
-        thermo.val=Math.min(1,thermo.val+0.22*dt);
-        if(thermo.val>0.42&&thermo.val<0.62){
-          thermoOk=true; holdThermo=0;
-          hint.textContent='恆溫安全！'; hint.classList.add('on');
-          updateCheck();
-        }
-      } else if(!thermoOk&&nearThermo()){
-        // slowly drift
-        thermo.val=Math.max(0,thermo.val-0.02*dt);
+      state.enemy.atkCd-=dt;
+      if(d<10 && state.enemy.atkCd<=0){
+        state.enemy.atkCd=1.4; state.hp-=18;
+        el.player.classList.add('hurt'); setTimeout(()=>el.player.classList.remove('hurt'),200);
+        showMsg('被咬傷！'); refreshHud();
+        if(state.hp<=0) loseGame();
       }
-
-      // auto pickup nearby tags prompt
-      updateActVis();
-      updateCheck();
-
-      if(exitOpen&&Math.hypot(px-EXIT.x,py-EXIT.y)<1.4){won=true;end(true);return;}
-
-      // stalker AI
-      const sd=Math.hypot(stalker.x-px,stalker.y-py);
-      const lit=flashOn&&battery>0&&facing(stalker.x,stalker.y)&&sd<11;
-      if(hiding&&nearCurtain()){
-        stalker.mode='patrol';
-        const ang=Math.atan2(stalker.py-stalker.y,stalker.px-stalker.x);
-        stalker.x+=Math.cos(ang)*1.3*dt; stalker.y+=Math.sin(ang)*1.3*dt;
-        if(Math.hypot(stalker.x-stalker.px,stalker.y-stalker.py)<0.7){
-          stalker.px=4+Math.random()*20; stalker.py=4+Math.random()*20;
-        }
-        hint.textContent='匿緊——等佢走過先出嚟';
-        stat.textContent='匿藏中';
-      } else if(sd<12){
-        stalker.mode='chase';
-        const ang=Math.atan2(py-stalker.y,px-stalker.x);
-        const bsp=(lit?3.4:(sd<5?2.4:1.7))*dt;
-        const bx=stalker.x+Math.cos(ang)*bsp, by=stalker.y+Math.sin(ang)*bsp;
-        if(!solid(bx,stalker.y)) stalker.x=bx;
-        if(!solid(stalker.x,by)) stalker.y=by;
-        if(sd<3.2){stat.textContent='就喺隔籬！！'; msg.textContent='小心！影嚟緊';}
-        else {stat.textContent=lit?'被照到·加速':'巡邏／追蹤';}
-        if(sd<0.68){dead=true;end(false);return;}
-      } else {
-        stalker.mode='patrol';
-        const ang=Math.atan2(stalker.py-stalker.y,stalker.px-stalker.x);
-        stalker.x+=Math.cos(ang)*1.5*dt; stalker.y+=Math.sin(ang)*1.5*dt;
-        if(Math.hypot(stalker.x-stalker.px,stalker.y-stalker.py)<0.7){
-          stalker.px=4+Math.random()*20; stalker.py=4+Math.random()*20;
-        }
-        stat.textContent='冷靜';
-      }
-      if(nearCurtain()&&!hiding) hint.textContent='掛肉簾—按住「匿藏」／空白鍵';
+      refreshHud();
     }
-    draw();
   }
   requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+Object.values(ROOMS).forEach(r=>{ const i=new Image(); i.src=r.img; });
+el.bg.src=ROOMS.dock.img; placePlayer(); refreshHud();
 
-  setInterval(function(){
-    var root=document.getElementById('vg-back-root');
-    if(!root){root=document.createElement('div');root.id='vg-back-root';document.body.appendChild(root);}
-    var tr=document.getElementById('vg-back-tr');
-    if(!tr){tr=document.createElement('a');tr.id='vg-back-tr';root.appendChild(tr);}
-    tr.className='vg-back-btn'; tr.href='/vincent-games-studio/games'; tr.textContent='← 返回遊戲目錄';
-  },3000);
+window.__dbg=()=>({
+  room:state.room, x:state.x, y:state.y, ang:state.ang,
+  inv:{...state.inv}, equip:state.equip, hp:state.hp,
+  flags:{...state.flags}, enemyAlive:state.enemy.alive, enemyHp:state.enemy.hp
+});
 })();
 </script>
 </body>

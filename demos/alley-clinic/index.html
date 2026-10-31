@@ -7,495 +7,702 @@
 <title>封鎖診所 · Lockdown Clinic — Vincent Games Studio</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;background:#140818;color:#ffe8f4;font-family:system-ui,"PingFang HK","Noto Sans TC",sans-serif;overflow:hidden;touch-action:none;user-select:none}
-canvas#view{position:relative;z-index:0;display:block;width:100%;height:100%;background:#2a1030;outline:none}
-#hud{position:fixed;left:0;right:0;top:0;z-index:3;padding:calc(10px + env(safe-area-inset-top)) 14px 0;padding-right:150px;display:flex;justify-content:space-between;pointer-events:none;font-weight:800;text-shadow:0 2px 10px #000}
-#hud .l{color:#ff7eb9}#hud .r{color:#40f0ff;text-align:right}
-#hud small{display:block;font-size:11px;opacity:.75;letter-spacing:.05em}
-#phase{position:fixed;left:50%;top:calc(52px + env(safe-area-inset-top));transform:translateX(-50%);z-index:3;padding:6px 12px;border-radius:999px;background:rgba(255,77,166,.28);border:1px solid #ff4da6;font-size:12px;font-weight:900;pointer-events:none}
-#goal{position:fixed;left:50%;top:calc(88px + env(safe-area-inset-top));transform:translateX(-50%);z-index:3;padding:8px 14px;border-radius:999px;background:rgba(0,0,0,.74);border:1px solid #40f0ff66;font-size:13px;font-weight:800;pointer-events:none;max-width:92vw;text-align:center}
-#noise{position:fixed;right:12px;top:calc(58px + env(safe-area-inset-top));z-index:3;width:120px;pointer-events:none}
-#noise .lab{font-size:11px;font-weight:800;color:#ffb0d0;margin-bottom:4px;text-align:right;text-shadow:0 2px 6px #000}
-#noise .bar{height:10px;border-radius:6px;background:#201018;border:1px solid #ff4da666;overflow:hidden}
-#noise .fill{height:100%;width:0%;background:linear-gradient(90deg,#40f0ff,#ffcc44,#ff4da6)}
-#hint{position:fixed;left:50%;bottom:calc(24% + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:4;max-width:92vw;padding:10px 14px;border-radius:12px;background:rgba(0,0,0,.78);border:1px solid #40f0ff55;font-size:13px;font-weight:700;text-align:center;display:none}
-#hint.on{display:block}
-#flash{position:fixed;inset:0;z-index:7;pointer-events:none;background:rgba(180,0,40,0)}
-#siren{position:fixed;inset:0;z-index:2;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 0%,rgba(255,40,80,.38),transparent 55%)}
-#moveFlash{position:fixed;left:0;right:0;bottom:0;height:5px;z-index:6;pointer-events:none;background:linear-gradient(90deg,#ff4da6,#40f0ff);opacity:0}
-#overlay{position:fixed;inset:0;z-index:8;display:flex;align-items:center;justify-content:center;background:rgba(12,4,16,.94);padding:20px;overflow-y:auto}
+html,body{height:100%;background:#0a040c;color:#ffe8f4;font-family:system-ui,"PingFang HK","Noto Sans TC",sans-serif;overflow:hidden;touch-action:none;user-select:none}
+#stage{position:fixed;inset:0;overflow:hidden;background:#100610}
+#bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;pointer-events:none;filter:contrast(1.05) saturate(1.05)}
+#vignette{position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at center,transparent 42%,rgba(0,0,0,.55) 100%)}
+#ground{position:absolute;left:0;right:0;bottom:0;height:42%;z-index:2}
+#player{position:absolute;z-index:5;width:28px;height:48px;margin-left:-14px;margin-top:-48px;transform-origin:50% 90%;pointer-events:none;transition:filter .15s}
+#player .body{position:absolute;inset:0;background:linear-gradient(180deg,#1a1a22 0%,#0a0a10 70%,#000 100%);clip-path:polygon(35% 0,65% 0,72% 18%,78% 45%,70% 48%,72% 100%,28% 100%,30% 48%,22% 45%,28% 18%);box-shadow:0 0 12px #000a}
+#player .head{position:absolute;left:50%;top:2px;width:14px;height:14px;margin-left:-7px;border-radius:50%;background:#222;border:1px solid #444}
+#player.hurt{filter:brightness(1.4) sepia(1) hue-rotate(-40deg)}
+.hotspot{position:absolute;z-index:4;border:2px solid rgba(64,240,255,.55);background:rgba(64,240,255,.12);border-radius:6px;cursor:pointer;box-shadow:0 0 14px rgba(64,240,255,.35),inset 0 0 10px rgba(64,240,255,.15);animation:hsPulse 1.6s ease-in-out infinite;pointer-events:auto}
+.hotspot.door{border-color:rgba(255,200,80,.65);background:rgba(255,200,80,.12);box-shadow:0 0 14px rgba(255,200,80,.35)}
+.hotspot.item{border-color:rgba(120,255,140,.65);background:rgba(120,255,140,.12);box-shadow:0 0 14px rgba(120,255,140,.4)}
+.hotspot.exam{border-color:rgba(255,120,200,.55);background:rgba(255,120,200,.1)}
+.hotspot .lbl{position:absolute;left:50%;bottom:calc(100% + 4px);transform:translateX(-50%);white-space:nowrap;padding:3px 8px;border-radius:8px;background:rgba(0,0,0,.78);font-size:11px;font-weight:800;color:#fff;pointer-events:none}
+@keyframes hsPulse{0%,100%{opacity:.85}50%{opacity:1;transform:scale(1.03)}}
+#enemy{position:absolute;z-index:6;width:40px;height:64px;margin-left:-20px;margin-top:-64px;display:none;pointer-events:none}
+#enemy.on{display:block}
+#enemy .sil{position:absolute;inset:0;background:linear-gradient(180deg,#3a1020,#1a0508);clip-path:polygon(30% 0,70% 0,78% 20%,85% 50%,72% 55%,75% 100%,25% 100%,28% 55%,15% 50%,22% 20%);box-shadow:0 0 20px #ff004088}
+#enemy .eyes{position:absolute;left:50%;top:10px;width:16px;height:6px;margin-left:-8px;background:linear-gradient(90deg,#ff2040,#ff2040);border-radius:2px;box-shadow:0 0 8px #ff2040;animation:blink 2s infinite}
+@keyframes blink{0%,90%,100%{opacity:1}95%{opacity:.2}}
+#fade{position:fixed;inset:0;z-index:50;background:#000;opacity:0;pointer-events:none;transition:opacity .35s}
+#fade.on{opacity:1;pointer-events:auto}
+#blood{position:fixed;inset:0;z-index:45;background:radial-gradient(circle at 50% 40%,rgba(180,0,20,.85),rgba(40,0,0,.95));opacity:0;pointer-events:none;transition:opacity .2s}
+#blood.on{opacity:1}
+#hudTop{position:fixed;left:0;right:0;top:0;z-index:20;padding:calc(10px + env(safe-area-inset-top)) 14px 0;padding-right:160px;pointer-events:none}
+#objBox{display:inline-block;padding:8px 12px;border-radius:12px;background:rgba(0,0,0,.78);border:1px solid #ff4da655;font-size:12px;font-weight:800;line-height:1.55;text-shadow:0 1px 4px #000}
+#objBox .ok{color:#5dff9a}#objBox .todo{color:#ffb0d0}#objBox .title{color:#40f0ff;font-size:11px;letter-spacing:.06em;margin-bottom:2px}
+#statHud{position:fixed;right:12px;top:calc(58px + env(safe-area-inset-top));z-index:20;padding:8px 10px;border-radius:10px;background:rgba(0,0,0,.78);border:1px solid #40f0ff44;font-size:12px;font-weight:800;line-height:1.5;text-align:right;pointer-events:none;min-width:120px}
+#statHud .hp{color:#ff6a8a}#statHud .ammo{color:#ffd36a}#statHud .herb{color:#7dff9a}#statHud .bat{color:#7ec8ff}
+#msgBar{position:fixed;left:50%;top:calc(52px + env(safe-area-inset-top));transform:translateX(-50%);z-index:22;max-width:88vw;padding:8px 14px;border-radius:12px;background:rgba(0,0,0,.82);border:1px solid #40f0ff55;font-size:13px;font-weight:800;text-align:center;display:none;pointer-events:none}
+#msgBar.on{display:block}
+#inv{position:fixed;left:50%;bottom:calc(12px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:30;display:flex;gap:6px;padding:6px;border-radius:14px;background:rgba(0,0,0,.72);border:1px solid #ff4da644;pointer-events:auto}
+.slot{width:52px;height:52px;border-radius:10px;border:2px solid #553344;background:rgba(20,8,16,.9);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#ffb0d0;cursor:pointer;position:relative}
+.slot.eq{border-color:#40f0ff;box-shadow:0 0 10px #40f0ff66}
+.slot .ic{font-size:18px;line-height:1}
+.slot .nm{font-size:9px;max-width:48px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.slot .qty{position:absolute;right:3px;bottom:2px;font-size:10px;color:#ffd36a}
+#pad{position:fixed;left:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:40;pointer-events:auto;display:grid;grid-template-columns:58px 58px 58px;grid-template-rows:58px 58px;gap:7px}
+#pad button{border:0;border-radius:16px;background:rgba(255,77,166,.55);color:#fff;font-weight:900;font-size:22px;box-shadow:0 4px 14px #0008}
+#pad button:active,#pad button.held{background:#ff4da6;outline:3px solid #40f0ff;transform:scale(.96)}
+#pad .x{visibility:hidden}
+#acts{position:fixed;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:40;display:flex;flex-direction:column;gap:8px;align-items:stretch}
+#acts button{min-height:48px;min-width:100px;padding:0 14px;border:0;border-radius:14px;color:#fff;font-weight:900;font-size:14px;font-family:inherit;box-shadow:0 4px 14px #0008}
+#btnExam{background:linear-gradient(180deg,#40f0ff,#2070aa)}
+#btnAtk{background:linear-gradient(180deg,#ff4da6,#8a2060);display:none}
+#btnAtk.on{display:block}
+#btnHerb{background:linear-gradient(180deg,#5dff9a,#208050);display:none}
+#btnHerb.on{display:block}
+#btnDodge{background:linear-gradient(180deg,#ffcc66,#aa8020);display:none}
+#btnDodge.on{display:block}
+#overlay{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(10,2,12,.94);padding:20px;overflow-y:auto}
 #overlay.hidden{display:none}
-.card{max-width:470px;width:100%;background:linear-gradient(160deg,#2a1030,#120818);border:1px solid #ff4da688;border-radius:20px;padding:22px 18px;text-align:center}
+.card{max-width:480px;width:100%;background:linear-gradient(160deg,#2a1030,#120818);border:1px solid #ff4da688;border-radius:20px;padding:22px 18px;text-align:center}
 .card h1{font-size:1.7rem;font-weight:900;background:linear-gradient(90deg,#ff4da6,#40f0ff);-webkit-background-clip:text;background-clip:text;color:transparent}
 .card .sub{margin-top:6px;color:#ffb0d0;font-size:13px}
 .card ol{margin:12px 0 0;padding-left:1.15em;color:#f0d0e0;font-size:13.5px;line-height:1.6;text-align:left}
-.card .tag{display:inline-block;margin-top:10px;padding:4px 10px;border-radius:999px;background:#ff4da633;color:#ffb0d0;font-size:11px;font-weight:800}
 button.play{margin-top:16px;min-height:52px;padding:0 26px;border:0;border-radius:999px;background:linear-gradient(90deg,#ff4da6,#7a2cff);color:#fff;font-weight:900;font-size:17px;cursor:pointer;font-family:inherit}
-#pad{position:fixed;left:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:40;pointer-events:auto;display:grid;grid-template-columns:64px 64px 64px;grid-template-rows:64px 64px;gap:8px}
-#pad button{border:0;border-radius:18px;background:rgba(255,77,166,.58);color:#fff;font-weight:900;font-size:24px;box-shadow:0 6px 18px #000a}
-#pad button:active,#pad button.held{background:#ff4da6;outline:3px solid #40f0ff;transform:scale(.96)}
-#pad .x{visibility:hidden}
-#hideBtn,#actBtn{position:fixed;z-index:40;display:none;min-height:56px;padding:0 16px;border:0;border-radius:16px;color:#fff;font-weight:900;font-size:15px}
-#hideBtn{right:12px;bottom:calc(12px + env(safe-area-inset-bottom));min-width:96px;background:linear-gradient(180deg,#ff4da6,#8a2060)}
-#actBtn{right:12px;bottom:calc(76px + env(safe-area-inset-bottom));min-width:110px;background:linear-gradient(180deg,#40f0ff,#2070aa)}
-#hideBtn.on,#actBtn.on{display:block}
-#hideBtn.active{outline:3px solid #40f0ff}
-#looktip{position:fixed;right:12px;bottom:calc(140px + env(safe-area-inset-bottom));z-index:5;display:none;padding:8px 10px;border-radius:10px;background:rgba(0,0,0,.55);color:#40f0ff;font-size:11px;font-weight:700}
-#looktip.on{display:block}
+#endCard h2{font-size:1.4rem;margin-bottom:8px}
 #vg-back-root{position:fixed;inset:0;z-index:2147483647;pointer-events:none}
 #vg-back-root a.vg-back-btn{pointer-events:auto;position:fixed;display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 14px;border-radius:14px;font:800 15px/1.2 system-ui,sans-serif;text-decoration:none;border:2px solid #ff4da6;background:#140818;color:#ff4da6;box-shadow:0 6px 28px #000a}
 #vg-back-tr{right:max(12px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));left:auto;bottom:auto}
 </style>
 </head>
 <body>
-<canvas id="view" tabindex="0"></canvas>
-<div id="flash"></div><div id="siren"></div><div id="moveFlash"></div>
-<div id="hud">
-  <div class="l"><small>LOCKDOWN CLINIC</small><span id="msg">封鎖診所</span></div>
-  <div class="r"><small>進度</small><span id="prog">血清 0／3 · 粉紅窗簾可匿</span></div>
+<div id="stage">
+  <img id="bg" alt="" draggable="false"/>
+  <div id="vignette"></div>
+  <div id="ground"></div>
+  <div id="player"><div class="head"></div><div class="body"></div></div>
+  <div id="enemy"><div class="sil"></div><div class="eyes"></div></div>
+  <div id="hots"></div>
 </div>
-<div id="phase">階段 1／3 · 血清自救</div>
-<div id="goal">執 3 支發光血清</div>
-<div id="noise"><div class="lab">噪音</div><div class="bar"><div class="fill" id="noiseFill"></div></div></div>
-<div id="hint"></div>
-<div id="overlay"><div class="card">
-  <h1>封鎖診所</h1>
-  <div class="sub">ALLEY CLINIC · 門反鎖之後</div>
-  <ol>
-    <li>颱風夜，你入錯非法診所攞藥。門反鎖。「病人」開始睜眼。</li>
-    <li>目標：① 注射血清自救（執 3 支綠光）　② 拆警報／開後門（青色面板 F）　③ 衝天台等車</li>
-    <li>蹲匿粉紅窗簾（空白鍵）；跑會加噪音引病人。開場 3.5 秒緩衝。一枝鎮靜劑＝匿藏冷卻。</li>
-    <li>先撳「進入遊戲」· WASD 行 · ←→ 或 Q／E 轉身 · 空白鍵匿窗簾</li>
-  </ol>
-  <button class="play" id="btn">進入遊戲</button>
-</div></div>
+<div id="fade"></div>
+<div id="blood"></div>
+<div id="hudTop">
+  <div id="objBox">
+    <div class="title">任務目標 · 封鎖診所</div>
+    <div id="o1" class="todo">① 注射血清自救</div>
+    <div id="o2" class="todo">② 拆警報／開後門</div>
+    <div id="o3" class="todo">③ 衝天台等車</div>
+  </div>
+</div>
+<div id="statHud">
+  <div class="hp" id="hpLine">生命 ███░</div>
+  <div class="ammo" id="ammo9">9mm 0</div>
+  <div class="ammo" id="ammoSg">散彈 0</div>
+  <div class="herb" id="herbLine">草藥×0</div>
+  <div class="bat" id="batLine">電池 0</div>
+</div>
+<div id="msgBar"></div>
+<div id="inv"></div>
 <div id="pad">
   <button class="x" tabindex="-1"></button><button id="tF" type="button">↑</button><button class="x" tabindex="-1"></button>
   <button id="tL" type="button">←</button><button id="tB" type="button">↓</button><button id="tR" type="button">→</button>
 </div>
-<button id="actBtn" type="button">啟動</button>
-<button id="hideBtn" type="button">匿藏</button>
-<div id="looktip">拖畫面轉頭</div>
+<div id="acts">
+  <button id="btnAtk" type="button">攻擊</button>
+  <button id="btnDodge" type="button">閃避</button>
+  <button id="btnHerb" type="button">用綠草回血</button>
+  <button id="btnExam" type="button">調查</button>
+</div>
+<div id="overlay"><div class="card" id="startCard">
+  <h1>封鎖診所</h1>
+  <div class="sub">ALLEY CLINIC · 門反鎖之後</div>
+  <ol>
+    <li>颱風夜，你入錯非法診所攞藥。門反鎖。「病人」開始睜眼。</li>
+    <li>目標：① 注射血清自救　② 拆警報／開後門　③ 衝天台等車</li>
+    <li>固定鏡頭電影場景 · 生化危機風。↑ 前進 · ↓ 後退 · ←→ 轉身 · E／F／調查</li>
+    <li>彈藥有限，能走就走；夠近先用撬棍。</li>
+  </ol>
+  <button class="play" id="btn">進入遊戲</button>
+</div>
+<div class="card" id="endCard" style="display:none">
+  <h2 id="endTitle"></h2>
+  <p id="endBody" style="margin-top:8px;line-height:1.55;font-size:14px"></p>
+  <button class="play" id="btnRetry">再試一次</button>
+</div></div>
 <div id="vg-back-root" aria-label="catalog"><a id="vg-back-tr" class="vg-back-btn" href="/vincent-games-studio/games" title="← 返回遊戲目錄">← 返回遊戲目錄</a></div>
 <script>
 (function(){
-  const W=26,H=26,map=[];
-  for(let y=0;y<H;y++){map[y]=[];for(let x=0;x<W;x++)map[y][x]=(x===0||y===0||x===W-1||y===H-1)?1:0;}
-  [[4,4,4,12],[4,4,14,4],[10,4,10,16],[16,6,16,20],[6,16,18,16],[20,8,20,18],[12,10,22,10],[8,20,8,24],[14,20,22,20],[3,8,8,8],[18,4,22,4]].forEach(([x0,y0,x1,y1])=>{
-    for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)if(x>0&&y>0&&x<W-1&&y<H-1)map[y][x]=1;
+'use strict';
+const W=100,H=100; // percent ground coords: x 0-100, y 0-100 (y=0 near camera bottom, y=100 far)
+const keys={};
+const pad={f:0,b:0,l:0,r:0};
+let running=false, transitioning=false, combatActive=false, reloading=false;
+let msgTimer=0;
+
+const state={
+  room:'entrance',
+  x:50,y:22,ang:0, // ang degrees; 0 = up/away from camera
+  hp:100, maxHp:100,
+  inv:{crowbar:false,handgun:false,shotgun:false,ammo9:0,ammoSg:0,herb:0,battery:0,serum:false,keycard:false},
+  equip:'crowbar', // crowbar|handgun|shotgun|none
+  flags:{serumUsed:false,alarmOff:false,powerOn:false,rooftopOpen:false,wardCleared:false,waitingLooted:false},
+  enemy:{alive:false,hp:0,x:70,y:55,cd:0,atkCd:0}
+};
+
+const ROOMS={
+  entrance:{
+    img:'scenes/entrance.jpg',
+    name:'颱風巷入口',
+    spawn:{x:50,y:20,ang:0},
+    bounds:{xmin:18,xmax:82,ymin:12,ymax:78},
+    hotspots:[
+      {id:'door_waiting',type:'door',x:48,y:72,w:14,h:18,label:'診所大門',to:'waiting',need:null,lockedMsg:'門反鎖……撬棍或用力推。',unlockFlag:null,forceCrowbar:true},
+      {id:'exam_sign',type:'exam',x:22,y:40,w:12,h:10,label:'告示',text:'「夜間急診 · 現金结算」——字跡被雨沖淡。廣播殘響：「……請病人留在床位……」'},
+      {id:'item_crowbar',type:'item',x:72,y:28,w:10,h:10,label:'撬棍',item:'crowbar',once:true}
+    ]
+  },
+  waiting:{
+    img:'scenes/waiting.jpg',
+    name:'候診室',
+    spawn:{x:50,y:18,ang:0},
+    bounds:{xmin:15,xmax:85,ymin:12,ymax:80},
+    hotspots:[
+      {id:'door_ent',type:'door',x:50,y:12,w:12,h:10,label:'返回入口',to:'entrance'},
+      {id:'door_ward',type:'door',x:78,y:55,w:12,h:16,label:'治療區',to:'ward',need:'serumUsed',lockedMsg:'身體發冷……先注射血清。'},
+      {id:'item_serum',type:'item',x:28,y:48,w:11,h:11,label:'血清',item:'serum',once:true},
+      {id:'item_ammo9',type:'item',x:62,y:35,w:10,h:10,label:'9mm',item:'ammo9',qty:12,once:true},
+      {id:'item_handgun',type:'item',x:18,y:62,w:11,h:11,label:'手槍',item:'handgun',once:true},
+      {id:'exam_file',type:'exam',x:40,y:70,w:12,h:10,label:'病歷夾',text:'文件碎片：「受試者對血清有依賴……門反鎖之後，唔好出聲。」'}
+    ]
+  },
+  ward:{
+    img:'scenes/ward.jpg',
+    name:'治療病房',
+    spawn:{x:30,y:20,ang:20},
+    bounds:{xmin:12,xmax:88,ymin:12,ymax:82},
+    hotspots:[
+      {id:'door_wait',type:'door',x:18,y:18,w:12,h:12,label:'候診室',to:'waiting'},
+      {id:'door_roof',type:'door',x:72,y:75,w:14,h:14,label:'後門／天台梯',to:'rooftop',need:'alarmOff',lockedMsg:'警報鎖住後門。先拆面板。'},
+      {id:'panel',type:'use',x:55,y:48,w:12,h:12,label:'警報面板',needItem:'battery',onUse:'alarm',lockedMsg:'面板沒電——需要電池。',doneFlag:'alarmOff',doneMsg:'警報已解除。後門開了。'},
+      {id:'item_battery',type:'item',x:35,y:60,w:10,h:10,label:'電池',item:'battery',once:true},
+      {id:'item_shotgun',type:'item',x:80,y:40,w:11,h:11,label:'散彈槍',item:'shotgun',once:true},
+      {id:'item_sgammo',type:'item',x:82,y:28,w:10,h:10,label:'散彈',item:'ammoSg',qty:4,once:true},
+      {id:'item_herb',type:'item',x:25,y:45,w:10,h:10,label:'綠草',item:'herb',qty:1,once:true},
+      {id:'exam_bed',type:'exam',x:45,y:35,w:14,h:12,label:'病床',text:'床單仍暖。廣播：「病人開始睜眼——請封鎖 C 區。」'}
+    ],
+    ambush:true
+  },
+  rooftop:{
+    img:'scenes/rooftop.jpg',
+    name:'天台',
+    spawn:{x:50,y:25,ang:0},
+    bounds:{xmin:20,xmax:80,ymin:15,ymax:70},
+    hotspots:[
+      {id:'door_ward2',type:'door',x:50,y:15,w:12,h:10,label:'返回病房',to:'ward'},
+      {id:'exit',type:'exit',x:55,y:60,w:16,h:14,label:'等車點'}
+    ]
+  }
+};
+
+const taken=new Set();
+
+const el={
+  bg:document.getElementById('bg'),
+  player:document.getElementById('player'),
+  enemy:document.getElementById('enemy'),
+  hots:document.getElementById('hots'),
+  fade:document.getElementById('fade'),
+  blood:document.getElementById('blood'),
+  msg:document.getElementById('msgBar'),
+  inv:document.getElementById('inv'),
+  overlay:document.getElementById('overlay'),
+  o1:document.getElementById('o1'),
+  o2:document.getElementById('o2'),
+  o3:document.getElementById('o3'),
+  hpLine:document.getElementById('hpLine'),
+  ammo9:document.getElementById('ammo9'),
+  ammoSg:document.getElementById('ammoSg'),
+  herbLine:document.getElementById('herbLine'),
+  batLine:document.getElementById('batLine'),
+  btnAtk:document.getElementById('btnAtk'),
+  btnDodge:document.getElementById('btnDodge'),
+  btnHerb:document.getElementById('btnHerb'),
+  btnExam:document.getElementById('btnExam')
+};
+
+function showMsg(t,ms){
+  el.msg.textContent=t;
+  el.msg.classList.add('on');
+  clearTimeout(msgTimer);
+  msgTimer=setTimeout(()=>el.msg.classList.remove('on'),ms||2200);
+}
+
+function hpBar(){
+  const n=Math.max(0,Math.round(state.hp/25));
+  return '█'.repeat(n)+'░'.repeat(4-n);
+}
+
+function refreshHud(){
+  el.hpLine.textContent='生命 '+hpBar()+' '+Math.max(0,Math.round(state.hp));
+  el.ammo9.textContent='9mm '+state.inv.ammo9;
+  el.ammoSg.textContent='散彈 '+state.inv.ammoSg;
+  el.herbLine.textContent='草藥×'+state.inv.herb;
+  el.batLine.textContent='電池 '+(state.inv.battery?1:0);
+  el.o1.className=state.flags.serumUsed?'ok':'todo';
+  el.o1.textContent=(state.flags.serumUsed?'✓':'①')+' 注射血清自救';
+  el.o2.className=state.flags.alarmOff?'ok':'todo';
+  el.o2.textContent=(state.flags.alarmOff?'✓':'②')+' 拆警報／開後門';
+  el.o3.className=state.flags.rooftopOpen?'ok':'todo';
+  el.o3.textContent=(state.flags.rooftopOpen?'✓':'③')+' 衝天台等車';
+  el.btnHerb.classList.toggle('on',state.inv.herb>0 && state.hp<state.maxHp);
+  const nearEnemy=combatActive && state.enemy.alive;
+  el.btnAtk.classList.toggle('on',nearEnemy || (state.enemy.alive && dist(state.x,state.y,state.enemy.x,state.enemy.y)<28));
+  el.btnDodge.classList.toggle('on',nearEnemy || (state.enemy.alive && dist(state.x,state.y,state.enemy.x,state.enemy.y)<32));
+  renderInv();
+}
+
+function renderInv(){
+  const slots=[];
+  const I=state.inv;
+  if(I.crowbar) slots.push({id:'crowbar',ic:'🔧',nm:'撬棍',eq:state.equip==='crowbar'});
+  if(I.handgun) slots.push({id:'handgun',ic:'🔫',nm:'手槍',eq:state.equip==='handgun',qty:I.ammo9});
+  if(I.shotgun) slots.push({id:'shotgun',ic:'💥',nm:'散彈槍',eq:state.equip==='shotgun',qty:I.ammoSg});
+  if(I.herb>0) slots.push({id:'herb',ic:'🌿',nm:'綠草',qty:I.herb});
+  if(I.battery) slots.push({id:'battery',ic:'🔋',nm:'電池'});
+  if(I.serum && !state.flags.serumUsed) slots.push({id:'serum',ic:'💉',nm:'血清'});
+  if(I.keycard) slots.push({id:'keycard',ic:'🪪',nm:'鑰匙卡'});
+  while(slots.length<6) slots.push({id:'',ic:'',nm:''});
+  el.inv.innerHTML=slots.slice(0,6).map(s=>{
+    if(!s.id) return '<div class="slot"></div>';
+    return `<div class="slot${s.eq?' eq':''}" data-id="${s.id}"><span class="ic">${s.ic}</span><span class="nm">${s.nm}</span>${s.qty!=null?`<span class="qty">${s.qty}</span>`:''}</div>`;
+  }).join('');
+  el.inv.querySelectorAll('.slot[data-id]').forEach(n=>{
+    n.onclick=()=>equipOrUse(n.dataset.id);
   });
-  [[10,8],[10,12],[16,12],[16,16],[20,12],[12,16],[8,22],[18,20],[14,10],[6,8],[20,4]].forEach(([x,y])=>{if(map[y])map[y][x]=0;});
-  map[22][22]=2; map[22][23]=2; map[23][22]=2; map[23][23]=2;
+}
 
-  const curtains=[{x:6.5,y:8.5},{x:12.5,y:14.5},{x:18.5,y:12.5},{x:9.5,y:18.5}];
-  const serums=[{x:6.5,y:6.5,taken:false},{x:18.5,y:8.5,taken:false},{x:14.5,y:22.5,taken:false}];
-  const panels=[{x:8.5,y:12.5,on:false},{x:20.5,y:16.5,on:false}];
-  const EXIT={x:22.5,y:22.5};
-  const patients=[
-    {x:20.5,y:14.5,tx:8,ty:14,invest:0},
-    {x:8.5,y:22.5,tx:18,ty:10,invest:0},
-    {x:16.5,y:6.5,tx:10,ty:18,invest:0}
-  ];
+function equipOrUse(id){
+  if(id==='crowbar'||id==='handgun'||id==='shotgun'){
+    state.equip=id;
+    showMsg(id==='crowbar'?'裝備撬棍':id==='handgun'?'裝備手槍':'裝備散彈槍');
+  } else if(id==='herb'){
+    useHerb();
+  } else if(id==='serum'){
+    useSerum();
+  }
+  refreshHud();
+}
 
-  let px=12.5,py=12.5,dir=0,grace=3.5;
-  let phase=1,serumN=0,panelN=0;
-  let playing=false,dead=false,won=false,hiding=false,alarm=false;
-  let scareT=0,jumpCD=0,noise=0,bob=0,idleNudge=0;
+function useHerb(){
+  if(state.inv.herb<=0) return;
+  state.inv.herb--;
+  state.hp=Math.min(state.maxHp,state.hp+45);
+  showMsg('用綠草回血');
+  refreshHud();
+}
 
-  const canvas=document.getElementById('view');
-  const ctx=canvas.getContext('2d',{alpha:false});
-  const msg=document.getElementById('msg');
-  const prog=document.getElementById('prog');
-  const phaseEl=document.getElementById('phase');
-  const goal=document.getElementById('goal');
-  const overlay=document.getElementById('overlay');
-  const hint=document.getElementById('hint');
-  const pad=document.getElementById('pad');
-  const hideBtn=document.getElementById('hideBtn');
-  const actBtn=document.getElementById('actBtn');
-  const looktip=document.getElementById('looktip');
-  const flash=document.getElementById('flash');
-  const siren=document.getElementById('siren');
-  const noiseFill=document.getElementById('noiseFill');
-  const keys={}; const move={f:0,b:0,turnL:0,turnR:0};
+function useSerum(){
+  if(!state.inv.serum || state.flags.serumUsed) return;
+  state.flags.serumUsed=true;
+  state.inv.serum=false;
+  state.hp=Math.min(state.maxHp,state.hp+20);
+  showMsg('注射血清……寒意退去。');
+  refreshHud();
+}
 
-  function resize(){const d=Math.min(devicePixelRatio||1,2);canvas.width=(innerWidth*d)|0;canvas.height=(innerHeight*d)|0;}
-  resize(); addEventListener('resize',resize);
+function dist(ax,ay,bx,by){const dx=ax-bx,dy=ay-by;return Math.hypot(dx,dy)}
 
-  function cell(x,y){const cx=x|0,cy=y|0;if(cx<0||cy<0||cx>=W||cy>=H)return 1;return map[cy][cx];}
-  function solid(x,y){const t=cell(x,y);if(t===1)return true;if(t===2&&phase<3)return true;return false;}
-  function nearCurtain(){return curtains.some(c=>Math.hypot(px-c.x,py-c.y)<1.15);}
-  function nearPanel(){return panels.find(p=>!p.on&&Math.hypot(px-p.x,py-p.y)<1.25);}
+function placePlayer(){
+  const p=el.player;
+  // map ground percent to screen: x 0-100 -> 8%-92% width; y 0-100 -> bottom 8% to 48% from bottom
+  const left=8+(state.x/100)*84;
+  const bottom=8+(state.y/100)*40;
+  p.style.left=left+'%';
+  p.style.bottom=bottom+'%';
+  p.style.top='auto';
+  p.style.transform=`rotate(${state.ang}deg)`;
+  const scale=0.75+(state.y/100)*0.55;
+  p.style.width=(28*scale)+'px';
+  p.style.height=(48*scale)+'px';
+  p.style.marginLeft=(-14*scale)+'px';
+}
 
-  function setUI(){
-    if(phase===1){
-      phaseEl.textContent='階段 1／3 · 血清自救';
-      goal.textContent='① 注射血清自救——執 3 支綠光血清';
-      prog.textContent='血清 '+serumN+'／3 · 粉紅窗簾可匿';
-      msg.textContent='執血清';
-      actBtn.classList.remove('on');
-    } else if(phase===2){
-      phaseEl.textContent='階段 2／3 · 拆警報';
-      goal.textContent='去青色面板撳「啟動」／F（'+panelN+'/2）';
-      prog.textContent='隔離 '+panelN+'／2 · 粉紅窗簾可匿';
-      msg.textContent='啟動隔離';
-    } else {
-      phaseEl.textContent='階段 3／3 · 天台等車';
-      goal.textContent='警報！冲黃光天台出口';
-      prog.textContent='逃上天台 · 粉紅窗簾可匿';
-      msg.textContent='冲天台！';
-      actBtn.classList.remove('on');
-      alarm=true;
+function placeEnemy(){
+  const e=el.enemy;
+  if(!state.enemy.alive){e.classList.remove('on');return}
+  e.classList.add('on');
+  const left=8+(state.enemy.x/100)*84;
+  const bottom=8+(state.enemy.y/100)*40;
+  e.style.left=left+'%';
+  e.style.bottom=bottom+'%';
+  e.style.top='auto';
+  const scale=0.85+(state.enemy.y/100)*0.5;
+  e.style.width=(40*scale)+'px';
+  e.style.height=(64*scale)+'px';
+  e.style.marginLeft=(-20*scale)+'px';
+}
+
+function clearHots(){el.hots.innerHTML=''}
+
+function renderHots(){
+  clearHots();
+  const room=ROOMS[state.room];
+  room.hotspots.forEach(h=>{
+    if(h.once && taken.has(h.id)) return;
+    if(h.doneFlag && state.flags[h.doneFlag] && h.type==='use') return;
+    const d=document.createElement('div');
+    d.className='hotspot '+(h.type==='door'||h.type==='exit'?'door':h.type==='item'?'item':'exam');
+    d.dataset.id=h.id;
+    const left=8+(h.x/100)*84;
+    const bottom=8+(h.y/100)*40;
+    d.style.left=left+'%';
+    d.style.bottom=bottom+'%';
+    d.style.width=h.w+'%';
+    d.style.height=(h.h*0.55)+'vh';
+    d.style.transform='translate(-50%,0)';
+    d.innerHTML=`<span class="lbl">${h.label}</span>`;
+    d.onclick=(ev)=>{ev.stopPropagation();activateHotspot(h)};
+    el.hots.appendChild(d);
+  });
+}
+
+function nearestHotspot(maxD){
+  const room=ROOMS[state.room];
+  let best=null,bd=maxD||14;
+  for(const h of room.hotspots){
+    if(h.once && taken.has(h.id)) continue;
+    if(h.doneFlag && state.flags[h.doneFlag] && h.type==='use') continue;
+    const d=dist(state.x,state.y,h.x,h.y);
+    if(d<bd){bd=d;best=h}
+  }
+  return best;
+}
+
+async function fadeDoor(label){
+  transitioning=true;
+  el.fade.classList.add('on');
+  showMsg(label||'開門…',900);
+  await wait(450);
+}
+
+async function unfade(){
+  el.fade.classList.remove('on');
+  await wait(350);
+  transitioning=false;
+}
+
+function wait(ms){return new Promise(r=>setTimeout(r,ms))}
+
+async function goRoom(id,fromDoor){
+  await fadeDoor('開門…');
+  state.room=id;
+  const r=ROOMS[id];
+  el.bg.src=r.img;
+  el.bg.alt=r.name;
+  const sp=r.spawn;
+  state.x=sp.x;state.y=sp.y;state.ang=sp.ang||0;
+  state.enemy.alive=false;
+  combatActive=false;
+  if(id==='ward' && !state.flags.wardCleared){
+    // ambush after short delay
+    setTimeout(()=>spawnAmbush(),900);
+  }
+  renderHots();
+  placePlayer();
+  placeEnemy();
+  refreshHud();
+  showMsg(r.name,1400);
+  await unfade();
+}
+
+function spawnAmbush(){
+  if(state.room!=='ward' || state.flags.wardCleared) return;
+  state.enemy={alive:true,hp:70,x:68,y:58,cd:0,atkCd:1.2};
+  combatActive=true;
+  placeEnemy();
+  showMsg('「病人」撲過來！',2500);
+  refreshHud();
+}
+
+function pickup(h){
+  const I=state.inv;
+  taken.add(h.id);
+  switch(h.item){
+    case 'crowbar': I.crowbar=true; if(state.equip==='none'||!state.equip) state.equip='crowbar'; showMsg('取得撬棍'); break;
+    case 'handgun': I.handgun=true; state.equip='handgun'; showMsg('取得手槍'); break;
+    case 'shotgun': I.shotgun=true; state.equip='shotgun'; showMsg('取得散彈槍'); break;
+    case 'ammo9': {const n=h.qty||12; I.ammo9+=n; showMsg('取得 9mm ×'+n); break;}
+    case 'ammoSg': {const n=h.qty||4; I.ammoSg+=n; showMsg('取得散彈 ×'+n); break;}
+    case 'herb': I.herb+=(h.qty||1); showMsg('取得綠草／治療噴霧'); break;
+    case 'battery': I.battery=true; showMsg('取得電池'); break;
+    case 'serum': I.serum=true; showMsg('取得血清——盡快注射。'); break;
+    case 'keycard': I.keycard=true; showMsg('取得鑰匙卡'); break;
+  }
+  renderHots();
+  refreshHud();
+}
+
+function activateHotspot(h){
+  if(!running||transitioning) return;
+  if(h.type==='item'){pickup(h);return}
+  if(h.type==='exam'){showMsg(h.text,4000);return}
+  if(h.type==='exit'){
+    if(!state.flags.alarmOff){showMsg('還未開後門。');return}
+    state.flags.rooftopOpen=true;
+    winGame();
+    return;
+  }
+  if(h.type==='use'){
+    if(state.flags[h.doneFlag]){showMsg(h.doneMsg||'已經處理過。');return}
+    if(h.needItem==='battery' && !state.inv.battery){showMsg(h.lockedMsg);return}
+    if(h.onUse==='alarm'){
+      state.inv.battery=false;
+      state.flags.alarmOff=true;
+      showMsg('警報解除。後門開了。');
+      renderHots();
+      refreshHud();
     }
+    return;
   }
-
-  function bloodFlash(a){
-    flash.style.background='rgba(180,0,40,'+(a||0.5)+')';
-    setTimeout(()=>{flash.style.background='rgba(180,0,40,0)';},140);
-  }
-  function jumpScare(){
-    if(jumpCD>0) return;
-    jumpCD=2.2;
-    bloodFlash(0.72);
-    scareT=0.38;
-    hint.textContent='！！病人就喺隔籬——快匿窗簾！！';
-    hint.classList.add('on');
-  }
-
-  function cast(rayAng){
-    const sin=Math.sin(rayAng),cos=Math.cos(rayAng);
-    let dist=0,hit=0,side=0,x=px,y=py;
-    for(let i=0;i<480;i++){
-      x+=cos*0.025;y+=sin*0.025;dist+=0.025;
-      const t=cell(x,y);
-      if(t===1||t===2){hit=t;const fx=x-(x|0);side=(fx<0.03||fx>0.97)?0:1;break;}
-    }
-    return {dist:Math.max(dist,0.0001),hit,side};
-  }
-
-  function draw(){
-    const w=canvas.width,h=canvas.height;
-    const pulse=0.5+0.5*Math.sin(performance.now()*0.005);
-    const bobY=Math.sin(bob)*h*0.007;
-    const g=ctx.createLinearGradient(0,0,0,h);
-    if(alarm){g.addColorStop(0,'#6a1020');g.addColorStop(0.5,'#301018');g.addColorStop(1,'#180810');}
-    else{g.addColorStop(0,'#4a1840');g.addColorStop(0.5,'#241028');g.addColorStop(1,'#180c20');}
-    ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
-    ctx.fillStyle=alarm?'#3a1820':'#2a1830'; ctx.fillRect(0,h*0.52+bobY,w,h*0.48);
-
-    const fov=Math.PI/3, cols=Math.min(220,(w/3)|0), colW=w/cols;
-    for(let i=0;i<cols;i++){
-      const ang=dir-fov/2+(i/cols)*fov;
-      const {dist,hit,side}=cast(ang);
-      const corr=dist*Math.cos(ang-dir);
-      const wallH=Math.min(h*1.35,(h*0.92)/corr);
-      let shade=1-Math.min(0.82,corr/13); if(side) shade*=0.85;
-      let r,gg,b;
-      if(hit===2){
-        if(phase>=3){r=(220+30*pulse)*shade;gg=(180+20*pulse)*shade;b=40*shade;}
-        else{r=20*shade;gg=180*shade;b=200*shade;}
-      } else {
-        r=(140+40*pulse)*shade; gg=40*shade; b=(110+30*pulse)*shade;
-        if(alarm){r=(180+60*pulse)*shade;gg=30*shade;b=50*shade;}
-        if(((i*17)|0)%11===0){r+=50;b+=20;}
+  if(h.type==='door'){
+    if(h.need && !state.flags[h.need] && !(h.need==='serumUsed' && state.flags.serumUsed)){
+      // special: serumUsed check
+      if(h.need==='serumUsed' && !state.flags.serumUsed){
+        if(state.inv.serum){useSerum(); /* then can retry */}
+        else {showMsg(h.lockedMsg);return}
       }
-      ctx.fillStyle=`rgb(${r|0},${gg|0},${b|0})`;
-      ctx.fillRect((i*colW)|0,((h-wallH)/2+bobY)|0,(colW+1)|0,wallH|0);
-      if(hit===1&&((i*7)|0)%13===0){
-        ctx.fillStyle=`rgba(160,20,50,${0.45*shade})`;
-        ctx.fillRect((i*colW)|0,(h*0.58+bobY)|0,(colW+1)|0,(wallH*0.18)|0);
+      if(h.need==='alarmOff' && !state.flags.alarmOff){showMsg(h.lockedMsg);return}
+      if(h.need==='serumUsed' && !state.flags.serumUsed){showMsg(h.lockedMsg);return}
+    }
+    if(h.forceCrowbar && !taken.has('forced_'+h.id)){
+      // first open from entrance - allow with crowbar or just push after having crowbar
+      if(!state.inv.crowbar){showMsg(h.lockedMsg||'門反鎖……');return}
+      taken.add('forced_'+h.id);
+      showMsg('用撬棍撬開門縫……');
+    }
+    if(h.need==='serumUsed' && !state.flags.serumUsed){
+      showMsg(h.lockedMsg);return;
+    }
+    if(h.need==='alarmOff' && !state.flags.alarmOff){
+      showMsg(h.lockedMsg);return;
+    }
+    goRoom(h.to);
+  }
+}
+
+function tryAttack(){
+  if(!running||!state.enemy.alive||reloading) return;
+  const d=dist(state.x,state.y,state.enemy.x,state.enemy.y);
+  const eq=state.equip;
+  const I=state.inv;
+
+  if(eq==='handgun'){
+    if(I.ammo9<=0){showMsg('打空——改用撬棍或逃走'); if(I.crowbar) state.equip='crowbar'; refreshHud(); return}
+    I.ammo9--;
+    reloading=true;
+    showMsg('換彈中');
+    const dmg=d<35?28:18;
+    state.enemy.hp-=dmg;
+    showMsg('擊退！');
+    setTimeout(()=>{reloading=false},400);
+  } else if(eq==='shotgun'){
+    if(I.ammoSg<=0){showMsg('打空——改用撬棍或逃走'); if(I.crowbar) state.equip='crowbar'; refreshHud(); return}
+    I.ammoSg--;
+    const dmg=d<30?55:30;
+    state.enemy.hp-=dmg;
+    showMsg('擊退！');
+  } else {
+    // crowbar melee — need to be close
+    if(d>16){showMsg('太遠——靠近再用撬棍');return}
+    state.enemy.hp-=22;
+    showMsg('擊退！');
+    // knockback
+    const ang=Math.atan2(state.enemy.y-state.y,state.enemy.x-state.x);
+    state.enemy.x=clamp(state.enemy.x+Math.cos(ang)*8,15,85);
+    state.enemy.y=clamp(state.enemy.y+Math.sin(ang)*8,15,80);
+  }
+  if(state.enemy.hp<=0){
+    state.enemy.alive=false;
+    state.flags.wardCleared=true;
+    combatActive=false;
+    placeEnemy();
+    showMsg('感染者倒下了……快走。',2500);
+  }
+  refreshHud();
+  placeEnemy();
+}
+
+function tryDodge(){
+  if(!state.enemy.alive) return;
+  const ang=(state.ang-90)*Math.PI/180;
+  // sidestep
+  state.x=clamp(state.x+Math.cos(ang)*14, ROOMS[state.room].bounds.xmin, ROOMS[state.room].bounds.xmax);
+  state.y=clamp(state.y+Math.sin(ang)*10, ROOMS[state.room].bounds.ymin, ROOMS[state.room].bounds.ymax);
+  placePlayer();
+  showMsg('閃避！');
+}
+
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+
+function winGame(){
+  running=false;
+  document.getElementById('startCard').style.display='none';
+  const ec=document.getElementById('endCard');
+  ec.style.display='block';
+  document.getElementById('endTitle').textContent='逃出';
+  document.getElementById('endBody').textContent='救護車燈劃過天台。你仲握住藥單——上面寫住你個名。';
+  el.overlay.classList.remove('hidden');
+  refreshHud();
+}
+
+function loseGame(){
+  running=false;
+  el.blood.classList.add('on');
+  setTimeout(()=>{
+    document.getElementById('startCard').style.display='none';
+    const ec=document.getElementById('endCard');
+    ec.style.display='block';
+    document.getElementById('endTitle').textContent='遊戲結束';
+    document.getElementById('endBody').textContent='病床升起，螢光燈好光。';
+    el.overlay.classList.remove('hidden');
+    el.blood.classList.remove('on');
+  },700);
+}
+
+function resetGame(){
+  Object.assign(state,{
+    room:'entrance',x:50,y:22,ang:0,hp:100,
+    inv:{crowbar:false,handgun:false,shotgun:false,ammo9:0,ammoSg:0,herb:0,battery:0,serum:false,keycard:false},
+    equip:'none',
+    flags:{serumUsed:false,alarmOff:false,powerOn:false,rooftopOpen:false,wardCleared:false,waitingLooted:false},
+    enemy:{alive:false,hp:0,x:70,y:55,cd:0,atkCd:0}
+  });
+  taken.clear();
+  combatActive=false;
+  el.blood.classList.remove('on');
+  document.getElementById('endCard').style.display='none';
+  document.getElementById('startCard').style.display='block';
+}
+
+function startGame(){
+  resetGame();
+  el.overlay.classList.add('hidden');
+  running=true;
+  goRoom('entrance');
+  // focus for keys
+  window.focus();
+  document.body.focus();
+  showMsg('彈藥有限，能走就走；夠近先用撬棍。',3200);
+  refreshHud();
+}
+
+document.getElementById('btn').onclick=()=>startGame();
+document.getElementById('btnRetry').onclick=()=>{
+  resetGame();
+  el.overlay.classList.remove('hidden');
+  document.getElementById('startCard').style.display='block';
+  document.getElementById('endCard').style.display='none';
+};
+
+el.btnExam.onclick=()=>{
+  const h=nearestHotspot(16);
+  if(h) activateHotspot(h);
+  else showMsg('附近沒有可調查的東西。');
+};
+el.btnAtk.onclick=()=>tryAttack();
+el.btnDodge.onclick=()=>tryDodge();
+el.btnHerb.onclick=()=>useHerb();
+
+function bindPad(id,key){
+  const b=document.getElementById(id);
+  const down=e=>{e.preventDefault();pad[key]=1;b.classList.add('held')};
+  const up=()=>{pad[key]=0;b.classList.remove('held')};
+  b.addEventListener('pointerdown',down);
+  b.addEventListener('pointerup',up);
+  b.addEventListener('pointerleave',up);
+  b.addEventListener('pointercancel',up);
+}
+bindPad('tF','f');bindPad('tB','b');bindPad('tL','l');bindPad('tR','r');
+
+window.addEventListener('keydown',e=>{
+  keys[e.code]=true;
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault();
+  if(!running) return;
+  if(e.code==='KeyE'||e.code==='KeyF'){el.btnExam.click()}
+  if(e.code==='KeyR'||e.code==='Space'){if(state.enemy.alive) tryAttack()}
+  if(e.code==='KeyQ') tryDodge();
+  if(e.code==='KeyH') useHerb();
+  if(e.code==='Digit1'&&state.inv.crowbar){state.equip='crowbar';refreshHud()}
+  if(e.code==='Digit2'&&state.inv.handgun){state.equip='handgun';refreshHud()}
+  if(e.code==='Digit3'&&state.inv.shotgun){state.equip='shotgun';refreshHud()}
+});
+window.addEventListener('keyup',e=>{keys[e.code]=false});
+
+let last=performance.now();
+function tick(now){
+  const dt=Math.min(0.05,(now-last)/1000); last=now;
+  if(running && !transitioning){
+    const room=ROOMS[state.room];
+    const turn=((keys.ArrowLeft||keys.KeyA||pad.l)?1:0)-((keys.ArrowRight||keys.KeyD||pad.r)?1:0);
+    state.ang+=turn*120*dt;
+    const forward=((keys.ArrowUp||keys.KeyW||pad.f)?1:0)-((keys.ArrowDown||keys.KeyS||pad.b)?1:0);
+    if(forward){
+      const rad=(state.ang-90)*Math.PI/180;
+      // tank: ang 0 = face up (increasing y)
+      const face=((state.ang%360)+360)%360;
+      const fr=face*Math.PI/180;
+      // forward in facing direction: ang 0 -> +y (into scene)
+      const dx=Math.sin(fr)*forward*38*dt;
+      const dy=Math.cos(fr)*forward*38*dt;
+      state.x=clamp(state.x+dx, room.bounds.xmin, room.bounds.xmax);
+      state.y=clamp(state.y+dy, room.bounds.ymin, room.bounds.ymax);
+      placePlayer();
+      // auto-prompt near hotspot
+      const nh=nearestHotspot(12);
+      if(nh && !msgTimer){/* soft */}
+    } else if(turn){
+      placePlayer();
+    }
+
+    // enemy AI
+    if(state.enemy.alive){
+      const d=dist(state.x,state.y,state.enemy.x,state.enemy.y);
+      const spd=16*dt;
+      if(d>8){
+        state.enemy.x+=(state.x-state.enemy.x)/d*spd;
+        state.enemy.y+=(state.y-state.enemy.y)/d*spd;
+        placeEnemy();
       }
-    }
-    curtains.forEach(c=>bill(c.x,c.y,'curtain',bobY));
-    serums.forEach(s=>{if(!s.taken)bill(s.x,s.y,'serum',bobY);});
-    panels.forEach(p=>bill(p.x,p.y,p.on?'panelOn':'panel',bobY));
-    patients.forEach(p=>bill(p.x,p.y,'patient',bobY));
-
-    ctx.strokeStyle='rgba(255,180,220,0.65)'; ctx.lineWidth=2;
-    ctx.beginPath(); ctx.arc(w/2,h/2,8,0,Math.PI*2); ctx.stroke();
-
-    if(hiding){
-      ctx.fillStyle='rgba(255,80,160,0.22)'; ctx.fillRect(0,0,w,h);
-      ctx.fillStyle='#ffb0d0'; ctx.font='800 18px system-ui'; ctx.textAlign='center';
-      ctx.fillText('匿喺窗簾後面…',w/2,h*0.16);
-    }
-    if(scareT>0){
-      ctx.fillStyle=`rgba(255,0,40,${scareT})`; ctx.fillRect(0,0,w,h);
-      ctx.fillStyle='#fff'; ctx.font='900 42px system-ui'; ctx.textAlign='center';
-      ctx.fillText('！！',w/2,h*0.45);
-    }
-    siren.style.opacity=alarm?String(0.25+0.35*pulse):'0';
-
-    const ms=Math.min(120,w*0.14),mx=16,my=h-ms-16;
-    ctx.fillStyle='rgba(0,0,0,0.65)'; ctx.fillRect(mx-4,my-4,ms+8,ms+8);
-    for(let yy=0;yy<H;yy++)for(let xx=0;xx<W;xx++){
-      if(map[yy][xx]===1){ctx.fillStyle='#603050';ctx.fillRect(mx+xx*(ms/W),my+yy*(ms/H),ms/W+.5,ms/H+.5);}
-      if(map[yy][xx]===2){ctx.fillStyle='#ffcc44';ctx.fillRect(mx+xx*(ms/W),my+yy*(ms/H),ms/W+.5,ms/H+.5);}
-    }
-    serums.forEach(s=>{if(!s.taken){ctx.fillStyle='#66ffcc';ctx.fillRect(mx+s.x*(ms/W)-2,my+s.y*(ms/H)-2,4,4);}});
-    ctx.fillStyle='#40f0ff'; panels.forEach(p=>{if(!p.on)ctx.fillRect(mx+p.x*(ms/W)-2,my+p.y*(ms/H)-2,4,4);});
-    patients.forEach(p=>{ctx.fillStyle='#e03050';ctx.beginPath();ctx.arc(mx+p.x*(ms/W),my+p.y*(ms/H),2.5,0,Math.PI*2);ctx.fill();});
-    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(mx+px*(ms/W),my+py*(ms/H),3,0,Math.PI*2); ctx.fill();
-    ctx.strokeStyle='#ff4da6'; ctx.beginPath(); ctx.moveTo(mx+px*(ms/W),my+py*(ms/H));
-    ctx.lineTo(mx+px*(ms/W)+Math.cos(dir)*8,my+py*(ms/H)+Math.sin(dir)*8); ctx.stroke();
-  }
-
-  function bill(sx,sy,kind,bobY){
-    const dx=sx-px,dy=sy-py,dist=Math.hypot(dx,dy);
-    if(dist<0.15||dist>15) return;
-    let ang=Math.atan2(dy,dx)-dir;
-    while(ang>Math.PI)ang-=Math.PI*2; while(ang<-Math.PI)ang+=Math.PI*2;
-    if(Math.abs(ang)>Math.PI/3+0.2) return;
-    const hit=cast(dir+ang); if(hit.dist+0.2<dist&&hit.hit) return;
-    const w=canvas.width,h=canvas.height,fov=Math.PI/3;
-    const screenX=w/2+(ang/(fov/2))*(w/2);
-    const size=Math.min(h*0.85,(h*0.55)/dist);
-    const x=screenX-size/2,y=(h-size)/2+(bobY||0);
-    if(kind==='serum'){
-      ctx.fillStyle='rgba(80,255,200,0.32)'; ctx.beginPath(); ctx.arc(screenX,y+size*0.4,size*0.42,0,Math.PI*2); ctx.fill();
-      ctx.fillStyle='#66ffcc'; ctx.fillRect(screenX-size*0.08,y+size*0.25,size*0.16,size*0.4);
-    } else if(kind==='panel'||kind==='panelOn'){
-      ctx.fillStyle=kind==='panelOn'?'#40f0ff':'#2080aa';
-      ctx.fillRect(x+size*0.25,y+size*0.25,size*0.5,size*0.5);
-      ctx.fillStyle='#fff'; ctx.font='800 '+(size*0.12|0)+'px system-ui'; ctx.textAlign='center';
-      ctx.fillText(kind==='panelOn'?'ON':'隔離',screenX,y+size*0.55);
-    } else if(kind==='curtain'){
-      ctx.fillStyle='rgba(200,40,100,0.55)'; ctx.fillRect(x+size*0.2,y+size*0.1,size*0.6,size*0.85);
-    } else {
-      ctx.fillStyle='#e8d8c8'; ctx.fillRect(x+size*0.28,y+size*0.25,size*0.44,size*0.55);
-      ctx.fillStyle='#f0e8dc'; ctx.beginPath(); ctx.arc(screenX,y+size*0.22,size*0.14,0,Math.PI*2); ctx.fill();
-      ctx.fillStyle='#a01828'; ctx.fillRect(x+size*0.32,y+size*0.4,size*0.36,size*0.2);
+      state.enemy.atkCd-=dt;
+      if(d<10 && state.enemy.atkCd<=0){
+        state.enemy.atkCd=1.4;
+        state.hp-=18;
+        el.player.classList.add('hurt');
+        setTimeout(()=>el.player.classList.remove('hurt'),200);
+        showMsg('被咬傷！');
+        refreshHud();
+        if(state.hp<=0) loseGame();
+      }
+      refreshHud();
     }
   }
-
-  function end(ok){
-    playing=false;hiding=false;alarm=false;siren.style.opacity='0';
-    overlay.classList.remove('hidden');
-    pad.classList.remove('on'); hideBtn.classList.remove('on'); actBtn.classList.remove('on');
-    hint.classList.remove('on'); looktip.classList.remove('on');
-    overlay.querySelector('.card').innerHTML=ok
-      ?'<h1>救護車燈劃過天台</h1><div class="sub">ROOFTOP CLEAR</div><ol><li>你仲握住藥單——上面寫住你個名。</li></ol><button class="play" id="again">再玩一次</button>'
-      :'<h1>俾人拖走……</h1><div class="sub">ADMITTED</div><ol><li>下次降噪音、用窗簾匿藏，再冲天台。</li></ol><button class="play" id="again">再試一次</button>';
-    document.getElementById('again').onclick=()=>location.reload();
-  }
-
-  function tryAct(){
-    const p=nearPanel();
-    if(phase===2&&p){
-      p.on=true; panelN++;
-      bloodFlash(0.25);
-      if(panelN>=2){phase=3;setUI();jumpScare();hint.textContent='隔離完成——警報！冲黃光天台！';hint.classList.add('on');}
-      else{setUI();hint.textContent='隔離 1/2——再搵另一個青色面板';hint.classList.add('on');}
-      updateActBtn();
-    }
-  }
-  function updateActBtn(){
-    if(phase===2&&nearPanel()) actBtn.classList.add('on');
-    else actBtn.classList.remove('on');
-  }
-  function setHide(v){
-    hiding=!!(v&&nearCurtain());
-    hideBtn.classList.toggle('active',hiding);
-    if(v&&!nearCurtain()){hint.textContent='要企喺粉紅窗簾前先可以匿！';hint.classList.add('on');}
-  }
-
-  function pressKey(e,down){
-    const c=e.code||'';
-    const k=(e.key||'').toLowerCase();
-    if(c) keys[c]=down;
-    if(k==='w'||c==='KeyW') keys.KeyW=down;
-    if(k==='a'||c==='KeyA') keys.KeyA=down;
-    if(k==='s'||c==='KeyS') keys.KeyS=down;
-    if(k==='d'||c==='KeyD') keys.KeyD=down;
-    if(k==='q'||c==='KeyQ') keys.KeyQ=down;
-    if(k==='e'||c==='KeyE') keys.KeyE=down;
-    if(k==='f'||c==='KeyF') keys.KeyF=down;
-    if(k==='arrowup') keys.ArrowUp=down;
-    if(k==='arrowdown') keys.ArrowDown=down;
-    if(k==='arrowleft') keys.ArrowLeft=down;
-    if(k==='arrowright') keys.ArrowRight=down;
-    if(k===' '||c==='Space') keys.Space=down;
-    if(k==='shift'||c==='ShiftLeft'||c==='ShiftRight') keys.Shift=down;
-  }
-
-  function focusPlay(){
-    try{canvas.focus({preventScroll:true});}catch(_){try{canvas.focus();}catch(e){}}
-    try{canvas.requestPointerLock&&canvas.requestPointerLock();}catch(_){}
-  }
-
-  function start(){
-    overlay.classList.add('hidden'); playing=true; dead=false; won=false; hiding=false; alarm=false;
-    phase=1; serumN=0; panelN=0; grace=3.5; noise=0; idleNudge=0; bob=0;
-    px=12.5; py=12.5; dir=0;
-    serums.forEach(s=>s.taken=false); panels.forEach(p=>{p.on=false;});
-    patients[0].x=20.5;patients[0].y=14.5;patients[0].invest=0;
-    patients[1].x=8.5;patients[1].y=22.5;patients[1].invest=0;
-    patients[2].x=16.5;patients[2].y=6.5;patients[2].invest=0;
-    setUI();
-    hint.classList.add('on'); hideBtn.classList.add('on'); looktip.classList.add('on');
-    pad.style.display='grid'; pad.classList.add('on');
-    hint.textContent='先撳「進入遊戲」· WASD 行 · ←→ 或 Q／E 轉身 · 空白鍵匿窗簾';
-    setTimeout(()=>{if(playing) hint.textContent='血清 0／3 · 粉紅窗簾可匿';},2500);
-    focusPlay();
-  }
-  document.getElementById('btn').onclick=start;
-  actBtn.addEventListener('click',tryAct);
-  actBtn.addEventListener('touchstart',e=>{e.preventDefault();tryAct();},{passive:false});
-  hideBtn.addEventListener('touchstart',e=>{e.preventDefault();setHide(true);},{passive:false});
-  hideBtn.addEventListener('touchend',()=>setHide(false));
-  hideBtn.addEventListener('mousedown',()=>setHide(true));
-  hideBtn.addEventListener('mouseup',()=>setHide(false));
-  hideBtn.addEventListener('mouseleave',()=>setHide(false));
-
-  addEventListener('keydown',e=>{
-    if(!playing) return;
-    pressKey(e,true);
-    idleNudge=0;
-    const block=['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyW','KeyA','KeyS','KeyD','KeyQ','KeyE','KeyF'];
-    if(block.includes(e.code)||['w','a','s','d','q','e','f',' '].includes((e.key||'').toLowerCase())) e.preventDefault();
-    if(e.code==='Space'||e.key===' '){e.preventDefault();setHide(true);}
-    if(e.code==='KeyF'||(e.key||'').toLowerCase()==='f') tryAct();
-  });
-  addEventListener('keyup',e=>{
-    pressKey(e,false);
-    if(e.code==='Space'||e.key===' ') setHide(false);
-  });
-
-  let dragging=false,lastMX=0;
-  canvas.addEventListener('mousedown',e=>{
-    if(!playing||e.button!==0) return;
-    dragging=true; lastMX=e.clientX; idleNudge=0; focusPlay();
-  });
-  addEventListener('mouseup',()=>{dragging=false;});
-  addEventListener('mousemove',e=>{
-    if(!playing) return;
-    if(document.pointerLockElement===canvas){dir+=e.movementX*0.0045;return;}
-    if(dragging||e.buttons===1){dir+=(e.clientX-lastMX)*0.005;lastMX=e.clientX;}
-  });
-  canvas.addEventListener('click',()=>{if(!playing)return;idleNudge=0;focusPlay();});
-  let tx=-1;
-  canvas.addEventListener('touchstart',e=>{if(!playing)return;const t=e.changedTouches[0];if(t.clientX>innerWidth*0.36)tx=t.clientX;},{passive:true});
-  canvas.addEventListener('touchmove',e=>{if(tx<0)return;const t=e.changedTouches[0];dir+=(t.clientX-tx)*0.006;tx=t.clientX;},{passive:true});
-  canvas.addEventListener('touchend',()=>{tx=-1;},{passive:true});
-
-  function bindPad(id,onFn,offFn){
-    const el=document.getElementById(id);
-    const on=e=>{e.preventDefault();el.classList.add('held');onFn();idleNudge=0;};
-    const off=()=>{el.classList.remove('held');offFn();};
-    el.addEventListener('touchstart',on,{passive:false});
-    el.addEventListener('touchend',off); el.addEventListener('touchcancel',off);
-    el.addEventListener('mousedown',on); el.addEventListener('mouseup',off); el.addEventListener('mouseleave',off);
-  }
-  bindPad('tF',()=>move.f=1,()=>move.f=0);
-  bindPad('tB',()=>move.b=1,()=>move.b=0);
-  bindPad('tL',()=>move.turnL=1,()=>move.turnL=0);
-  bindPad('tR',()=>move.turnR=1,()=>move.turnR=0);
-
-  let last=performance.now();
-  function tick(now){
-    window.__alley=()=>({px,py,dir,playing,hiding});
   requestAnimationFrame(tick);
-    const dt=Math.min(0.05,(now-last)/1000); last=now;
-    if(scareT>0) scareT-=dt;
-    if(jumpCD>0) jumpCD-=dt;
-    if(playing&&!dead&&!won){
-      if(grace>0) grace-=dt;
-      idleNudge+=dt;
-      if(idleNudge>4.5){
-        hint.textContent='撳一下畫面，再用 WASD 行';
-        hint.classList.add('on');
-      }
+}
+requestAnimationFrame(tick);
 
-      if(keys.KeyQ||keys.ArrowLeft||move.turnL) dir-=2.8*dt;
-      if(keys.KeyE||keys.ArrowRight||move.turnR) dir+=2.8*dt;
+// preload
+Object.values(ROOMS).forEach(r=>{const i=new Image();i.src=r.img});
+el.bg.src=ROOMS.entrance.img;
+placePlayer();
+refreshHud();
 
-      let moved=false;
-      if(!hiding){
-        let f=0,s=0;
-        if(keys.KeyW||keys.ArrowUp||move.f) f+=1;
-        if(keys.KeyS||keys.ArrowDown||move.b) f-=1;
-        if(keys.KeyA) s-=1;
-        if(keys.KeyD) s+=1;
-        const sprint=!!(keys.Shift&&f>0);
-        const base=alarm?3.8:3.4;
-        const sp=(sprint?base*1.35:base)*dt;
-        const ox=px,oy=py;
-        const nx=px+Math.cos(dir)*f*sp+Math.cos(dir+Math.PI/2)*s*sp;
-        const ny=py+Math.sin(dir)*f*sp+Math.sin(dir+Math.PI/2)*s*sp;
-        if(!solid(nx,py)) px=nx;
-        else if(!solid(px+Math.cos(dir)*f*sp*0.5,py)) px+=Math.cos(dir)*f*sp*0.5;
-        if(!solid(px,ny)) py=ny;
-        else if(!solid(px,py+Math.sin(dir)*f*sp*0.5)) py+=Math.sin(dir)*f*sp*0.5;
-        moved=(px!==ox||py!==oy);
-        if(moved){
-          bob+=dt*(sprint?14:9);
-          noise=Math.min(100,noise+(sprint?55:22)*dt);
-          idleNudge=0;
-        } else {
-          noise=Math.max(0,noise-18*dt);
-          bob*=0.9;
-        }
-      } else {
-        noise=Math.max(0,noise-35*dt);
-        hint.textContent='匿緊——等病人走開先出嚟';
-        hint.classList.add('on');
-      }
-      noiseFill.style.width=noise+'%';
-      const mf=document.getElementById('moveFlash');
-      if(mf) mf.style.opacity=moved?'1':'0';
-
-      if(phase===1){
-        serums.forEach(s=>{
-          if(!s.taken&&Math.hypot(px-s.x,py-s.y)<1.05){
-            s.taken=true; serumN++; setUI();
-            if(serumN>=3){phase=2;setUI();hint.textContent='血清齊——去青色隔離面板撳「啟動」／F';hint.classList.add('on');}
-            else hint.textContent='仲差 '+(3-serumN)+' 支血清';
-          }
-        });
-      }
-      if(phase===2) updateActBtn();
-      if(phase===3&&Math.hypot(px-EXIT.x,py-EXIT.y)<1.35){won=true;end(true);}
-
-      // patient AI — investigate noise
-      const hearR=4+noise*0.07;
-      patients.forEach(p=>{
-        const d=Math.hypot(p.x-px,p.y-py);
-        if(hiding&&nearCurtain()){
-          const ang=Math.atan2(p.ty-p.y,p.tx-p.x);
-          p.x+=Math.cos(ang)*1.1*dt; p.y+=Math.sin(ang)*1.1*dt;
-          if(Math.hypot(p.x-p.tx,p.y-p.ty)<0.6){p.tx=4+Math.random()*18;p.ty=4+Math.random()*18;}
-          p.invest=0;
-        } else if(grace<=0 && (d<hearR || p.invest>0 || (noise>40&&d<14))){
-          if(noise>35||d<hearR) p.invest=2.5;
-          if(p.invest>0){
-            p.invest-=dt;
-            const ang=Math.atan2(py-p.y,px-p.x);
-            const spd=(alarm?2.9:(d<5?2.2:1.6))*dt;
-            const bx=p.x+Math.cos(ang)*spd, by=p.y+Math.sin(ang)*spd;
-            if(!solid(bx,p.y)) p.x=bx; if(!solid(p.x,by)) p.y=by;
-          }
-          if(d<3.4) jumpScare();
-          if(d<0.65){dead=true;bloodFlash(0.85);end(false);}
-        } else {
-          const ang=Math.atan2(p.ty-p.y,p.tx-p.x);
-          p.x+=Math.cos(ang)*1.35*dt; p.y+=Math.sin(ang)*1.35*dt;
-          if(Math.hypot(p.x-p.tx,p.y-p.ty)<0.6){p.tx=4+Math.random()*18;p.ty=4+Math.random()*18;}
-        }
-      });
-      if(nearCurtain()&&!hiding){hint.textContent='窗簾位—按住「匿藏」／空白掣';hint.classList.add('on');}
-    }
-    draw();
-  }
-  window.__alley=()=>({px,py,dir,playing,hiding});
-  requestAnimationFrame(tick);
-
-  setInterval(function(){
-    var root=document.getElementById('vg-back-root');
-    if(!root){root=document.createElement('div');root.id='vg-back-root';document.body.appendChild(root);}
-    var tr=document.getElementById('vg-back-tr');
-    if(!tr){tr=document.createElement('a');tr.id='vg-back-tr';root.appendChild(tr);}
-    tr.className='vg-back-btn'; tr.href='/vincent-games-studio/games'; tr.textContent='← 返回遊戲目錄';
-  },3000);
+window.__dbg=()=>({
+  room:state.room,
+  x:state.x,
+  y:state.y,
+  ang:state.ang,
+  inv:{...state.inv},
+  equip:state.equip,
+  hp:state.hp,
+  flags:{...state.flags},
+  enemyAlive:state.enemy.alive,
+  enemyHp:state.enemy.hp
+});
 })();
 </script>
 </body>
