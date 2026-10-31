@@ -1866,20 +1866,51 @@ function chromaKeyPlayerTexture(img) {
   ctx.drawImage(img, 0, 0);
   const data = ctx.getImageData(0, 0, c.width, c.height);
   const px = data.data;
+  const w = c.width;
+  const h = c.height;
+  // Multimedia contract: solid #00FF00 plate. Key ONLY true chroma-green.
+  // Do NOT luma-key black — dark bomber/jeans must stay opaque.
   for (let i = 0; i < px.length; i += 4) {
     const r = px[i], g = px[i + 1], b = px[i + 2];
-    // Only key true chroma-green screen (high G, low R/B).
-    // NEVER treat dark jacket/pants (low lum) as transparent — Multimedia confirmed lum<36 punched coats.
-    // Strict chroma-green only. Dark coats/pants (low R≈G≈B) must stay opaque.
     const maxRB = Math.max(r, b);
-    const greenDominates = g >= 110 && g > r + 40 && g > b + 40 && g > maxRB * 1.65;
-    const notNeutralDark = (r + g + b) > 90; // never key near-black / charcoal fabric
-    const greenScreen = greenDominates && notNeutralDark && (r + b) < g * 1.05;
+    // JPEG softens #00FF00 → (0,255,1); tolerate mild channel bleed
+    const greenScreen = g >= 140 && g > r + 50 && g > b + 50 && g >= maxRB * 1.7 && (r + b) < g * 0.95;
     if (greenScreen) {
-      const excess = Math.min(1, (g - maxRB) / 100);
-      if (excess > 0.5) px[i + 3] = 0;
-      else px[i + 3] = Math.min(px[i + 3], Math.floor((1 - excess) * 55));
+      const excess = Math.min(1, (g - maxRB) / 80);
+      px[i + 3] = excess > 0.28 ? 0 : Math.min(px[i + 3], Math.floor((1 - excess) * 35));
+      // light despill on soft edge (keep RGB from going neon-green)
+      if (px[i + 3] > 0 && g > maxRB) {
+        px[i + 1] = Math.min(g, maxRB + 12);
+      }
     }
+  }
+  // Edge flood through keyed-transparent + residual near-#00FF00 fringe only (not charcoal fabric)
+  const isGreenPlate = (idx) => {
+    const i = idx * 4;
+    if (px[i + 3] < 10) return true;
+    const r = px[i], g = px[i + 1], b = px[i + 2];
+    const maxRB = Math.max(r, b);
+    return g >= 120 && g > r + 40 && g > b + 40 && g >= maxRB * 1.55;
+  };
+  const n = w * h;
+  const seen = new Uint8Array(n);
+  const stack = [];
+  const push = (x, y) => {
+    if (x < 0 || y < 0 || x >= w || y >= h) return;
+    const idx = y * w + x;
+    if (seen[idx]) return;
+    if (!isGreenPlate(idx)) return;
+    seen[idx] = 1;
+    stack.push(idx);
+  };
+  for (let x = 0; x < w; x++) { push(x, 0); push(x, h - 1); }
+  for (let y = 0; y < h; y++) { push(0, y); push(w - 1, y); }
+  while (stack.length) {
+    const idx = stack.pop();
+    px[idx * 4 + 3] = 0;
+    const x = idx % w;
+    const y = (idx / w) | 0;
+    push(x + 1, y); push(x - 1, y); push(x, y + 1); push(x, y - 1);
   }
   ctx.putImageData(data, 0, 0);
   const tex = new THREE.CanvasTexture(c);
@@ -2236,7 +2267,8 @@ function applyCinematicEnv(root, mapId, tex) {
  *  Not hide — remove from scene + dispose. Collision AABBs kept. Whitelist: cinematicEnv, hero, bots, gun, pickups, hold. */
 function stripBlockyArena(root) {
   if (!root) return;
-  const keepName = new Set(['cinematicEnv', 'playerHero', 'botActor', 'heroGun', 'holdZone']);
+  // holdZone visuals DELETED — do not whitelist cyan rings / blue pads
+  const keepName = new Set(['cinematicEnv', 'playerHero', 'botActor', 'heroGun']);
   const doomed = [];
   root.traverse((obj) => {
     if (!obj.isMesh || !obj.geometry) return;
@@ -2251,7 +2283,8 @@ function stripBlockyArena(root) {
     const mats = Array.isArray(mat) ? mat : (mat ? [mat] : []);
     const hasCanvas = mats.some((m) => m && m.map && m.map.isCanvasTexture);
     const neonEmit = mats.some((m) => m && (m.emissiveIntensity || 0) >= 0.5);
-    if (t === 'PlaneGeometry' || t === 'BoxGeometry' || hasCanvas || (t === 'CylinderGeometry' && (hasCanvas || neonEmit))) {
+    const loudRing = t === 'RingGeometry' || t === 'CircleGeometry';
+    if (t === 'PlaneGeometry' || t === 'BoxGeometry' || hasCanvas || loudRing || (t === 'CylinderGeometry' && (hasCanvas || neonEmit))) {
       doomed.push(obj);
     }
   });
@@ -2279,10 +2312,10 @@ function stripBlockyArena(root) {
 
 function arenaVisualAudit(root) {
   const r = root || worldRoot;
-  let box = 0, plane = 0, canvas = 0, solidColorBoxes = 0, samples = [];
-  if (!r) return { box, plane, canvas, solidColorBoxes, samples, solids: solidBoxes.length };
-  // pickupOrb no longer BoxGeometry; never whitelist solid-color arena slabs
-  const keepName = new Set(['cinematicEnv', 'playerHero', 'botActor', 'heroGun', 'holdZone']);
+  let box = 0, plane = 0, canvas = 0, solidColorBoxes = 0, rings = 0, samples = [];
+  if (!r) return { box, plane, canvas, solidColorBoxes, rings, samples, solids: solidBoxes.length };
+  // pickupOrb is Sprite (not Mesh); never whitelist solid-color arena slabs / cyan hold rings
+  const keepName = new Set(['cinematicEnv', 'playerHero', 'botActor', 'heroGun']);
   r.traverse((obj) => {
     if (!obj.isMesh || !obj.geometry || obj.visible === false) return;
     let p = obj;
@@ -2303,13 +2336,14 @@ function arenaVisualAudit(root) {
     }
     if (t === 'PlaneGeometry' && !hasMap) plane++;
     else if (t === 'PlaneGeometry') { /* textured plate ok if somehow outside env */ }
+    if (t === 'RingGeometry' || t === 'CircleGeometry') rings++;
     if (hasCanvas) canvas++;
-    if (samples.length < 8 && (t === 'BoxGeometry' || (t === 'PlaneGeometry' && !hasMap) || hasCanvas)) {
+    if (samples.length < 8 && (t === 'BoxGeometry' || (t === 'PlaneGeometry' && !hasMap) || hasCanvas || t === 'RingGeometry' || t === 'CircleGeometry')) {
       const prm = obj.geometry.parameters || {};
       samples.push({ t, w: prm.width, h: prm.height, d: prm.depth, canvas: !!hasCanvas, name: obj.name || '' });
     }
   });
-  return { box, plane, canvas, solidColorBoxes, samples, solids: solidBoxes.length };
+  return { box, plane, canvas, solidColorBoxes, rings, samples, solids: solidBoxes.length };
 }
 
 /** Sparse HK curb silhouettes when env plate is live — plate stays the main visual. */
@@ -2799,25 +2833,9 @@ function spawnPickups(root) {
 }
 
 function setupHoldZone(root, mapId) {
+  // Logic-only hold radius. DELETE cyan RingGeometry / blue CircleGeometry — Vincent FAIL 地面大青環.
   holdZone = { x: 0, z: 0, r: 4.5 };
-  const ring = new THREE.Mesh(
-    new THREE.RingGeometry(holdZone.r - 0.15, holdZone.r + 0.15, 32),
-    new THREE.MeshBasicMaterial({ color: 0x40f0ff, transparent: true, opacity: 0.55, side: THREE.DoubleSide })
-  );
-  ring.name = 'holdZone';
-  ring.userData.keepVisual = true;
-  ring.rotation.x = -Math.PI / 2;
-  ring.position.set(holdZone.x, 0.08, holdZone.z);
-  root.add(ring);
-  const pad = new THREE.Mesh(
-    new THREE.CircleGeometry(holdZone.r - 0.2, 24),
-    new THREE.MeshBasicMaterial({ color: 0x2080ff, transparent: true, opacity: 0.18, side: THREE.DoubleSide })
-  );
-  pad.name = 'holdZone';
-  pad.userData.keepVisual = true;
-  pad.rotation.x = -Math.PI / 2;
-  pad.position.set(holdZone.x, 0.06, holdZone.z);
-  root.add(pad);
+  void root; void mapId;
 }
 
 function updatePickups(dt) {
