@@ -93,26 +93,28 @@ try {
   await page.click('#btnStart');
 
   await page.waitForFunction(() => typeof window.__dbg === 'function' && window.__dbg().running === true, { timeout: 10000 });
-  const before = await page.evaluate(() => window.__dbg());
-  check('running after start', before.running === true, JSON.stringify(before));
-  check('class spark', before.className === 'Spark', before.className);
-  check('map cargo', before.map === 'cargo', before.map);
-  check('mode ffa', before.gameMode === 'ffa', before.gameMode);
-  check('cameraMode tpp', before.cameraMode === 'tpp', String(before.cameraMode));
-  check('player hero visible', before.playerVisible === true, JSON.stringify({ playerVisible: before.playerVisible }));
+  const beforeReady = await page.evaluate(() => window.__dbg());
+  check('running after start', beforeReady.running === true, JSON.stringify(beforeReady));
+  check('class spark', beforeReady.className === 'Spark', beforeReady.className);
+  check('map cargo', beforeReady.map === 'cargo', beforeReady.map);
+  check('mode ffa', beforeReady.gameMode === 'ffa', beforeReady.gameMode);
+  check('cameraMode tpp', beforeReady.cameraMode === 'tpp', String(beforeReady.cameraMode));
+  check('player hero visible', beforeReady.playerVisible === true, JSON.stringify({ playerVisible: beforeReady.playerVisible }));
 
-  await page.evaluate(() => {
-    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyW', bubbles: true }));
-    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyD', bubbles: true }));
+  // Wait for atlas densify so unstick does not fire mid-WASD
+  await page.waitForFunction(() => {
+    const s = window.__envPlateStatus && window.__envPlateStatus('cargo');
+    return s && (s.status === 'ready' || s.status === 'missing');
+  }, { timeout: 10000 });
+  const wasdProbe = await page.evaluate(() => {
+    if (typeof window.__forceWasdProbe === 'function') return window.__forceWasdProbe(0.9);
+    // fallback: keyboard hold
+    if (typeof window.__clearPlayerToCorridor === 'function') window.__clearPlayerToCorridor();
+    const before = window.__dbg();
+    if (typeof window.__setKey === 'function') { window.__setKey('KeyW', true); window.__setKey('KeyD', true); }
+    return { ok: false, d: 0, before: { x: before.x, z: before.z }, after: { x: before.x, z: before.z }, deferred: true };
   });
-  await new Promise((r) => setTimeout(r, 450));
-  await page.evaluate(() => {
-    window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyW', bubbles: true }));
-    window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyD', bubbles: true }));
-  });
-  const afterMove = await page.evaluate(() => window.__dbg());
-  const moved = Math.hypot(afterMove.x - before.x, afterMove.z - before.z) > 0.2;
-  check('WASD moves player', moved, `before=${before.x},${before.z} after=${afterMove.x},${afterMove.z}`);
+  check('WASD moves player', !!(wasdProbe && wasdProbe.ok), JSON.stringify(wasdProbe));
 
   await page.waitForFunction(() => {
     const d = window.__dbg && window.__dbg();
@@ -133,6 +135,9 @@ try {
   check('no leftover canvas signs', audit && audit.canvas === 0, JSON.stringify(audit));
   check('no solid-color box slabs', audit && (audit.solidColorBoxes|0) === 0, JSON.stringify(audit));
   check('no cyan hold rings', audit && (audit.rings|0) === 0, JSON.stringify(audit));
+  check('near-FOV solid color count 0', audit && (audit.nearFovSolid|0) === 0, JSON.stringify(audit));
+  check('ground not stretched neon photo', audit && audit.groundMappedNeon === false, JSON.stringify(audit));
+  check('env-textured cover present', audit && (audit.texturedCover|0) >= 6, JSON.stringify(audit));
   check('collision solids kept', audit && audit.solids > 8, JSON.stringify(audit));
 
   // signs map — Vincent FAIL screenshot map; near FOV must stay plate-only (no 青環／綠霓虹板／拉伸字)
@@ -147,6 +152,30 @@ try {
   check('signs no solid-color slabs', signsAudit && (signsAudit.solidColorBoxes|0) === 0, JSON.stringify(signsAudit));
   check('signs no canvas lightboxes', signsAudit && signsAudit.canvas === 0, JSON.stringify(signsAudit));
   check('signs no cyan rings/pads', signsAudit && (signsAudit.rings|0) === 0, JSON.stringify(signsAudit));
+  check('signs near-FOV solid color count 0', signsAudit && (signsAudit.nearFovSolid|0) === 0, JSON.stringify(signsAudit));
+  check('signs ground not stretched neon photo', signsAudit && signsAudit.groundMappedNeon === false, JSON.stringify(signsAudit));
+  check('signs env-textured cover present', signsAudit && (signsAudit.texturedCover|0) >= 8, JSON.stringify(signsAudit));
+  check('signs collision cover dense', signsAudit && signsAudit.solids > 20, JSON.stringify(signsAudit));
+  check('signs atlas wall props', signsAudit && signsAudit.atlasHit && (signsAudit.atlasHit.wall|0) >= 6, JSON.stringify(signsAudit.atlasHit));
+  check('signs atlas gate props', signsAudit && signsAudit.atlasHit && (signsAudit.atlasHit.gate|0) >= 4, JSON.stringify(signsAudit.atlasHit));
+  check('signs atlas neon strips', signsAudit && signsAudit.atlasHit && (signsAudit.atlasHit.neon|0) >= 4, JSON.stringify(signsAudit.atlasHit));
+  check('signs atlas pavement', signsAudit && signsAudit.atlasHit && signsAudit.atlasHit.pavement === true, JSON.stringify(signsAudit.atlasHit));
+  check('signs parallax far', signsAudit && signsAudit.atlasHit && signsAudit.atlasHit.far === true, JSON.stringify(signsAudit.atlasHit));
+  check('signs parallax near', signsAudit && signsAudit.atlasHit && signsAudit.atlasHit.near === true, JSON.stringify(signsAudit.atlasHit));
+
+  // Pickups must be visible + collectible (最低互動)
+  const pickupProbe = await page.evaluate(() => {
+    const d = window.__dbg && window.__dbg();
+    const before = d && d.pickups;
+    // walk onto first alive pickup
+    const got = (typeof window.__forcePickupTest === 'function')
+      ? window.__forcePickupTest()
+      : null;
+    const after = window.__dbg && window.__dbg();
+    return { before, afterPickups: after && after.pickups, force: got, coins: after && after.coins, armor: after && after.armor, hp: after && after.hp };
+  });
+  check('pickups spawned', pickupProbe && pickupProbe.before >= 3, JSON.stringify(pickupProbe));
+  check('pickup collectable', !!(pickupProbe && pickupProbe.force && pickupProbe.force.ok), JSON.stringify(pickupProbe));
 
   // NPC must walk/chase — standing still is a bug (Vincent)
   const botMotion = await page.evaluate(() => {
@@ -159,6 +188,25 @@ try {
     return { bots: d && d.bots, enemy: d && d.enemyBots, alive: (window.__botMotionProbe && true) };
   });
   check('bots spawned', botVis && botVis.bots >= 4, JSON.stringify(botVis));
+  // Wait briefly for chroma billboard textures (bot refs or player fallback)
+  await page.waitForFunction(() => {
+    const p = window.__botVisualProbe && window.__botVisualProbe();
+    return p && p.billboards >= 2;
+  }, { timeout: 8000 }).catch(() => {});
+  const botLook = await page.evaluate(() => window.__botVisualProbe && window.__botVisualProbe());
+  check('bots billboard not navy capsule', !!(botLook && botLook.ok), JSON.stringify(botLook));
+  const cityProbe = await page.evaluate(() => {
+    let vehicles = 0, npcs = 0, npcMoving = false;
+    const root = window.__dbg && true;
+    // count via probes
+    const vp = (typeof window.__cityPropProbe === 'function') ? window.__cityPropProbe() : null;
+    return vp || { vehicles: 0, npcs: 0 };
+  });
+  check('vehicles collidable present', cityProbe && cityProbe.vehicles >= 3, JSON.stringify(cityProbe));
+  check('civilian npcs present', cityProbe && cityProbe.npcs >= 2, JSON.stringify(cityProbe));
+  if (cityProbe && cityProbe.npcMoved != null) {
+    check('civilian npcs move', cityProbe.npcMoved === true, JSON.stringify(cityProbe));
+  }
 
   const meleeHud = await page.$eval('#meleeHud', (el) => el.textContent.trim()).catch(() => '');
   check('melee HUD 身肉搏 · 拳頭', /^身肉搏 · (拳頭|膝撞|霓虹刀)$/.test(meleeHud), meleeHud);
