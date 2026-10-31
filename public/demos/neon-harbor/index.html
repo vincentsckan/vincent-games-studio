@@ -80,11 +80,19 @@ button.ghost{margin-top:10px;background:transparent;border:1px solid #40f0ff66;c
       <span class="t">剩餘 <b id="time">2:30</b></span>
       <span class="s" id="objHud">目標 20</span>
     </div>
+    <div id="bossHud" style="display:none;margin-top:8px;align-items:center;gap:8px">
+      <img id="bossPortrait" alt="" style="width:52px;height:52px;object-fit:cover;border-radius:10px;border:2px solid #ff4dc8;box-shadow:0 0 12px #ff4dc866"/>
+      <div>
+        <div id="bossNameHud" style="font-size:14px;font-weight:900;color:#ff4dc8"></div>
+        <div id="bossHookHud" style="font-size:11px;color:#ffd36a;max-width:46vw;line-height:1.35"></div>
+      </div>
+    </div>
   </div>
   <div id="killfeed"></div>
   <div id="hudBot">
     <span class="hp">HP <b id="hp">100</b></span>
     <span class="ammo">彈藥 <b id="ammo">30</b>/<b id="reserve">90</b></span>
+    <span id="gunHud" style="margin-left:14px;color:#40f0ff;font-size:14px"></span>
     <span class="slide" id="slideTag">滑行中</span>
   </div>
 </div>
@@ -95,14 +103,17 @@ button.ghost{margin-top:10px;background:transparent;border:1px solid #40f0ff66;c
       <h1>NEON HARBOR CLASH</h1>
       <div class="sub">霓虹港戰 · Vincent Games Studio</div>
       <img class="hero" src="refs/hero.jpg" alt="Neon Harbor" onerror="this.style.display='none'"/>
-      <p>Frag Channel 開播——快一步，今晚先有糧。<br/>你加入 Channel 7；貨櫃區同廟市天台，打贏先有收視。</p>
+      <p>跟足高速競技——多模式、多槍械、執資源、打 Boss。<br/>Frag Channel 開播——你加入 Channel 7；貨櫃區同廟市天台，打贏先有收視。</p>
+      <img class="hero sheet" src="refs/ui/weapons-sheet.jpg" alt="weapons" style="max-height:110px" onerror="this.style.display='none'"/>
+      <img class="hero sheet" src="refs/ui/pickups-sheet.jpg" alt="pickups" style="max-height:90px" onerror="this.style.display='none'"/>
       <p class="hint">WASD 移動 · 滑鼠瞄準 · Space 跳 · C／Ctrl 蹲滑 · 左鍵射擊 · R 換彈</p>
       <button class="play" id="btnEnter">進入遊戲</button>
     </div>
 
     <div class="panel" id="panelMode">
       <h1>選擇模式</h1>
-      <div class="sub">GAME MODE · FFA / Channel 7 / 佔領</div>
+      <div class="sub">混戰｜團隊死鬥｜據點爭奪｜槍階亂鬥｜Boss 狩獵｜Channel 7</div>
+      <img class="hero sheet" src="refs/ui/weapons-sheet.jpg" alt="guns" style="max-height:88px" onerror="this.style.display='none'"/>
       <div class="grid" id="modeGrid"></div>
       <button class="play" id="btnModeNext" disabled>下一步</button>
       <button class="ghost" id="btnModeBack">返回</button>
