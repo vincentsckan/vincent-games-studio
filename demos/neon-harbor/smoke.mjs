@@ -98,6 +98,8 @@ try {
   check('class spark', before.className === 'Spark', before.className);
   check('map cargo', before.map === 'cargo', before.map);
   check('mode ffa', before.gameMode === 'ffa', before.gameMode);
+  check('cameraMode tpp', before.cameraMode === 'tpp', String(before.cameraMode));
+  check('player hero visible', before.playerVisible === true, JSON.stringify({ playerVisible: before.playerVisible }));
 
   await page.evaluate(() => {
     window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyW', bubbles: true }));
@@ -111,6 +113,13 @@ try {
   const afterMove = await page.evaluate(() => window.__dbg());
   const moved = Math.hypot(afterMove.x - before.x, afterMove.z - before.z) > 0.2;
   check('WASD moves player', moved, `before=${before.x},${before.z} after=${afterMove.x},${afterMove.z}`);
+
+  await page.waitForFunction(() => {
+    const d = window.__dbg && window.__dbg();
+    return d && d.playerBillboard === true;
+  }, { timeout: 8000 }).catch(() => {});
+  const afterBill = await page.evaluate(() => window.__dbg());
+  check('player billboard textured', afterBill.playerBillboard === true, JSON.stringify({ pose: afterBill.playerPose, billboard: afterBill.playerBillboard }));
 
   const hit = await page.evaluate(() => {
     if (typeof window.__forceHitTest === 'function') return window.__forceHitTest();
