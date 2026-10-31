@@ -13,6 +13,13 @@ import {
 } from './supabase'
 import { resolvePlayHref } from './demoPlay'
 
+/** Vincent abandoned these demos 2026-10-31 — never show in public catalog. */
+const ABANDONED_SLUGS = new Set(['cold-hold', 'alley-clinic'])
+
+function isPublicGame(g: Game): boolean {
+  return !ABANDONED_SLUGS.has(g.slug) && !ABANDONED_SLUGS.has(g.id)
+}
+
 const DEFAULT_PALETTE: Game['palette'] = {
   from: '#0a1628',
   via: '#1a3a5c',
@@ -75,9 +82,9 @@ function withBustedPlay(game: Game): Game {
 }
 
 export async function fetchPublishedGames(): Promise<Game[]> {
-  if (!isSupabaseConfigured) return localGames.map(withBustedPlay)
+  if (!isSupabaseConfigured) return localGames.filter(isPublicGame).map(withBustedPlay)
   const sb = getSupabase()
-  if (!sb) return localGames.map(withBustedPlay)
+  if (!sb) return localGames.filter(isPublicGame).map(withBustedPlay)
 
   const { data, error } = await sb
     .from('games')
@@ -88,7 +95,7 @@ export async function fetchPublishedGames(): Promise<Game[]> {
 
   if (error || !data) {
     console.warn('[gamesCatalog] Supabase fetch failed, using local fallback:', error?.message)
-    return localGames.map(withBustedPlay)
+    return localGames.filter(isPublicGame).map(withBustedPlay)
   }
   // Merge Supabase + local: prefer local Pages play/cover when present
   // (Storage-uploaded .html often serves as text/plain and shows source.)
@@ -117,11 +124,12 @@ export async function fetchPublishedGames(): Promise<Game[]> {
       status: local.links.play || remoteGame.links.play ? 'demo' : remoteGame.status,
     })
   }
-  const merged = Array.from(bySlug.values())
-  return (merged.length > 0 ? merged : localGames).map(withBustedPlay)
+  const merged = Array.from(bySlug.values()).filter(isPublicGame)
+  return (merged.length > 0 ? merged : localGames.filter(isPublicGame)).map(withBustedPlay)
 }
 
 export async function fetchGameBySlug(slug: string): Promise<Game | undefined> {
+  if (ABANDONED_SLUGS.has(slug)) return undefined
   if (!isSupabaseConfigured) {
     const g = getLocalBySlug(slug)
     return g ? withBustedPlay(g) : undefined

@@ -18,8 +18,6 @@ const DEMO_SLUGS = [
   'neon-chase',
   'rooftop-cat',
   'tea-rush',
-  'cold-hold',
-  'alley-clinic',
 ] as const
 
 export type DemoSlug = (typeof DEMO_SLUGS)[number]
