@@ -126,7 +126,7 @@ try {
   check('temple WASD move', Math.hypot(t1.x - t0.x, t1.z - t0.z) > 0.15, `${t0.x},${t0.z} -> ${t1.x},${t1.z}`);
 
   // All selectable maps beyond cargo/temple already covered above
-  for (const mid of ['signs', 'minibus', 'tonglau', 'neonroof', 'tram', 'kaitak']) {
+  for (const mid of ['signs', 'estate', 'teahouse', 'tram', 'kaitak', 'minibus', 'tonglau', 'neonroof']) {
     await page.evaluate((id) => window.__startForTest(id, 'spark'), mid);
     await page.waitForFunction((id) => window.__dbg().map === id && window.__dbg().running, { timeout: 8000 }, mid);
     const m0 = await page.evaluate(() => window.__dbg());
