@@ -181,8 +181,34 @@ try {
     check(`camera clip clear ${look.label}`, !!(clip && clip.ok), JSON.stringify(clip));
     check(`awning hidden ${look.label}`, !!(clip && clip.awningVisible === false), JSON.stringify(clip));
     check(`cam not inside solid ${look.label}`, !!(clip && clip.camInsideSolid === false), JSON.stringify(clip));
+    check(`look-up dark band clear ${look.label}`, !!(clip && clip.lookUpDarkBand === false), JSON.stringify(clip));
+    check(`forceHidden occluders off ${look.label}`, !!(clip && (clip.forceHiddenVisible|0) === 0), JSON.stringify(clip));
+    check(`player visible to cam ${look.label}`, !!(clip && clip.playerVisible === true), JSON.stringify(clip));
   }
-  // Chase cam against façade — player near curb, face wall + look up
+  // Signs look-up near 「雅翠火鍋」 corridor — dedicated dark-band smoke (DO hard gate)
+  const signsLookUp = await page.evaluate(() => {
+    if (typeof window.__setPlayerXZ === 'function') window.__setPlayerXZ(0.2, 2.0);
+    const views = [
+      { yaw: 0, pitch: 0.55 },
+      { yaw: 0, pitch: 0.95 },
+      { yaw: Math.PI * 0.15, pitch: 0.85 },
+      { yaw: -Math.PI * 0.15, pitch: 0.9 },
+      { yaw: Math.PI * 0.5, pitch: 0.75 },
+      { yaw: -Math.PI * 0.5, pitch: 0.75 },
+    ];
+    const out = [];
+    for (const v of views) {
+      if (typeof window.__setCameraLook === 'function') window.__setCameraLook(v.yaw, v.pitch);
+      out.push(window.__cameraClipProbe && window.__cameraClipProbe());
+    }
+    if (typeof window.__clearPlayerToCorridor === 'function') window.__clearPlayerToCorridor();
+    return out;
+  });
+  for (let i = 0; i < signsLookUp.length; i++) {
+    const clip = signsLookUp[i];
+    check(`signs look-up band clear #${i}`, !!(clip && clip.ok && clip.lookUpDarkBand === false && clip.awningVisible === false), JSON.stringify(clip));
+  }
+  // Chase cam against façade — player near curb, face wall + look up (Searching hard gate)
   const wallHug = await page.evaluate(() => {
     if (typeof window.__setPlayerXZ === 'function') window.__setPlayerXZ(2.35, 1.5);
     else if (typeof window.__clearPlayerToCorridor === 'function') window.__clearPlayerToCorridor();
@@ -190,12 +216,21 @@ try {
     const a = window.__cameraClipProbe && window.__cameraClipProbe();
     if (typeof window.__setCameraLook === 'function') window.__setCameraLook(Math.PI * 0.5, 0.95);
     const b = window.__cameraClipProbe && window.__cameraClipProbe();
+    // Deeper curb hug toward densify façade
+    if (typeof window.__setPlayerXZ === 'function') window.__setPlayerXZ(3.1, 0.5);
+    if (typeof window.__setCameraLook === 'function') window.__setCameraLook(Math.PI * 0.5, 0.35);
+    const c = window.__cameraClipProbe && window.__cameraClipProbe();
+    if (typeof window.__setCameraLook === 'function') window.__setCameraLook(0, 0.85);
+    const d = window.__cameraClipProbe && window.__cameraClipProbe();
     if (typeof window.__clearPlayerToCorridor === 'function') window.__clearPlayerToCorridor();
-    return { a, b };
+    return { a, b, c, d };
   });
   check('wall-hug cam clip clear', !!(wallHug && wallHug.a && wallHug.a.ok), JSON.stringify(wallHug && wallHug.a));
   check('wall-hug cam not inside solid', !!(wallHug && wallHug.a && wallHug.a.camInsideSolid === false), JSON.stringify(wallHug && wallHug.a));
-  check('wall-hug look-up cam clear', !!(wallHug && wallHug.b && wallHug.b.ok && wallHug.b.awningVisible === false), JSON.stringify(wallHug && wallHug.b));
+  check('wall-hug player visible', !!(wallHug && wallHug.a && wallHug.a.playerVisible === true), JSON.stringify(wallHug && wallHug.a));
+  check('wall-hug look-up cam clear', !!(wallHug && wallHug.b && wallHug.b.ok && wallHug.b.awningVisible === false && wallHug.b.lookUpDarkBand === false), JSON.stringify(wallHug && wallHug.b));
+  check('wall-hug deep curb cam clear', !!(wallHug && wallHug.c && wallHug.c.ok && wallHug.c.playerVisible === true && wallHug.c.facadeCardHit === false), JSON.stringify(wallHug && wallHug.c));
+  check('wall-hug deep curb look-up clear', !!(wallHug && wallHug.d && wallHug.d.ok && wallHug.d.lookUpDarkBand === false), JSON.stringify(wallHug && wallHug.d));
   const whiteProbe = await page.evaluate(() => window.__whiteMeshProbe && window.__whiteMeshProbe());
   check('whiteMeshProbe 0', !!(whiteProbe && whiteProbe.ok && whiteProbe.untexturedWhite === 0), JSON.stringify(whiteProbe));
 
