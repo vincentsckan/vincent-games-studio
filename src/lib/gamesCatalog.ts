@@ -11,6 +11,7 @@ import {
   storagePublicUrl,
   type DbGame,
 } from './supabase'
+import { resolvePlayHref } from './demoPlay'
 
 const DEFAULT_PALETTE: Game['palette'] = {
   from: '#0a1628',
@@ -54,7 +55,7 @@ export function dbGameToGame(row: DbGame): Game {
     coverImage: coverUrl ?? undefined,
     palette: DEFAULT_PALETTE,
     links: {
-      play: demoUrl ?? undefined,
+      play: resolvePlayHref(demoUrl) ?? undefined,
       download: buildUrl ?? undefined,
       steam: steam || undefined,
       itch: itch || undefined,
@@ -62,10 +63,21 @@ export function dbGameToGame(row: DbGame): Game {
   }
 }
 
+
+function withBustedPlay(game: Game): Game {
+  return {
+    ...game,
+    links: {
+      ...game.links,
+      play: resolvePlayHref(game.links.play),
+    },
+  }
+}
+
 export async function fetchPublishedGames(): Promise<Game[]> {
-  if (!isSupabaseConfigured) return localGames
+  if (!isSupabaseConfigured) return localGames.map(withBustedPlay)
   const sb = getSupabase()
-  if (!sb) return localGames
+  if (!sb) return localGames.map(withBustedPlay)
 
   const { data, error } = await sb
     .from('games')
@@ -76,7 +88,7 @@ export async function fetchPublishedGames(): Promise<Game[]> {
 
   if (error || !data) {
     console.warn('[gamesCatalog] Supabase fetch failed, using local fallback:', error?.message)
-    return localGames
+    return localGames.map(withBustedPlay)
   }
   // Merge Supabase + local: prefer local Pages play/cover when present
   // (Storage-uploaded .html often serves as text/plain and shows source.)
@@ -99,20 +111,26 @@ export async function fetchPublishedGames(): Promise<Game[]> {
       coverImage: local.coverImage || remoteGame.coverImage,
       links: {
         ...remoteGame.links,
-        play: local.links.play || remoteGame.links.play,
+        play: resolvePlayHref(local.links.play || remoteGame.links.play),
         download: remoteGame.links.download || local.links.download,
       },
       status: local.links.play || remoteGame.links.play ? 'demo' : remoteGame.status,
     })
   }
   const merged = Array.from(bySlug.values())
-  return merged.length > 0 ? merged : localGames
+  return (merged.length > 0 ? merged : localGames).map(withBustedPlay)
 }
 
 export async function fetchGameBySlug(slug: string): Promise<Game | undefined> {
-  if (!isSupabaseConfigured) return getLocalBySlug(slug)
+  if (!isSupabaseConfigured) {
+    const g = getLocalBySlug(slug)
+    return g ? withBustedPlay(g) : undefined
+  }
   const sb = getSupabase()
-  if (!sb) return getLocalBySlug(slug)
+  if (!sb) {
+    const g = getLocalBySlug(slug)
+    return g ? withBustedPlay(g) : undefined
+  }
 
   const { data, error } = await sb
     .from('games')
@@ -123,13 +141,14 @@ export async function fetchGameBySlug(slug: string): Promise<Game | undefined> {
 
   if (error) {
     console.warn('[gamesCatalog] slug fetch failed:', error.message)
-    return getLocalBySlug(slug)
+    const localFallback = getLocalBySlug(slug)
+    return localFallback ? withBustedPlay(localFallback) : undefined
   }
   const local = getLocalBySlug(slug)
-  if (!data) return local
+  if (!data) return local ? withBustedPlay(local) : undefined
   const remoteGame = dbGameToGame(data as DbGame)
-  if (!local) return remoteGame
-  return {
+  if (!local) return withBustedPlay(remoteGame)
+  return withBustedPlay({
     ...remoteGame,
     titleEn: local.titleEn || remoteGame.titleEn,
     taglineEn: local.taglineEn || remoteGame.taglineEn,
@@ -142,7 +161,7 @@ export async function fetchGameBySlug(slug: string): Promise<Game | undefined> {
       download: remoteGame.links.download || local.links.download,
     },
     status: local.links.play || remoteGame.links.play ? 'demo' : remoteGame.status,
-  }
+  })
 }
 
 export function filterCatalog(

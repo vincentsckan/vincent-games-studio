@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import type { ReactNode } from 'react'
+import { isExternalPlayHref, resolvePlayHref } from '../lib/demoPlay'
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'steam' | 'itch'
 
@@ -85,11 +86,16 @@ export function GameCtaRow({
 
   return (
     <div className={`flex flex-wrap gap-3 ${className}`}>
-      {links.play && (
-        <CtaButton href={links.play} variant="primary">
-          試玩
-        </CtaButton>
-      )}
+      {links.play && (() => {
+        const playHref = resolvePlayHref(links.play)
+        if (!playHref) return null
+        const openTab = isExternalPlayHref(playHref)
+        return (
+          <CtaButton href={playHref} variant="primary" external={openTab}>
+            試玩
+          </CtaButton>
+        )
+      })()}
       {links.download && (
         <CtaButton href={links.download} variant="secondary">
           下載

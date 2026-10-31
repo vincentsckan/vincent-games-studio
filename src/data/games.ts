@@ -63,6 +63,57 @@ The studio's aim is simple: make players stop—and hit "play again."`,
 
 export const games: Game[] = [
   {
+    id: 'midnight-estate',
+    slug: 'midnight-estate',
+    titleZh: '午夜屋邨',
+    titleEn: 'Midnight Estate',
+    taglineZh: '舊邨走廊，紅衣與鑰匙。',
+    taglineEn: 'Old estate corridors, a lady in red, and the keys out.',
+    dimension: '3D',
+    status: 'demo',
+    year: 2026,
+    genres: ['探索', '驚悚'],
+    hookZh:
+      '午夜的舊式屋邨走廊裡，電燈忽明忽滅。你要在幽靈與紅衣女人之間找到鑰匙、打開鐵閘，一層一層往下走。',
+    hookEn:
+      'In a midnight Hong Kong estate corridor, lights flicker. Find keys, open gates, and descend floor by floor past ghosts and the Lady in Red.',
+    gameplayZh:
+      '瀏覽器 3D 試玩：移動探索、收集鑰匙與玉器，避開幽靈。支援觸控虛擬搖桿。',
+    gameplayEn:
+      'Browser 3D demo: explore, collect keys and jade, avoid ghosts. Touch joystick supported.',
+    features: [
+      {
+        titleZh: '屋邨氛圍',
+        titleEn: 'Estate atmosphere',
+        bodyZh: '鐵閘、通花磚、長廊燈光，香港舊邨味道。',
+        bodyEn: 'Gates, breeze-block patterns, corridor light—old-estate grain.',
+      },
+      {
+        titleZh: '分層關卡',
+        titleEn: 'Floor by floor',
+        bodyZh: '每層鑰匙與閘門，節奏逐步加快。',
+        bodyEn: 'Keys and gates each floor; pressure rises as you descend.',
+      },
+      {
+        titleZh: '即開即玩',
+        titleEn: 'Instant play',
+        bodyZh: '單一頁面試玩，無需安裝。',
+        bodyEn: 'Single-page demo—no install.',
+      },
+    ],
+    coverImage: 'covers/midnight-estate.jpg',
+    palette: {
+      from: '#071C22',
+      via: '#16444C',
+      to: '#E8A33A',
+      accent: '#E8A33A',
+      pattern: 'void',
+    },
+    links: {
+      play: '/vincent-games-studio/demos/midnight-estate/',
+    },
+  },
+  {
     id: 'neon-chase',
     slug: 'neon-chase',
     titleZh: '霓虹追蹤',
