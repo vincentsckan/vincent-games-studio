@@ -88,6 +88,19 @@ button.ghost{margin-top:10px;background:transparent;border:1px solid #40f0ff66;c
 #vg-back-root{position:fixed;inset:0;z-index:2147483647;pointer-events:none}
 #vg-back-root a.vg-back-btn{pointer-events:auto;position:fixed;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 14px;border-radius:14px;font:800 15px/1.2 "Noto Sans TC",system-ui,sans-serif;text-decoration:none;letter-spacing:.02em;border:2px solid #40f0ff;background:#05010a;color:#40f0ff;box-shadow:0 6px 28px rgba(0,0,0,.65)}
 #vg-back-tr{right:max(12px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));left:auto;bottom:auto}
+
+#meleeHud{margin-left:14px;color:#ff9ad4;font-size:14px;font-weight:800;text-shadow:0 2px 8px #000}
+#transition{position:fixed;inset:0;z-index:40;display:none;align-items:center;justify-content:center;background:#000;flex-direction:column}
+#transition.on{display:flex}
+#transition .plate{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .45s ease}
+#transition.on .plate{opacity:1}
+#transition .veil{position:absolute;inset:0;background:linear-gradient(180deg,#000c 0%,#0006 40%,#000a 100%);pointer-events:none}
+#transition .card{position:relative;z-index:2;text-align:center;padding:28px 22px;max-width:min(560px,92vw);background:#050818cc;border:1px solid #40f0ff55;border-radius:16px;box-shadow:0 0 40px #ff4dc844}
+#transition .card .lvl{font-family:Syne,sans-serif;letter-spacing:.12em;font-size:12px;color:#40f0ff;margin-bottom:8px}
+#transition .card .next{font-size:22px;font-weight:900;margin:6px 0;text-shadow:0 2px 12px #000}
+#transition .card .hint{font-size:13px;color:#ffd36a;opacity:.9;margin-top:4px}
+#transition .card .boss{font-size:13px;color:#ff4dc8;margin-top:10px;line-height:1.4}
+#transition .card .play{margin-top:16px}
 </style>
 <script type="importmap">
 {"imports":{"three":"../vendor/three.module.min.js"}}
@@ -121,6 +134,7 @@ button.ghost{margin-top:10px;background:transparent;border:1px solid #40f0ff66;c
     <span class="ammo">彈藥 <b id="ammo">30</b>/<b id="reserve">90</b></span>
     <img id="meleeIcon" alt="" width="28" height="28" style="display:none;margin-left:10px;vertical-align:middle;border-radius:4px;border:1px solid #40f0ff55"/>
     <span id="gunHud" style="margin-left:8px;color:#40f0ff;font-size:14px"></span>
+    <span id="meleeHud">身肉搏 · 拳頭</span>
     <span class="slide" id="slideTag">滑行中</span>
   </div>
 </div>
@@ -135,6 +149,19 @@ button.ghost{margin-top:10px;background:transparent;border:1px solid #40f0ff66;c
     </div>
   </div>
 </div>
+
+<div id="transition" aria-live="polite">
+  <img class="plate" id="transPlate" alt=""/>
+  <div class="veil"></div>
+  <div class="card">
+    <div class="lvl" id="transLevel">過場 · 第 1 關</div>
+    <div class="next" id="transNext">下一站——招牌街。</div>
+    <div class="hint" id="transHint">Channel 7 轉場中…</div>
+    <div class="boss" id="transBoss" style="display:none"></div>
+    <button class="play" id="btnTransContinue">繼續</button>
+  </div>
+</div>
+
 <div id="overlay">
   <div class="card">
     <div class="panel on" id="panelSplash">
@@ -202,7 +229,7 @@ button.ghost{margin-top:10px;background:transparent;border:1px solid #40f0ff66;c
   <a id="vg-back-tr" class="vg-back-btn" href="/vincent-games-studio/games" title="← 返回遊戲目錄">← 返回遊戲目錄</a>
 </div>
 
-<script type="module" src="./game.js?v=4e6ec4e"></script>
+<script type="module" src="./game.js?v=5016f79"></script>
 <script>
 (function(){
   var HREF='/vincent-games-studio/games', LABEL='← 返回遊戲目錄', locking=false, scheduled=null;
