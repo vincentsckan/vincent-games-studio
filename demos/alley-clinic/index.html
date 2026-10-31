@@ -4,33 +4,38 @@
 <meta charset="utf-8"/>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
-<title>後巷夜診 · Alley Clinic — Vincent Games Studio</title>
+<title>封鎖診所 · Lockdown Clinic — Vincent Games Studio</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;background:#140818;color:#ffe8f4;font-family:system-ui,"PingFang HK","Noto Sans TC",sans-serif;overflow:hidden;touch-action:none;user-select:none}
-canvas#view{display:block;width:100%;height:100%;background:#2a1030}
+canvas#view{position:relative;z-index:0;display:block;width:100%;height:100%;background:#2a1030;outline:none}
 #hud{position:fixed;left:0;right:0;top:0;z-index:3;padding:calc(10px + env(safe-area-inset-top)) 14px 0;padding-right:150px;display:flex;justify-content:space-between;pointer-events:none;font-weight:800;text-shadow:0 2px 10px #000}
 #hud .l{color:#ff7eb9}#hud .r{color:#40f0ff;text-align:right}
-#hud small{display:block;font-size:11px;opacity:.75;letter-spacing:.06em}
-#phase{position:fixed;left:50%;top:calc(52px + env(safe-area-inset-top));transform:translateX(-50%);z-index:3;padding:6px 12px;border-radius:999px;background:rgba(255,77,166,.25);border:1px solid #ff4da6;font-size:12px;font-weight:900;pointer-events:none}
-#goal{position:fixed;left:50%;top:calc(88px + env(safe-area-inset-top));transform:translateX(-50%);z-index:3;padding:8px 14px;border-radius:999px;background:rgba(0,0,0,.72);border:1px solid #40f0ff66;font-size:13px;font-weight:800;pointer-events:none;max-width:94vw;text-align:center}
+#hud small{display:block;font-size:11px;opacity:.75;letter-spacing:.05em}
+#phase{position:fixed;left:50%;top:calc(52px + env(safe-area-inset-top));transform:translateX(-50%);z-index:3;padding:6px 12px;border-radius:999px;background:rgba(255,77,166,.28);border:1px solid #ff4da6;font-size:12px;font-weight:900;pointer-events:none}
+#goal{position:fixed;left:50%;top:calc(88px + env(safe-area-inset-top));transform:translateX(-50%);z-index:3;padding:8px 14px;border-radius:999px;background:rgba(0,0,0,.74);border:1px solid #40f0ff66;font-size:13px;font-weight:800;pointer-events:none;max-width:92vw;text-align:center}
+#noise{position:fixed;right:12px;top:calc(58px + env(safe-area-inset-top));z-index:3;width:120px;pointer-events:none}
+#noise .lab{font-size:11px;font-weight:800;color:#ffb0d0;margin-bottom:4px;text-align:right;text-shadow:0 2px 6px #000}
+#noise .bar{height:10px;border-radius:6px;background:#201018;border:1px solid #ff4da666;overflow:hidden}
+#noise .fill{height:100%;width:0%;background:linear-gradient(90deg,#40f0ff,#ffcc44,#ff4da6)}
 #hint{position:fixed;left:50%;bottom:calc(24% + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:4;max-width:92vw;padding:10px 14px;border-radius:12px;background:rgba(0,0,0,.78);border:1px solid #40f0ff55;font-size:13px;font-weight:700;text-align:center;display:none}
 #hint.on{display:block}
 #flash{position:fixed;inset:0;z-index:7;pointer-events:none;background:rgba(180,0,40,0)}
-#siren{position:fixed;inset:0;z-index:2;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 0%,rgba(255,40,80,.35),transparent 55%)}
+#siren{position:fixed;inset:0;z-index:2;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 0%,rgba(255,40,80,.38),transparent 55%)}
+#moveFlash{position:fixed;left:0;right:0;bottom:0;height:5px;z-index:6;pointer-events:none;background:linear-gradient(90deg,#ff4da6,#40f0ff);opacity:0}
 #overlay{position:fixed;inset:0;z-index:8;display:flex;align-items:center;justify-content:center;background:rgba(12,4,16,.94);padding:20px;overflow-y:auto}
 #overlay.hidden{display:none}
-.card{max-width:460px;width:100%;background:linear-gradient(160deg,#2a1030,#120818);border:1px solid #ff4da688;border-radius:20px;padding:22px 18px;text-align:center}
-.card h1{font-size:1.75rem;font-weight:900;background:linear-gradient(90deg,#ff4da6,#40f0ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.card{max-width:470px;width:100%;background:linear-gradient(160deg,#2a1030,#120818);border:1px solid #ff4da688;border-radius:20px;padding:22px 18px;text-align:center}
+.card h1{font-size:1.7rem;font-weight:900;background:linear-gradient(90deg,#ff4da6,#40f0ff);-webkit-background-clip:text;background-clip:text;color:transparent}
 .card .sub{margin-top:6px;color:#ffb0d0;font-size:13px}
-.card ol{margin:12px 0 0;padding-left:1.15em;color:#f0d0e0;font-size:14px;line-height:1.65;text-align:left}
+.card ol{margin:12px 0 0;padding-left:1.15em;color:#f0d0e0;font-size:13.5px;line-height:1.6;text-align:left}
 .card .tag{display:inline-block;margin-top:10px;padding:4px 10px;border-radius:999px;background:#ff4da633;color:#ffb0d0;font-size:11px;font-weight:800}
 button.play{margin-top:16px;min-height:52px;padding:0 26px;border:0;border-radius:999px;background:linear-gradient(90deg,#ff4da6,#7a2cff);color:#fff;font-weight:900;font-size:17px;cursor:pointer;font-family:inherit}
-#pad{position:fixed;left:10px;bottom:calc(10px + env(safe-area-inset-bottom));z-index:5;display:none;grid-template-columns:52px 52px 52px;grid-template-rows:52px 52px;gap:6px}
-#pad.on{display:grid}
-#pad button{border:0;border-radius:14px;background:rgba(255,77,166,.4);color:#fff;font-weight:900;font-size:20px}
+#pad{position:fixed;left:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:40;pointer-events:auto;display:grid;grid-template-columns:64px 64px 64px;grid-template-rows:64px 64px;gap:8px}
+#pad button{border:0;border-radius:18px;background:rgba(255,77,166,.58);color:#fff;font-weight:900;font-size:24px;box-shadow:0 6px 18px #000a}
+#pad button:active,#pad button.held{background:#ff4da6;outline:3px solid #40f0ff;transform:scale(.96)}
 #pad .x{visibility:hidden}
-#hideBtn,#actBtn{position:fixed;z-index:5;display:none;min-height:56px;padding:0 16px;border:0;border-radius:16px;color:#fff;font-weight:900;font-size:15px}
+#hideBtn,#actBtn{position:fixed;z-index:40;display:none;min-height:56px;padding:0 16px;border:0;border-radius:16px;color:#fff;font-weight:900;font-size:15px}
 #hideBtn{right:12px;bottom:calc(12px + env(safe-area-inset-bottom));min-width:96px;background:linear-gradient(180deg,#ff4da6,#8a2060)}
 #actBtn{right:12px;bottom:calc(76px + env(safe-area-inset-bottom));min-width:110px;background:linear-gradient(180deg,#40f0ff,#2070aa)}
 #hideBtn.on,#actBtn.on{display:block}
@@ -38,29 +43,29 @@ button.play{margin-top:16px;min-height:52px;padding:0 26px;border:0;border-radiu
 #looktip{position:fixed;right:12px;bottom:calc(140px + env(safe-area-inset-bottom));z-index:5;display:none;padding:8px 10px;border-radius:10px;background:rgba(0,0,0,.55);color:#40f0ff;font-size:11px;font-weight:700}
 #looktip.on{display:block}
 #vg-back-root{position:fixed;inset:0;z-index:2147483647;pointer-events:none}
-#vg-back-root a{pointer-events:auto;position:fixed;right:max(12px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));min-height:44px;padding:10px 14px;border-radius:14px;font:800 15px/1.2 system-ui,sans-serif;text-decoration:none;border:2px solid #ff4da6;background:#140818;color:#ff4da6}
+#vg-back-root a.vg-back-btn{pointer-events:auto;position:fixed;display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 14px;border-radius:14px;font:800 15px/1.2 system-ui,sans-serif;text-decoration:none;border:2px solid #ff4da6;background:#140818;color:#ff4da6;box-shadow:0 6px 28px #000a}
+#vg-back-tr{right:max(12px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));left:auto;bottom:auto}
 </style>
 </head>
 <body>
-<canvas id="view"></canvas>
-<div id="flash"></div><div id="siren"></div>
+<canvas id="view" tabindex="0"></canvas>
+<div id="flash"></div><div id="siren"></div><div id="moveFlash"></div>
 <div id="hud">
-  <div class="l"><small>ALLEY CLINIC</small><span id="msg">階段 1</span></div>
-  <div class="r"><small>進度</small><span id="prog">血清 0/3</span></div>
+  <div class="l"><small>LOCKDOWN CLINIC</small><span id="msg">封鎖診所</span></div>
+  <div class="r"><small>進度</small><span id="prog">血清 0／3 · 粉紅窗簾可匿</span></div>
 </div>
-<div id="phase">階段 1／3 · 血清</div>
+<div id="phase">階段 1／3 · 血清自救</div>
 <div id="goal">執 3 支發光血清</div>
-<div id="hint">左下方向鍵行 · 拖畫面轉頭 · 窗簾匿藏避病人</div>
+<div id="noise"><div class="lab">噪音</div><div class="bar"><div class="fill" id="noiseFill"></div></div></div>
+<div id="hint"></div>
 <div id="overlay"><div class="card">
-  <h1>後巷夜診</h1>
-  <div class="sub">ALLEY CLINIC · 血清 → 隔離 → 天台</div>
-  <span class="tag">即開 · 驚悚 · 血腥風格</span>
+  <h1>封鎖診所</h1>
+  <div class="sub">ALLEY CLINIC · 門反鎖之後</div>
   <ol>
-    <li><strong>階段1 血清</strong>：走廊執 3 支<strong style="color:#66ffcc">綠光血清</strong></li>
-    <li><strong>階段2 隔離</strong>：去兩個<strong style="color:#40f0ff">青色面板</strong>撳「啟動」封區</li>
-    <li><strong>階段3 警報</strong>：紅燈大作，冲<strong style="color:#ffcc66">天台出口</strong>（地圖盡頭黃光）</li>
-    <li>病人近身：企粉紅<strong>窗簾</strong>按住「匿藏」；會有血閃 jump scare</li>
-    <li>電腦 WASD＋滑鼠；手機方向掣＋拖畫面</li>
+    <li>颱風夜，你入錯非法診所攞藥。門反鎖。「病人」開始睜眼。</li>
+    <li>目標：① 注射血清自救（執 3 支綠光）　② 拆警報／開後門（青色面板 F）　③ 衝天台等車</li>
+    <li>蹲匿粉紅窗簾（空白鍵）；跑會加噪音引病人。開場 3.5 秒緩衝。一枝鎮靜劑＝匿藏冷卻。</li>
+    <li>先撳「進入遊戲」· WASD 行 · ←→ 或 Q／E 轉身 · 空白鍵匿窗簾</li>
   </ol>
   <button class="play" id="btn">進入遊戲</button>
 </div></div>
@@ -71,28 +76,31 @@ button.play{margin-top:16px;min-height:52px;padding:0 26px;border:0;border-radiu
 <button id="actBtn" type="button">啟動</button>
 <button id="hideBtn" type="button">匿藏</button>
 <div id="looktip">拖畫面轉頭</div>
-<div id="vg-back-root"><a href="/vincent-games-studio/games">← 返回遊戲目錄</a></div>
+<div id="vg-back-root" aria-label="catalog"><a id="vg-back-tr" class="vg-back-btn" href="/vincent-games-studio/games" title="← 返回遊戲目錄">← 返回遊戲目錄</a></div>
 <script>
 (function(){
   const W=26,H=26,map=[];
   for(let y=0;y<H;y++){map[y]=[];for(let x=0;x<W;x++)map[y][x]=(x===0||y===0||x===W-1||y===H-1)?1:0;}
-  [[4,4,4,12],[4,4,14,4],[10,4,10,16],[16,6,16,20],[6,16,18,16],[20,8,20,18],[12,10,22,10],[8,20,8,24],[14,20,22,20]].forEach(([x0,y0,x1,y1])=>{
+  [[4,4,4,12],[4,4,14,4],[10,4,10,16],[16,6,16,20],[6,16,18,16],[20,8,20,18],[12,10,22,10],[8,20,8,24],[14,20,22,20],[3,8,8,8],[18,4,22,4]].forEach(([x0,y0,x1,y1])=>{
     for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)if(x>0&&y>0&&x<W-1&&y<H-1)map[y][x]=1;
   });
-  [[10,8],[10,12],[16,12],[16,16],[20,12],[12,16],[8,22],[18,20],[14,10]].forEach(([x,y])=>{if(map[y])map[y][x]=0;});
-  // rooftop exit cells (phase 3)
-  map[22][22]=2; map[22][23]=2; map[23][22]=2;
+  [[10,8],[10,12],[16,12],[16,16],[20,12],[12,16],[8,22],[18,20],[14,10],[6,8],[20,4]].forEach(([x,y])=>{if(map[y])map[y][x]=0;});
+  map[22][22]=2; map[22][23]=2; map[23][22]=2; map[23][23]=2;
 
   const curtains=[{x:6.5,y:8.5},{x:12.5,y:14.5},{x:18.5,y:12.5},{x:9.5,y:18.5}];
   const serums=[{x:6.5,y:6.5,taken:false},{x:18.5,y:8.5,taken:false},{x:14.5,y:22.5,taken:false}];
   const panels=[{x:8.5,y:12.5,on:false},{x:20.5,y:16.5,on:false}];
   const EXIT={x:22.5,y:22.5};
-  const patients=[{x:20.5,y:14.5,tx:8,ty:14},{x:8.5,y:22.5,tx:18,ty:10}];
+  const patients=[
+    {x:20.5,y:14.5,tx:8,ty:14,invest:0},
+    {x:8.5,y:22.5,tx:18,ty:10,invest:0},
+    {x:16.5,y:6.5,tx:10,ty:18,invest:0}
+  ];
 
-  let px=12.5,py=12.5,dir=-Math.PI/2;
-  let phase=1, serumN=0, panelN=0;
+  let px=12.5,py=12.5,dir=0,grace=3.5;
+  let phase=1,serumN=0,panelN=0;
   let playing=false,dead=false,won=false,hiding=false,alarm=false;
-  let scareT=0, nearMiss=0, jumpCD=0;
+  let scareT=0,jumpCD=0,noise=0,bob=0,idleNudge=0;
 
   const canvas=document.getElementById('view');
   const ctx=canvas.getContext('2d',{alpha:false});
@@ -108,8 +116,8 @@ button.play{margin-top:16px;min-height:52px;padding:0 26px;border:0;border-radiu
   const looktip=document.getElementById('looktip');
   const flash=document.getElementById('flash');
   const siren=document.getElementById('siren');
-  const isTouch=('ontouchstart'in window)||navigator.maxTouchPoints>0;
-  const keys={}; const move={f:0,b:0,l:0,r:0};
+  const noiseFill=document.getElementById('noiseFill');
+  const keys={}; const move={f:0,b:0,turnL:0,turnR:0};
 
   function resize(){const d=Math.min(devicePixelRatio||1,2);canvas.width=(innerWidth*d)|0;canvas.height=(innerHeight*d)|0;}
   resize(); addEventListener('resize',resize);
@@ -117,24 +125,24 @@ button.play{margin-top:16px;min-height:52px;padding:0 26px;border:0;border-radiu
   function cell(x,y){const cx=x|0,cy=y|0;if(cx<0||cy<0||cx>=W||cy>=H)return 1;return map[cy][cx];}
   function solid(x,y){const t=cell(x,y);if(t===1)return true;if(t===2&&phase<3)return true;return false;}
   function nearCurtain(){return curtains.some(c=>Math.hypot(px-c.x,py-c.y)<1.15);}
-  function nearPanel(){return panels.find(p=>!p.on&&Math.hypot(px-p.x,py-p.y)<1.2);}
+  function nearPanel(){return panels.find(p=>!p.on&&Math.hypot(px-p.x,py-p.y)<1.25);}
 
   function setUI(){
     if(phase===1){
-      phaseEl.textContent='階段 1／3 · 血清';
-      goal.textContent='執 3 支綠光血清（行近自動執）';
-      prog.textContent='血清 '+serumN+'/3';
+      phaseEl.textContent='階段 1／3 · 血清自救';
+      goal.textContent='① 注射血清自救——執 3 支綠光血清';
+      prog.textContent='血清 '+serumN+'／3 · 粉紅窗簾可匿';
       msg.textContent='執血清';
       actBtn.classList.remove('on');
     } else if(phase===2){
-      phaseEl.textContent='階段 2／3 · 隔離';
-      goal.textContent='去青色面板撳「啟動」封區（'+panelN+'/2）';
-      prog.textContent='隔離 '+panelN+'/2';
+      phaseEl.textContent='階段 2／3 · 拆警報';
+      goal.textContent='去青色面板撳「啟動」／F（'+panelN+'/2）';
+      prog.textContent='隔離 '+panelN+'／2 · 粉紅窗簾可匿';
       msg.textContent='啟動隔離';
     } else {
-      phaseEl.textContent='階段 3／3 · 警報／天台';
-      goal.textContent='警報響！冲黃光天台出口（避病人）';
-      prog.textContent='逃上天台';
+      phaseEl.textContent='階段 3／3 · 天台等車';
+      goal.textContent='警報！冲黃光天台出口';
+      prog.textContent='逃上天台 · 粉紅窗簾可匿';
       msg.textContent='冲天台！';
       actBtn.classList.remove('on');
       alarm=true;
@@ -147,9 +155,9 @@ button.play{margin-top:16px;min-height:52px;padding:0 26px;border:0;border-radiu
   }
   function jumpScare(){
     if(jumpCD>0) return;
-    jumpCD=2.5;
-    bloodFlash(0.7);
-    scareT=0.35;
+    jumpCD=2.2;
+    bloodFlash(0.72);
+    scareT=0.38;
     hint.textContent='！！病人就喺隔籬——快匿窗簾！！';
     hint.classList.add('on');
   }
@@ -168,11 +176,12 @@ button.play{margin-top:16px;min-height:52px;padding:0 26px;border:0;border-radiu
   function draw(){
     const w=canvas.width,h=canvas.height;
     const pulse=0.5+0.5*Math.sin(performance.now()*0.005);
+    const bobY=Math.sin(bob)*h*0.007;
     const g=ctx.createLinearGradient(0,0,0,h);
-    if(alarm){ g.addColorStop(0,'#6a1020'); g.addColorStop(0.5,'#301018'); g.addColorStop(1,'#180810'); }
-    else { g.addColorStop(0,'#4a1840'); g.addColorStop(0.5,'#241028'); g.addColorStop(1,'#180c20'); }
+    if(alarm){g.addColorStop(0,'#6a1020');g.addColorStop(0.5,'#301018');g.addColorStop(1,'#180810');}
+    else{g.addColorStop(0,'#4a1840');g.addColorStop(0.5,'#241028');g.addColorStop(1,'#180c20');}
     ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
-    ctx.fillStyle=alarm?'#3a1820':'#2a1830'; ctx.fillRect(0,h*0.52,w,h*0.48);
+    ctx.fillStyle=alarm?'#3a1820':'#2a1830'; ctx.fillRect(0,h*0.52+bobY,w,h*0.48);
 
     const fov=Math.PI/3, cols=Math.min(220,(w/3)|0), colW=w/cols;
     for(let i=0;i<cols;i++){
@@ -183,30 +192,30 @@ button.play{margin-top:16px;min-height:52px;padding:0 26px;border:0;border-radiu
       let shade=1-Math.min(0.82,corr/13); if(side) shade*=0.85;
       let r,gg,b;
       if(hit===2){
-        if(phase>=3){ r=(220+30*pulse)*shade; gg=(180+20*pulse)*shade; b=40*shade; } // rooftop gold
-        else { r=20*shade; gg=180*shade; b=200*shade; }
+        if(phase>=3){r=(220+30*pulse)*shade;gg=(180+20*pulse)*shade;b=40*shade;}
+        else{r=20*shade;gg=180*shade;b=200*shade;}
       } else {
         r=(140+40*pulse)*shade; gg=40*shade; b=(110+30*pulse)*shade;
-        if(alarm){ r=(180+60*pulse)*shade; gg=30*shade; b=50*shade; }
-        if(((i*17)|0)%11===0){ r+=50; b+=20; }
+        if(alarm){r=(180+60*pulse)*shade;gg=30*shade;b=50*shade;}
+        if(((i*17)|0)%11===0){r+=50;b+=20;}
       }
       ctx.fillStyle=`rgb(${r|0},${gg|0},${b|0})`;
-      ctx.fillRect((i*colW)|0,((h-wallH)/2)|0,(colW+1)|0,wallH|0);
+      ctx.fillRect((i*colW)|0,((h-wallH)/2+bobY)|0,(colW+1)|0,wallH|0);
       if(hit===1&&((i*7)|0)%13===0){
         ctx.fillStyle=`rgba(160,20,50,${0.45*shade})`;
-        ctx.fillRect((i*colW)|0,(h*0.58)|0,(colW+1)|0,(wallH*0.18)|0);
+        ctx.fillRect((i*colW)|0,(h*0.58+bobY)|0,(colW+1)|0,(wallH*0.18)|0);
       }
     }
-    curtains.forEach(c=>bill(c.x,c.y,'curtain'));
-    serums.forEach(s=>{if(!s.taken)bill(s.x,s.y,'serum');});
-    panels.forEach(p=>{if(!p.on)bill(p.x,p.y,'panel'); else bill(p.x,p.y,'panelOn');});
-    patients.forEach(p=>bill(p.x,p.y,'patient'));
+    curtains.forEach(c=>bill(c.x,c.y,'curtain',bobY));
+    serums.forEach(s=>{if(!s.taken)bill(s.x,s.y,'serum',bobY);});
+    panels.forEach(p=>bill(p.x,p.y,p.on?'panelOn':'panel',bobY));
+    patients.forEach(p=>bill(p.x,p.y,'patient',bobY));
 
     ctx.strokeStyle='rgba(255,180,220,0.65)'; ctx.lineWidth=2;
     ctx.beginPath(); ctx.arc(w/2,h/2,8,0,Math.PI*2); ctx.stroke();
 
     if(hiding){
-      ctx.fillStyle='rgba(255,80,160,0.2)'; ctx.fillRect(0,0,w,h);
+      ctx.fillStyle='rgba(255,80,160,0.22)'; ctx.fillRect(0,0,w,h);
       ctx.fillStyle='#ffb0d0'; ctx.font='800 18px system-ui'; ctx.textAlign='center';
       ctx.fillText('匿喺窗簾後面…',w/2,h*0.16);
     }
@@ -215,12 +224,23 @@ button.play{margin-top:16px;min-height:52px;padding:0 26px;border:0;border-radiu
       ctx.fillStyle='#fff'; ctx.font='900 42px system-ui'; ctx.textAlign='center';
       ctx.fillText('！！',w/2,h*0.45);
     }
-    if(alarm){
-      siren.style.opacity=String(0.25+0.35*pulse);
-    } else siren.style.opacity='0';
+    siren.style.opacity=alarm?String(0.25+0.35*pulse):'0';
+
+    const ms=Math.min(120,w*0.14),mx=16,my=h-ms-16;
+    ctx.fillStyle='rgba(0,0,0,0.65)'; ctx.fillRect(mx-4,my-4,ms+8,ms+8);
+    for(let yy=0;yy<H;yy++)for(let xx=0;xx<W;xx++){
+      if(map[yy][xx]===1){ctx.fillStyle='#603050';ctx.fillRect(mx+xx*(ms/W),my+yy*(ms/H),ms/W+.5,ms/H+.5);}
+      if(map[yy][xx]===2){ctx.fillStyle='#ffcc44';ctx.fillRect(mx+xx*(ms/W),my+yy*(ms/H),ms/W+.5,ms/H+.5);}
+    }
+    serums.forEach(s=>{if(!s.taken){ctx.fillStyle='#66ffcc';ctx.fillRect(mx+s.x*(ms/W)-2,my+s.y*(ms/H)-2,4,4);}});
+    ctx.fillStyle='#40f0ff'; panels.forEach(p=>{if(!p.on)ctx.fillRect(mx+p.x*(ms/W)-2,my+p.y*(ms/H)-2,4,4);});
+    patients.forEach(p=>{ctx.fillStyle='#e03050';ctx.beginPath();ctx.arc(mx+p.x*(ms/W),my+p.y*(ms/H),2.5,0,Math.PI*2);ctx.fill();});
+    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(mx+px*(ms/W),my+py*(ms/H),3,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle='#ff4da6'; ctx.beginPath(); ctx.moveTo(mx+px*(ms/W),my+py*(ms/H));
+    ctx.lineTo(mx+px*(ms/W)+Math.cos(dir)*8,my+py*(ms/H)+Math.sin(dir)*8); ctx.stroke();
   }
 
-  function bill(sx,sy,kind){
+  function bill(sx,sy,kind,bobY){
     const dx=sx-px,dy=sy-py,dist=Math.hypot(dx,dy);
     if(dist<0.15||dist>15) return;
     let ang=Math.atan2(dy,dx)-dir;
@@ -230,9 +250,9 @@ button.play{margin-top:16px;min-height:52px;padding:0 26px;border:0;border-radiu
     const w=canvas.width,h=canvas.height,fov=Math.PI/3;
     const screenX=w/2+(ang/(fov/2))*(w/2);
     const size=Math.min(h*0.85,(h*0.55)/dist);
-    const x=screenX-size/2,y=(h-size)/2;
+    const x=screenX-size/2,y=(h-size)/2+(bobY||0);
     if(kind==='serum'){
-      ctx.fillStyle='rgba(80,255,200,0.3)'; ctx.beginPath(); ctx.arc(screenX,y+size*0.4,size*0.42,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='rgba(80,255,200,0.32)'; ctx.beginPath(); ctx.arc(screenX,y+size*0.4,size*0.42,0,Math.PI*2); ctx.fill();
       ctx.fillStyle='#66ffcc'; ctx.fillRect(screenX-size*0.08,y+size*0.25,size*0.16,size*0.4);
     } else if(kind==='panel'||kind==='panelOn'){
       ctx.fillStyle=kind==='panelOn'?'#40f0ff':'#2080aa';
@@ -251,39 +271,72 @@ button.play{margin-top:16px;min-height:52px;padding:0 26px;border:0;border-radiu
   function end(ok){
     playing=false;hiding=false;alarm=false;siren.style.opacity='0';
     overlay.classList.remove('hidden');
-    pad.classList.remove('on');hideBtn.classList.remove('on');actBtn.classList.remove('on');hint.classList.remove('on');looktip.classList.remove('on');
+    pad.classList.remove('on'); hideBtn.classList.remove('on'); actBtn.classList.remove('on');
+    hint.classList.remove('on'); looktip.classList.remove('on');
     overlay.querySelector('.card').innerHTML=ok
-      ?'<h1>冲上天台！</h1><div class="sub">ESCAPED TO ROOF</div><ol><li>血清→隔離→警報，你活住衝出後巷。</li></ol><button class="play" id="again">再玩一次</button>'
-      :'<h1>俾人拖走……</h1><div class="sub">ADMITTED</div><ol><li>下次用窗簾「匿藏」，聽警報再冲天台。</li></ol><button class="play" id="again">再試一次</button>';
+      ?'<h1>救護車燈劃過天台</h1><div class="sub">ROOFTOP CLEAR</div><ol><li>你仲握住藥單——上面寫住你個名。</li></ol><button class="play" id="again">再玩一次</button>'
+      :'<h1>俾人拖走……</h1><div class="sub">ADMITTED</div><ol><li>下次降噪音、用窗簾匿藏，再冲天台。</li></ol><button class="play" id="again">再試一次</button>';
     document.getElementById('again').onclick=()=>location.reload();
   }
 
   function tryAct(){
     const p=nearPanel();
-    if(phase===2 && p){
+    if(phase===2&&p){
       p.on=true; panelN++;
       bloodFlash(0.25);
-      if(panelN>=2){ phase=3; setUI(); jumpScare(); hint.textContent='隔離完成——警報大作！冲黃光天台！'; }
-      else { setUI(); hint.textContent='隔離 1/2——再搵另一個青色面板'; }
+      if(panelN>=2){phase=3;setUI();jumpScare();hint.textContent='隔離完成——警報！冲黃光天台！';hint.classList.add('on');}
+      else{setUI();hint.textContent='隔離 1/2——再搵另一個青色面板';hint.classList.add('on');}
       updateActBtn();
     }
   }
   function updateActBtn(){
-    if(phase===2 && nearPanel()) actBtn.classList.add('on');
+    if(phase===2&&nearPanel()) actBtn.classList.add('on');
     else actBtn.classList.remove('on');
   }
-
   function setHide(v){
     hiding=!!(v&&nearCurtain());
     hideBtn.classList.toggle('active',hiding);
-    if(v&&!nearCurtain()){ hint.textContent='要企喺粉紅窗簾前先可以匿！'; hint.classList.add('on'); }
+    if(v&&!nearCurtain()){hint.textContent='要企喺粉紅窗簾前先可以匿！';hint.classList.add('on');}
+  }
+
+  function pressKey(e,down){
+    const c=e.code||'';
+    const k=(e.key||'').toLowerCase();
+    if(c) keys[c]=down;
+    if(k==='w'||c==='KeyW') keys.KeyW=down;
+    if(k==='a'||c==='KeyA') keys.KeyA=down;
+    if(k==='s'||c==='KeyS') keys.KeyS=down;
+    if(k==='d'||c==='KeyD') keys.KeyD=down;
+    if(k==='q'||c==='KeyQ') keys.KeyQ=down;
+    if(k==='e'||c==='KeyE') keys.KeyE=down;
+    if(k==='f'||c==='KeyF') keys.KeyF=down;
+    if(k==='arrowup') keys.ArrowUp=down;
+    if(k==='arrowdown') keys.ArrowDown=down;
+    if(k==='arrowleft') keys.ArrowLeft=down;
+    if(k==='arrowright') keys.ArrowRight=down;
+    if(k===' '||c==='Space') keys.Space=down;
+    if(k==='shift'||c==='ShiftLeft'||c==='ShiftRight') keys.Shift=down;
+  }
+
+  function focusPlay(){
+    try{canvas.focus({preventScroll:true});}catch(_){try{canvas.focus();}catch(e){}}
+    try{canvas.requestPointerLock&&canvas.requestPointerLock();}catch(_){}
   }
 
   function start(){
-    overlay.classList.add('hidden'); playing=true; phase=1; setUI();
-    hint.classList.add('on'); hideBtn.classList.add('on');
-    if(isTouch){ pad.classList.add('on'); looktip.classList.add('on'); }
-    hint.textContent=isTouch?'方向鍵行 · 拖轉頭 · 窗簾匿藏':'WASD · 滑鼠 · 空白匿藏 · E／啟動面板';
+    overlay.classList.add('hidden'); playing=true; dead=false; won=false; hiding=false; alarm=false;
+    phase=1; serumN=0; panelN=0; grace=3.5; noise=0; idleNudge=0; bob=0;
+    px=12.5; py=12.5; dir=0;
+    serums.forEach(s=>s.taken=false); panels.forEach(p=>{p.on=false;});
+    patients[0].x=20.5;patients[0].y=14.5;patients[0].invest=0;
+    patients[1].x=8.5;patients[1].y=22.5;patients[1].invest=0;
+    patients[2].x=16.5;patients[2].y=6.5;patients[2].invest=0;
+    setUI();
+    hint.classList.add('on'); hideBtn.classList.add('on'); looktip.classList.add('on');
+    pad.style.display='grid'; pad.classList.add('on');
+    hint.textContent='先撳「進入遊戲」· WASD 行 · ←→ 或 Q／E 轉身 · 空白鍵匿窗簾';
+    setTimeout(()=>{if(playing) hint.textContent='血清 0／3 · 粉紅窗簾可匿';},2500);
+    focusPlay();
   }
   document.getElementById('btn').onclick=start;
   actBtn.addEventListener('click',tryAct);
@@ -293,84 +346,156 @@ button.play{margin-top:16px;min-height:52px;padding:0 26px;border:0;border-radiu
   hideBtn.addEventListener('mousedown',()=>setHide(true));
   hideBtn.addEventListener('mouseup',()=>setHide(false));
   hideBtn.addEventListener('mouseleave',()=>setHide(false));
+
   addEventListener('keydown',e=>{
-    keys[e.code]=true;
-    if(e.code==='Space'){e.preventDefault();setHide(true);}
-    if(e.code==='KeyE') tryAct();
+    if(!playing) return;
+    pressKey(e,true);
+    idleNudge=0;
+    const block=['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyW','KeyA','KeyS','KeyD','KeyQ','KeyE','KeyF'];
+    if(block.includes(e.code)||['w','a','s','d','q','e','f',' '].includes((e.key||'').toLowerCase())) e.preventDefault();
+    if(e.code==='Space'||e.key===' '){e.preventDefault();setHide(true);}
+    if(e.code==='KeyF'||(e.key||'').toLowerCase()==='f') tryAct();
   });
-  addEventListener('keyup',e=>{keys[e.code]=false; if(e.code==='Space')setHide(false);});
+  addEventListener('keyup',e=>{
+    pressKey(e,false);
+    if(e.code==='Space'||e.key===' ') setHide(false);
+  });
+
+  let dragging=false,lastMX=0;
+  canvas.addEventListener('mousedown',e=>{
+    if(!playing||e.button!==0) return;
+    dragging=true; lastMX=e.clientX; idleNudge=0; focusPlay();
+  });
+  addEventListener('mouseup',()=>{dragging=false;});
   addEventListener('mousemove',e=>{
-    if(!playing||isTouch) return;
-    if(document.pointerLockElement===canvas||e.buttons===1) dir+=e.movementX*0.003;
+    if(!playing) return;
+    if(document.pointerLockElement===canvas){dir+=e.movementX*0.0045;return;}
+    if(dragging||e.buttons===1){dir+=(e.clientX-lastMX)*0.005;lastMX=e.clientX;}
   });
-  canvas.addEventListener('click',()=>{if(playing&&!isTouch)canvas.requestPointerLock?.();});
+  canvas.addEventListener('click',()=>{if(!playing)return;idleNudge=0;focusPlay();});
   let tx=-1;
   canvas.addEventListener('touchstart',e=>{if(!playing)return;const t=e.changedTouches[0];if(t.clientX>innerWidth*0.36)tx=t.clientX;},{passive:true});
   canvas.addEventListener('touchmove',e=>{if(tx<0)return;const t=e.changedTouches[0];dir+=(t.clientX-tx)*0.006;tx=t.clientX;},{passive:true});
   canvas.addEventListener('touchend',()=>{tx=-1;},{passive:true});
-  [['tF','f'],['tB','b'],['tL','l'],['tR','r']].forEach(([id,k])=>{
+
+  function bindPad(id,onFn,offFn){
     const el=document.getElementById(id);
-    const on=e=>{e.preventDefault();move[k]=1;}; const off=()=>move[k]=0;
+    const on=e=>{e.preventDefault();el.classList.add('held');onFn();idleNudge=0;};
+    const off=()=>{el.classList.remove('held');offFn();};
     el.addEventListener('touchstart',on,{passive:false});
     el.addEventListener('touchend',off); el.addEventListener('touchcancel',off);
-  });
+    el.addEventListener('mousedown',on); el.addEventListener('mouseup',off); el.addEventListener('mouseleave',off);
+  }
+  bindPad('tF',()=>move.f=1,()=>move.f=0);
+  bindPad('tB',()=>move.b=1,()=>move.b=0);
+  bindPad('tL',()=>move.turnL=1,()=>move.turnL=0);
+  bindPad('tR',()=>move.turnR=1,()=>move.turnR=0);
 
   let last=performance.now();
   function tick(now){
-    requestAnimationFrame(tick);
+    window.__alley=()=>({px,py,dir,playing,hiding});
+  requestAnimationFrame(tick);
     const dt=Math.min(0.05,(now-last)/1000); last=now;
     if(scareT>0) scareT-=dt;
     if(jumpCD>0) jumpCD-=dt;
     if(playing&&!dead&&!won){
+      if(grace>0) grace-=dt;
+      idleNudge+=dt;
+      if(idleNudge>4.5){
+        hint.textContent='撳一下畫面，再用 WASD 行';
+        hint.classList.add('on');
+      }
+
+      if(keys.KeyQ||keys.ArrowLeft||move.turnL) dir-=2.8*dt;
+      if(keys.KeyE||keys.ArrowRight||move.turnR) dir+=2.8*dt;
+
+      let moved=false;
       if(!hiding){
         let f=0,s=0;
-        if(keys.KeyW||keys.ArrowUp||move.f)f+=1;
-        if(keys.KeyS||keys.ArrowDown||move.b)f-=1;
-        if(keys.KeyA||keys.ArrowLeft||move.l)s-=1;
-        if(keys.KeyD||keys.ArrowRight||move.r)s+=1;
-        const sp=(alarm?3.1:2.7)*dt;
+        if(keys.KeyW||keys.ArrowUp||move.f) f+=1;
+        if(keys.KeyS||keys.ArrowDown||move.b) f-=1;
+        if(keys.KeyA) s-=1;
+        if(keys.KeyD) s+=1;
+        const sprint=!!(keys.Shift&&f>0);
+        const base=alarm?3.8:3.4;
+        const sp=(sprint?base*1.35:base)*dt;
+        const ox=px,oy=py;
         const nx=px+Math.cos(dir)*f*sp+Math.cos(dir+Math.PI/2)*s*sp;
         const ny=py+Math.sin(dir)*f*sp+Math.sin(dir+Math.PI/2)*s*sp;
-        if(!solid(nx,py))px=nx; if(!solid(px,ny))py=ny;
+        if(!solid(nx,py)) px=nx;
+        else if(!solid(px+Math.cos(dir)*f*sp*0.5,py)) px+=Math.cos(dir)*f*sp*0.5;
+        if(!solid(px,ny)) py=ny;
+        else if(!solid(px,py+Math.sin(dir)*f*sp*0.5)) py+=Math.sin(dir)*f*sp*0.5;
+        moved=(px!==ox||py!==oy);
+        if(moved){
+          bob+=dt*(sprint?14:9);
+          noise=Math.min(100,noise+(sprint?55:22)*dt);
+          idleNudge=0;
+        } else {
+          noise=Math.max(0,noise-18*dt);
+          bob*=0.9;
+        }
+      } else {
+        noise=Math.max(0,noise-35*dt);
+        hint.textContent='匿緊——等病人走開先出嚟';
+        hint.classList.add('on');
       }
+      noiseFill.style.width=noise+'%';
+      const mf=document.getElementById('moveFlash');
+      if(mf) mf.style.opacity=moved?'1':'0';
+
       if(phase===1){
         serums.forEach(s=>{
           if(!s.taken&&Math.hypot(px-s.x,py-s.y)<1.05){
             s.taken=true; serumN++; setUI();
-            if(serumN>=3){ phase=2; setUI(); hint.textContent='血清齊——去青色隔離面板撳「啟動」'; }
+            if(serumN>=3){phase=2;setUI();hint.textContent='血清齊——去青色隔離面板撳「啟動」／F';hint.classList.add('on');}
             else hint.textContent='仲差 '+(3-serumN)+' 支血清';
           }
         });
       }
       if(phase===2) updateActBtn();
-      if(phase===3&&Math.hypot(px-EXIT.x,py-EXIT.y)<1.35){ won=true; end(true); }
+      if(phase===3&&Math.hypot(px-EXIT.x,py-EXIT.y)<1.35){won=true;end(true);}
 
-      const spd=alarm?2.8:1.7;
+      // patient AI — investigate noise
+      const hearR=4+noise*0.07;
       patients.forEach(p=>{
         const d=Math.hypot(p.x-px,p.y-py);
         if(hiding&&nearCurtain()){
           const ang=Math.atan2(p.ty-p.y,p.tx-p.x);
           p.x+=Math.cos(ang)*1.1*dt; p.y+=Math.sin(ang)*1.1*dt;
           if(Math.hypot(p.x-p.tx,p.y-p.ty)<0.6){p.tx=4+Math.random()*18;p.ty=4+Math.random()*18;}
-        } else if(d<12){
-          const ang=Math.atan2(py-p.y,px-p.x);
-          const bsp=(d<5?spd+0.6:spd)*dt;
-          const bx=p.x+Math.cos(ang)*bsp, by=p.y+Math.sin(ang)*bsp;
-          if(!solid(bx,p.y))p.x=bx; if(!solid(p.x,by))p.y=by;
-          if(d<3.5) jumpScare();
-          if(d<0.65){dead=true;bloodFlash(0.8);end(false);}
+          p.invest=0;
+        } else if(grace<=0 && (d<hearR || p.invest>0 || (noise>40&&d<14))){
+          if(noise>35||d<hearR) p.invest=2.5;
+          if(p.invest>0){
+            p.invest-=dt;
+            const ang=Math.atan2(py-p.y,px-p.x);
+            const spd=(alarm?2.9:(d<5?2.2:1.6))*dt;
+            const bx=p.x+Math.cos(ang)*spd, by=p.y+Math.sin(ang)*spd;
+            if(!solid(bx,p.y)) p.x=bx; if(!solid(p.x,by)) p.y=by;
+          }
+          if(d<3.4) jumpScare();
+          if(d<0.65){dead=true;bloodFlash(0.85);end(false);}
         } else {
           const ang=Math.atan2(p.ty-p.y,p.tx-p.x);
-          p.x+=Math.cos(ang)*1.4*dt; p.y+=Math.sin(ang)*1.4*dt;
+          p.x+=Math.cos(ang)*1.35*dt; p.y+=Math.sin(ang)*1.35*dt;
           if(Math.hypot(p.x-p.tx,p.y-p.ty)<0.6){p.tx=4+Math.random()*18;p.ty=4+Math.random()*18;}
         }
       });
-      if(nearCurtain()&&!hiding) hint.textContent='窗簾位—按住「匿藏」／空白掣';
+      if(nearCurtain()&&!hiding){hint.textContent='窗簾位—按住「匿藏」／空白掣';hint.classList.add('on');}
     }
     draw();
   }
+  window.__alley=()=>({px,py,dir,playing,hiding});
   requestAnimationFrame(tick);
-  setInterval(function(){var a=document.querySelector('#vg-back-root a');if(a){a.href='/vincent-games-studio/games';a.textContent='← 返回遊戲目錄';}},3000);
+
+  setInterval(function(){
+    var root=document.getElementById('vg-back-root');
+    if(!root){root=document.createElement('div');root.id='vg-back-root';document.body.appendChild(root);}
+    var tr=document.getElementById('vg-back-tr');
+    if(!tr){tr=document.createElement('a');tr.id='vg-back-tr';root.appendChild(tr);}
+    tr.className='vg-back-btn'; tr.href='/vincent-games-studio/games'; tr.textContent='← 返回遊戲目錄';
+  },3000);
 })();
 </script>
 </body>
