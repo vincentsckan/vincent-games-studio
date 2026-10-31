@@ -231,6 +231,13 @@ try {
   check('wall-hug look-up cam clear', !!(wallHug && wallHug.b && wallHug.b.ok && wallHug.b.awningVisible === false && wallHug.b.lookUpDarkBand === false), JSON.stringify(wallHug && wallHug.b));
   check('wall-hug deep curb cam clear', !!(wallHug && wallHug.c && wallHug.c.ok && wallHug.c.playerVisible === true && wallHug.c.facadeCardHit === false), JSON.stringify(wallHug && wallHug.c));
   check('wall-hug deep curb look-up clear', !!(wallHug && wallHug.d && wallHug.d.ok && wallHug.d.lookUpDarkBand === false), JSON.stringify(wallHug && wallHug.d));
+  // Soft polish: exactly one additive 「雅翠火鍋」 vertical neon plane (Multimedia PNG)
+  await page.waitForFunction(() => {
+    const p = window.__yacuiNeonProbe && window.__yacuiNeonProbe();
+    return p && p.ok && p.count === 1 && p.samples.some((s) => s.visible);
+  }, { timeout: 8000 }).catch(() => {});
+  const yacui = await page.evaluate(() => window.__yacuiNeonProbe && window.__yacuiNeonProbe());
+  check('yacui hotpot neon prop single additive plane', !!(yacui && yacui.ok && yacui.count === 1 && yacui.samples.some((s) => s.visible)), JSON.stringify(yacui));
   const whiteProbe = await page.evaluate(() => window.__whiteMeshProbe && window.__whiteMeshProbe());
   check('whiteMeshProbe 0', !!(whiteProbe && whiteProbe.ok && whiteProbe.untexturedWhite === 0), JSON.stringify(whiteProbe));
 

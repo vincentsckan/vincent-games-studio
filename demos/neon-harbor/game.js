@@ -2762,6 +2762,76 @@ function arenaVisualAudit(root) {
 }
 
 /** Thick atlas-textured Tong Lau + gates + neon strips + cover. Playable |x|<3.8 corridor. */
+
+/** Soft polish: Multimedia 「雅翠火鍋」 vertical neon billboard (PNG alpha preferred).
+ *  ONE street-facing additive PlaneGeometry — restores readable shop lettering after
+ *  Gate A plate/ghost cleanup. Never BoxGeometry; never a second overlay (ghosting). */
+const YACUI_NEON_PNG = './refs/props/neon-yacui-hotpot-vertical.png?v=yacui1';
+const YACUI_NEON_JPG = './refs/props/neon-yacui-hotpot-vertical.jpg?v=yacui1';
+
+function hangYacuiHotpotNeonProp(envGroup) {
+  if (!envGroup) return null;
+  // Left Tong-lau shopfront facing corridor, near look-up smoke stand (x≈0,z≈2).
+  // densify façades sit at |bx|=9.6; neon planes hang at bx+toward*2.42.
+  const bx = -9.6;
+  const toward = 1;
+  const signW = 0.78;
+  const signH = 3.55;
+  const baseY = 2.45;
+  const z = 2.15;
+  const mat = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    transparent: true,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    fog: false,
+    side: THREE.DoubleSide,
+    opacity: 0.96,
+  });
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(signW, signH), mat);
+  sign.position.set(bx + toward * 2.42, baseY + signH * 0.5, z);
+  sign.rotation.y = Math.PI / 2; // face corridor center
+  sign.name = 'envProp';
+  sign.userData.envTextured = true;
+  sign.userData.atlasRole = 'neon';
+  sign.userData.verticalNeon = true;
+  sign.userData.additiveNeon = true;
+  sign.userData.yacuiHotpotNeon = true;
+  sign.userData.shopNameZh = '雅翠火鍋';
+  sign.userData.awaitingTex = true; // survive hideUntexturedWhiteMeshes until PNG/JPG binds
+  sign.renderOrder = 3;
+  sign.visible = false; // show only after tex binds — never white slab
+  envGroup.add(sign);
+
+  const bindTex = (tex) => {
+    if (!tex) return false;
+    if (THREE.SRGBColorSpace) tex.colorSpace = THREE.SRGBColorSpace;
+    tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
+    tex.anisotropy = 4;
+    tex.needsUpdate = true;
+    mat.map = tex;
+    mat.needsUpdate = true;
+    sign.userData.awaitingTex = false;
+    sign.visible = true;
+    return true;
+  };
+
+  // Prefer PNG alpha (no chroma). JPG = #00FF00 greenscreen fallback like other Multimedia assets.
+  getEnvLoader().load(
+    YACUI_NEON_PNG,
+    (tex) => { bindTex(tex); },
+    undefined,
+    () => {
+      loadPlayerPoseTex(YACUI_NEON_JPG).then((keyed) => {
+        if (!bindTex(keyed)) {
+          try { if (sign.parent) sign.parent.remove(sign); } catch (_) {}
+        }
+      });
+    }
+  );
+  return sign;
+}
+
 function densifyCinematicCitySlice(envGroup, root, mapId, tex, atlas = {}) {
   if (!envGroup || !tex) return;
   // densify owns façades. Under PLATE_ONLY, builders still push invisible building/arcade
@@ -2857,6 +2927,9 @@ function densifyCinematicCitySlice(envGroup, root, mapId, tex, atlas = {}) {
       }
     }
   });
+
+  // Soft polish — ONE 「雅翠火鍋」 additive vertical neon (Multimedia PNG). Not a Gate A plate.
+  hangYacuiHotpotNeonProp(envGroup);
 
   // Cover along curbs — NEVER iron-gate atlas (Searching: soft gate-slat pavement band).
   // Wall/pavement-adjacent crates use wall/cover mats only.
@@ -4673,6 +4746,26 @@ window.__forcePickupTest = () => {
   };
 };
 
+window.__yacuiNeonProbe = () => {
+  let n = 0;
+  const samples = [];
+  if (worldRoot) {
+    worldRoot.traverse((o) => {
+      if (!o.isMesh || !o.userData || !o.userData.yacuiHotpotNeon) return;
+      n += 1;
+      const wp = new THREE.Vector3();
+      o.getWorldPosition(wp);
+      samples.push({
+        visible: !!o.visible,
+        additive: !!o.userData.additiveNeon,
+        vertical: !!o.userData.verticalNeon,
+        box: !!(o.geometry && o.geometry.type === 'BoxGeometry'),
+        x: +wp.x.toFixed(2), y: +wp.y.toFixed(2), z: +wp.z.toFixed(2),
+      });
+    });
+  }
+  return { ok: n === 1 && samples.every((s) => s.additive && s.vertical && !s.box), count: n, samples };
+};
 window.__cityPropProbe = () => {
   let vehicles = 0, npcs = 0;
   if (worldRoot) {
