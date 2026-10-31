@@ -242,10 +242,11 @@ const PLATE_ONLY_ARENA = true;
 let muzzleFlash = null;
 let gunMesh = null;
 let playerMesh = null; // visible TPP hero (simple humanoid; Multimedia refs/player/* can skin later)
-const CAM_BACK = 3.35;
-const CAM_RIGHT = 0.55;
-const CAM_UP = 1.05;
-const CAM_COLLIDE_PAD = 0.85; // sphere pad vs building solids — chase cam must not enter walls
+const CAM_BACK = 3.15;
+const CAM_RIGHT = 0.42;
+const CAM_UP = 1.12;
+const CAM_COLLIDE_PAD = 1.15; // sphere pad vs building solids — chase cam must not enter walls/façade cards
+const CAM_CORRIDOR_MAX_X = 5.6; // densify inner face ~7.4; keep chase cam inside playable canyon
 let spawnPoints = [];
 let bulletTraces = [];
 let bloodBursts = [];
@@ -2458,26 +2459,34 @@ function applyCinematicEnv(root, mapId, tex, atlas = {}) {
   envGroup.name = 'cinematicEnv';
   envGroup.userData.atlas = atlas;
 
-  // Far parallax canyon (Multimedia) behind sky plate
+  // Far parallax: KEEP for atlasHit.far, NEVER render in street/look-up FOV.
+  // DO FAIL ?v=a27c728: translucent 160×56 canyon photo still cut a horizontal dark
+  // band through 「雅翠火鍋」 when pitch was up (near already force-hidden).
   if (atlas.far) {
     const farMat = new THREE.MeshBasicMaterial({
-      map: atlas.far, fog: false, depthWrite: false, transparent: true, opacity: 0.92,
+      map: atlas.far, fog: false, depthWrite: false, transparent: true, opacity: 0,
     });
-    const farN = new THREE.Mesh(new THREE.PlaneGeometry(160, 56), farMat);
-    farN.position.set(0, 22, -92);
+    const farN = new THREE.Mesh(new THREE.PlaneGeometry(48, 16), farMat);
+    farN.position.set(0, 96, -160);
     farN.name = 'envParallaxFar';
+    farN.visible = false;
     farN.userData.envTextured = true;
     farN.userData.cameraOccluder = true;
-    farN.userData.baseOpacity = 0.92;
-    farN.renderOrder = -4;
+    farN.userData.forceHidden = true;
+    farN.userData.lookUpOccluder = true;
+    farN.userData.baseOpacity = 0;
+    farN.renderOrder = -5;
     envGroup.add(farN);
     const farS = farN.clone();
     farS.material = farMat.clone();
-    farS.position.set(0, 22, 92);
+    farS.position.set(0, 96, 160);
     farS.rotation.y = Math.PI;
     farS.name = 'envParallaxFarS';
+    farS.visible = false;
+    farS.userData.forceHidden = true;
+    farS.userData.lookUpOccluder = true;
     farS.userData.cameraOccluder = true;
-    farS.userData.baseOpacity = 0.92;
+    farS.userData.baseOpacity = 0;
     envGroup.add(farS);
   }
 
@@ -2490,19 +2499,27 @@ function applyCinematicEnv(root, mapId, tex, atlas = {}) {
   sky.renderOrder = -2;
   envGroup.add(sky);
 
+  // Env photo backdrops DUPLICATE neon-street signs (雅翠火鍋) vs densify neon quads —
+  // misaligned stack + look-up seam. Keep named meshes for probes but never draw.
   const mkBackdrop = (z, rotY, name) => {
     const m = new THREE.Mesh(
-      new THREE.PlaneGeometry(140, 52),
-      new THREE.MeshBasicMaterial({ map: tex, fog: false, depthWrite: false, side: THREE.DoubleSide })
+      new THREE.PlaneGeometry(32, 12),
+      new THREE.MeshBasicMaterial({ map: tex, fog: false, depthWrite: false, side: THREE.DoubleSide, transparent: true, opacity: 0 })
     );
-    m.position.set(0, 18, z);
+    m.position.set(0, 88, z);
     m.rotation.y = rotY;
     m.name = name;
-    m.renderOrder = -3;
+    m.visible = false;
+    m.userData.envTextured = true;
+    m.userData.cameraOccluder = true;
+    m.userData.forceHidden = true;
+    m.userData.lookUpOccluder = true;
+    m.userData.baseOpacity = 0;
+    m.renderOrder = -5;
     envGroup.add(m);
   };
-  mkBackdrop(-72, 0, 'envBackdropN');
-  mkBackdrop(72, Math.PI, 'envBackdropS');
+  mkBackdrop(-160, 0, 'envBackdropN');
+  mkBackdrop(160, Math.PI, 'envBackdropS');
 
   // Wet pavement atlas ONLY — never stretch full env plate onto ground (Vincent: 巨大字／人影 FAIL)
   let groundMat;
@@ -2531,30 +2548,37 @@ function applyCinematicEnv(root, mapId, tex, atlas = {}) {
   groundPlate.renderOrder = -1;
   envGroup.add(groundPlate);
 
-  // Far side plates — pushed further out; marked cameraOccluder so chase cam never leaves dark sheets in FOV
-  const wallBillboard = () => new THREE.MeshBasicMaterial({ map: tex, fog: true, side: THREE.DoubleSide });
+  // Env wall photo cards: densify owns façades. These DoubleSide plates were the
+  // Searching "cam into façade cards / player vanishes" FAIL and DO look-up dark sheets.
+  // Keep named meshes (audit keep list) but force-hide + park outside playable FOV.
+  const wallBillboard = () => new THREE.MeshBasicMaterial({
+    map: tex, fog: false, side: THREE.DoubleSide, transparent: true, opacity: 0, depthWrite: false,
+  });
   const markWallOccluder = (m) => {
+    m.visible = false;
     m.userData.envTextured = true;
     m.userData.cameraOccluder = true;
-    m.userData.baseOpacity = 1;
+    m.userData.forceHidden = true;
+    m.userData.lookUpOccluder = true;
+    m.userData.baseOpacity = 0;
     return m;
   };
-  const sideL = markWallOccluder(new THREE.Mesh(new THREE.PlaneGeometry(90, 40), wallBillboard()));
-  sideL.position.set(-28, 16, 0);
+  const sideL = markWallOccluder(new THREE.Mesh(new THREE.PlaneGeometry(24, 10), wallBillboard()));
+  sideL.position.set(-120, 80, 0);
   sideL.rotation.y = Math.PI / 2;
   sideL.name = 'envWallL';
   envGroup.add(sideL);
-  const sideR = markWallOccluder(new THREE.Mesh(new THREE.PlaneGeometry(90, 40), wallBillboard()));
-  sideR.position.set(28, 16, 0);
+  const sideR = markWallOccluder(new THREE.Mesh(new THREE.PlaneGeometry(24, 10), wallBillboard()));
+  sideR.position.set(120, 80, 0);
   sideR.rotation.y = -Math.PI / 2;
   sideR.name = 'envWallR';
   envGroup.add(sideR);
-  const endN = markWallOccluder(new THREE.Mesh(new THREE.PlaneGeometry(56, 36), wallBillboard()));
-  endN.position.set(0, 15, -48);
+  const endN = markWallOccluder(new THREE.Mesh(new THREE.PlaneGeometry(24, 10), wallBillboard()));
+  endN.position.set(0, 80, -120);
   endN.name = 'envWallN';
   envGroup.add(endN);
-  const endS = markWallOccluder(new THREE.Mesh(new THREE.PlaneGeometry(56, 36), wallBillboard()));
-  endS.position.set(0, 15, 48);
+  const endS = markWallOccluder(new THREE.Mesh(new THREE.PlaneGeometry(24, 10), wallBillboard()));
+  endS.position.set(0, 80, 120);
   endS.rotation.y = Math.PI;
   endS.name = 'envWallS';
   envGroup.add(endS);
@@ -2574,6 +2598,7 @@ function applyCinematicEnv(root, mapId, tex, atlas = {}) {
     awn.userData.parallaxNear = true;
     awn.userData.cameraOccluder = true;
     awn.userData.forceHidden = true; // never show in match — atlas probe only
+    awn.userData.lookUpOccluder = true;
     awn.userData.baseOpacity = 0;
     awn.renderOrder = -5;
     envGroup.add(awn);
@@ -2793,12 +2818,14 @@ function arenaVisualAudit(root) {
 /** Thick atlas-textured Tong Lau + gates + neon strips + cover. Playable |x|<3.8 corridor. */
 function densifyCinematicCitySlice(envGroup, root, mapId, tex, atlas = {}) {
   if (!envGroup || !tex) return;
-  // Drop procedural mid-lane low AABBs (meshes already stripped) so corridor stays walkable
+  // densify owns façades. Under PLATE_ONLY, builders still push invisible building/arcade
+  // overhang solids (y≈3.2 into street) — Searching FAIL: chase cam enters "façade cards"
+  // and player vanishes. Keep ground + low curb/vehicle only; rebuild tall collision here.
   solidBoxes = solidBoxes.filter((b) => {
-    const cx = (b.minX + b.maxX) * 0.5;
     const h = b.maxY - b.minY;
-    if (Math.abs(cx) < 3.3 && h < 3.2 && b.maxY < 3.5) return false;
-    return true;
+    if (b.maxY < 0.35) return true; // ground slabs
+    if (h <= 2.25 && b.maxY <= 2.35) return true; // curb cover / vehicles / stools
+    return false; // drop tall buildings + elevated arcade overhangs
   });
   const seed = String(mapId || 'signs').split('').reduce((a, c) => a + c.charCodeAt(0), 0);
   const rnd = (i) => {
@@ -2814,7 +2841,7 @@ function densifyCinematicCitySlice(envGroup, root, mapId, tex, atlas = {}) {
   const facadeMats = [0, 1, 2, 3].map((i) => makeAtlasMat(wallSrc, {
     repeatX: 1.1 + i * 0.15, repeatY: 1.6 + (i % 2) * 0.4,
   }));
-  const gateMat = makeAtlasMat(gateSrc, { repeatX: 1.2, repeatY: 1.0 });
+  const gateMat = makeAtlasMat(gateSrc, { repeatX: 1.0, repeatY: 1.35 });
   const coverMat = makeAtlasMat(coverSrc, { repeatX: 0.8, repeatY: 0.8, color: 0x9aa0a8 });
 
   // Buildings far enough that inner face stays |x| >= 6.2 — corridor walkable
@@ -2829,27 +2856,44 @@ function densifyCinematicCitySlice(envGroup, root, mapId, tex, atlas = {}) {
       mesh.userData.atlasRole = 'wall';
 
       const toward = bx > 0 ? -1 : 1;
-      // Iron gate shutter on shopfront (atlas-iron-gate)
+      // Iron gate shutter on shopfront ONLY (not curb pavement) — raised so slats
+      // don't read as a soft horizontal "pavement band" at street level.
       const gate = addEnvTexturedBox(
-        envGroup, bx + toward * 2.15, 0, z, 0.22, 2.4, depth * 0.72, gateMat, true
+        envGroup, bx + toward * 2.15, 0.08, z, 0.18, 2.55, depth * 0.55, gateMat, true
       );
       gate.userData.atlasRole = 'gate';
+      gate.userData.shopfrontGate = true;
 
-      // Neon sign strip board on façade (not solid color)
-      if (neonSrc) {
+      // Vertical neon boards (NOT horizontal strip quads). Prior 0.75×2.2 boards
+      // stacked at y≈3.4 formed a look-up horizontal dark band of atlas background
+      // + duplicated misaligned signs vs env plate. Tall thin = real HK vertical neon.
+      if (neonSrc && (i + ri) % 2 === 0) {
         const nmat = makeAtlasMat(neonSrc, {
-          repeatX: 1, repeatY: 1, wrap: THREE.ClampToEdgeWrapping, roughness: 0.45, metalness: 0.2,
+          repeatX: 0.16 + (i % 5) * 0.14, repeatY: 1,
+          wrap: THREE.ClampToEdgeWrapping, roughness: 0.4, metalness: 0.25,
         });
+        // Offset U so neighbouring boards sample different glyphs (less duplicate stack)
+        if (nmat.map) {
+          nmat.map.offset.x = ((i + ri * 3 + 7) % 6) * 0.14;
+          nmat.map.needsUpdate = true;
+        }
+        const signH = 2.6 + (i % 3) * 0.35;
         const sign = addEnvTexturedBox(
-          envGroup, bx + toward * 2.28, 3.4 + (i % 3) * 0.35, z + (ri ? -0.55 : 0.55),
-          0.14, 0.75, 2.2, nmat, false
+          envGroup,
+          bx + toward * 2.35,
+          2.15 + (i % 3) * 0.55,
+          z + (ri ? -0.9 : 0.9),
+          0.12, signH, 0.55,
+          nmat, false
         );
         sign.userData.atlasRole = 'neon';
+        sign.userData.verticalNeon = true;
       }
     }
   });
 
-  // Cover along curbs only (|x|>=3.4) — keep center lane free for WASD / bots / pickups
+  // Cover along curbs — NEVER iron-gate atlas (Searching: soft gate-slat pavement band).
+  // Wall/pavement-adjacent crates use wall/cover mats only.
   const covers = [
     [-3.5, 6.5, 1.35, 1.15, 1.25], [3.5, -6.5, 1.4, 1.2, 1.3],
     [-3.6, 12, 1.3, 1.05, 1.2], [3.6, -12, 1.35, 1.1, 1.25],
@@ -2857,8 +2901,9 @@ function densifyCinematicCitySlice(envGroup, root, mapId, tex, atlas = {}) {
     [-3.7, 17, 1.5, 1.25, 1.4], [3.7, -17, 1.5, 1.25, 1.4],
   ];
   covers.forEach(([x, z, w, h, d], i) => {
-    const m = addEnvTexturedBox(envGroup, x, 0, z, w, h, d, i % 2 ? gateMat : coverMat, true);
-    m.userData.atlasRole = i % 2 ? 'gate' : 'wall';
+    const m = addEnvTexturedBox(envGroup, x, 0, z, w, h, d, i % 2 ? coverMat : facadeMats[i % facadeMats.length], true);
+    m.userData.atlasRole = 'wall';
+    m.userData.curbCover = true;
   });
 
   // Textured end barriers
@@ -3283,10 +3328,18 @@ function cameraPullBack(idealX, idealY, idealZ, targetX, targetY, targetZ) {
 function updateCameraOccluders(camX, camY, camZ, lookDx, lookDy, lookDz) {
   if (!worldRoot) return;
   const ldx = lookDx || 0, ldy = lookDy || 0, ldz = lookDz || 0;
+  const forceHideNames = new Set([
+    'envParallaxNear', 'envParallaxFar', 'envParallaxFarS',
+    'envWallL', 'envWallR', 'envWallN', 'envWallS',
+    'envBackdropN', 'envBackdropS',
+  ]);
   worldRoot.traverse((o) => {
     if (!o.isMesh || !o.userData || !o.userData.cameraOccluder) return;
-    // Near-awning / forceHidden: NEVER visible in match (DO look-up dark band FAIL)
-    if (o.userData.forceHidden || o.userData.parallaxNear || o.name === 'envParallaxNear') {
+    // Force-hidden look-up / façade-card occluders: NEVER visible in match
+    if (
+      o.userData.forceHidden || o.userData.parallaxNear || o.userData.lookUpOccluder ||
+      forceHideNames.has(o.name)
+    ) {
       o.visible = false;
       if (o.material) o.material.opacity = 0;
       return;
@@ -3324,14 +3377,16 @@ function updateCameraOccluders(camX, camY, camZ, lookDx, lookDy, lookDz) {
 }
 
 function updateCamera() {
-  // Near-awning stays force-hidden above sky — do not parallax it into street FOV
+  // Look-up / façade-card occluders stay force-hidden — never parallax into street FOV
   if (worldRoot) {
     worldRoot.traverse((o) => {
-      if (o.name === 'envParallaxNear' && o.userData && o.userData.parallaxNear) {
-        o.position.set(0, 78, -130);
-        o.visible = false;
-        if (o.material) o.material.opacity = 0;
-      }
+      if (!o.isMesh || !o.userData) return;
+      if (!(o.userData.forceHidden || o.userData.lookUpOccluder || o.userData.parallaxNear)) return;
+      o.visible = false;
+      if (o.material) o.material.opacity = 0;
+      if (o.name === 'envParallaxNear') o.position.set(0, 78, -130);
+      if (o.name === 'envParallaxFar') o.position.set(0, 96, -160);
+      if (o.name === 'envParallaxFarS') o.position.set(0, 96, 160);
     });
   }
   const eyeH = state.crouching || state.sliding ? CROUCH_HEIGHT : PLAYER_HEIGHT;
@@ -3349,12 +3404,20 @@ function updateCamera() {
   // GTA-like OTS chase: behind + slightly above + right of player
   const sy = Math.sin(yaw);
   const cy = Math.cos(yaw);
-  // Shrink boom when player hugs façade so ideal target is less often inside walls
+  // Shrink boom when player hugs façade / curb so chase cam never enters wall cards
   let back = CAM_BACK;
   let right = CAM_RIGHT;
-  if (pointHitsSolidExpanded(state.x + sy * back, state.y + 0.4, state.z + cy * back, 0.35)) {
-    back = Math.min(back, 2.1);
-    right *= 0.55;
+  const hugPad = 0.55;
+  const behindBlocked = pointHitsSolidExpanded(state.x + sy * back, state.y + 0.4, state.z + cy * back, hugPad);
+  const rightBlocked = pointHitsSolidExpanded(state.x + cy * 1.2, state.y + 0.4, state.z + (-sy) * 1.2, hugPad);
+  const leftBlocked = pointHitsSolidExpanded(state.x - cy * 1.2, state.y + 0.4, state.z + sy * 1.2, hugPad);
+  const nearFacade = Math.abs(state.x) > 2.0 || behindBlocked || rightBlocked || leftBlocked;
+  if (nearFacade) {
+    back = Math.min(back, behindBlocked ? 1.55 : 2.25);
+    right *= (rightBlocked || leftBlocked) ? 0.25 : 0.45;
+    // Prefer offset toward street center, never into façades
+    if (state.x > 0.4 && right > 0) right = -Math.abs(right) * 0.35;
+    if (state.x < -0.4 && right < 0) right = Math.abs(right) * 0.35;
   }
   const up = CAM_UP + (state.crouching || state.sliding ? -0.25 : 0);
   const idealX = state.x + sy * back + cy * right;
@@ -3365,10 +3428,18 @@ function updateCamera() {
   const pivotY = state.y - 0.15;
   const pivotZ = state.z;
   const pulled = cameraPullBack(idealX, idealY, idealZ, pivotX, pivotY, pivotZ);
-  camera.position.set(pulled.x, pulled.y, pulled.z);
+  // Hard corridor clamp — never sit inside densify façade volumes (|x|>=~7.4)
+  let cx = Math.max(-CAM_CORRIDOR_MAX_X, Math.min(CAM_CORRIDOR_MAX_X, pulled.x));
+  let cyCam = Math.max(0.55, Math.min(12, pulled.y));
+  let cz = pulled.z;
+  const ejected2 = ejectCameraFromSolids(cx, cyCam, cz, pivotX, pivotY, pivotZ, CAM_COLLIDE_PAD);
+  cx = Math.max(-CAM_CORRIDOR_MAX_X, Math.min(CAM_CORRIDOR_MAX_X, ejected2.x));
+  cyCam = Math.max(0.55, Math.min(12, ejected2.y));
+  cz = ejected2.z;
+  camera.position.set(cx, cyCam, cz);
   // look along aim (yaw/pitch) through a point ahead of the hero
   const { dx, dy, dz } = dirFromAngles(yaw, pitch);
-  updateCameraOccluders(pulled.x, pulled.y, pulled.z, dx, dy, dz);
+  updateCameraOccluders(cx, cyCam, cz, dx, dy, dz);
   const lookDist = 22;
   camera.lookAt(
     state.x + dx * lookDist,
@@ -4698,11 +4769,50 @@ window.__setCameraLook = (y, p) => {
 window.__cameraClipProbe = () => {
   if (!camera || !worldRoot) return { ok: false, reason: 'no-cam' };
   const cam = camera.position;
+  const forceHideNames = new Set([
+    'envParallaxNear', 'envParallaxFar', 'envParallaxFarS',
+    'envWallL', 'envWallR', 'envWallN', 'envWallS',
+    'envBackdropN', 'envBackdropS',
+  ]);
   let nearHits = 0;
   const samples = [];
+  let forceHiddenVisible = 0;
+  let lookUpDarkBand = false;
+  let lookUpOccluderVisible = 0;
+  let largeTranslucentInLookUp = 0;
+  const pitchNow = typeof pitch === 'number' ? pitch : 0;
+  const lookUp = pitchNow >= 0.45;
   worldRoot.traverse((o) => {
-    if (!o.isMesh || !o.visible) return;
-    if (o.name !== 'envParallaxNear' && !(o.userData && o.userData.cameraOccluder)) return;
+    if (!o.isMesh) return;
+    const ud = o.userData || {};
+    const mustHide = !!(ud.forceHidden || ud.lookUpOccluder || ud.parallaxNear || forceHideNames.has(o.name));
+    if (mustHide && o.visible) {
+      forceHiddenVisible += 1;
+      if (ud.lookUpOccluder || forceHideNames.has(o.name)) lookUpOccluderVisible += 1;
+    }
+    if (!o.visible) return;
+    if (o.name !== 'envParallaxNear' && !ud.cameraOccluder && !mustHide) {
+      // Look-up mid-FOV: fail if a LARGE translucent/dark plane covers the cone
+      if (lookUp && o.geometry && o.geometry.type === 'PlaneGeometry' && o.geometry.parameters) {
+        const pw = o.geometry.parameters.width || 0;
+        const ph = o.geometry.parameters.height || 0;
+        const mats = Array.isArray(o.material) ? o.material : (o.material ? [o.material] : []);
+        const translucent = mats.some((m) => m && (m.transparent || (m.opacity != null && m.opacity < 0.98)));
+        if ((pw >= 40 || ph >= 20) && translucent) {
+          const wp = new THREE.Vector3();
+          o.getWorldPosition(wp);
+          // Plane sits in upper/mid look cone (not sky-parked)
+          if (wp.y < 55 && Math.hypot(wp.x - cam.x, wp.z - cam.z) < 110) {
+            largeTranslucentInLookUp += 1;
+            lookUpDarkBand = true;
+            if (samples.length < 8) {
+              samples.push({ name: o.name || 'plane', kind: 'lookUpPlane', y: +wp.y.toFixed(1), w: pw, h: ph });
+            }
+          }
+        }
+      }
+      return;
+    }
     const wp = new THREE.Vector3();
     o.getWorldPosition(wp);
     const dist = cam.distanceTo(wp);
@@ -4717,7 +4827,7 @@ window.__cameraClipProbe = () => {
       Math.abs(cam.z - wp.z) < 2.8;
     if (inBand || dist < 4) {
       nearHits += 1;
-      if (samples.length < 6) {
+      if (samples.length < 8) {
         samples.push({
           name: o.name,
           dist: +dist.toFixed(2),
@@ -4728,7 +4838,7 @@ window.__cameraClipProbe = () => {
       }
     }
   });
-  // Near-awning must never be visible in street/look-up cone (DO dark-band FAIL)
+  // Near-awning / force-hidden occluders must never be visible in street/look-up cone
   let midStreetAwning = false;
   let awningVisible = false;
   let awningInLookUpBand = false;
@@ -4737,21 +4847,55 @@ window.__cameraClipProbe = () => {
     if (o.visible) awningVisible = true;
     const wp = new THREE.Vector3();
     o.getWorldPosition(wp);
-    // Legacy mid-street + any visible strip that could band across canyon neon
     if (o.visible && wp.y < 45 && Math.abs(wp.z) < 100) awningInLookUpBand = true;
     if (o.visible && wp.y < 16 && Math.abs(wp.z) < 40) midStreetAwning = true;
   });
+  if (lookUp && (lookUpOccluderVisible > 0 || forceHiddenVisible > 0)) lookUpDarkBand = true;
+
   const inside = pointInsideSolid(cam.x, cam.y, cam.z);
-  // Soft pad probe is diagnostic only (cover crates hug corridor); hard FAIL = inside volume / visible awning
   const paddedHit = pointHitsSolidExpanded(cam.x, cam.y, cam.z, CAM_COLLIDE_PAD * 0.35);
+  // Player-vanishes gate: cam outside corridor or solid between cam and hero feet
+  const camOutOfCorridor = Math.abs(cam.x) > CAM_CORRIDOR_MAX_X + 0.05;
+  let facadeCardHit = false;
+  if (state && Number.isFinite(state.x)) {
+    const steps = 14;
+    for (let i = 1; i <= steps; i++) {
+      const t = i / steps;
+      const px = cam.x + (state.x - cam.x) * t;
+      const py = cam.y + ((state.y - 0.2) - cam.y) * t;
+      const pz = cam.z + (state.z - cam.z) * t;
+      if (pointInsideSolid(px, py, pz)) { facadeCardHit = true; break; }
+    }
+  }
+  const playerVisible = !inside && !facadeCardHit && !camOutOfCorridor;
+
+  const ok =
+    nearHits === 0 &&
+    !midStreetAwning &&
+    !awningVisible &&
+    !awningInLookUpBand &&
+    !inside &&
+    forceHiddenVisible === 0 &&
+    !lookUpDarkBand &&
+    largeTranslucentInLookUp === 0 &&
+    playerVisible;
+
   return {
-    ok: nearHits === 0 && !midStreetAwning && !awningVisible && !awningInLookUpBand && !inside,
+    ok,
     nearHits,
     midStreetAwning,
     awningVisible,
     awningInLookUpBand,
+    forceHiddenVisible,
+    lookUpOccluderVisible,
+    lookUpDarkBand,
+    largeTranslucentInLookUp,
     camInsideSolid: !!inside,
     camPaddedHit: !!paddedHit,
+    camOutOfCorridor,
+    facadeCardHit,
+    playerVisible,
+    pitch: +pitchNow.toFixed(2),
     cam: { x: +cam.x.toFixed(2), y: +cam.y.toFixed(2), z: +cam.z.toFixed(2) },
     samples,
   };
