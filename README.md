@@ -23,6 +23,14 @@ npm run build:pages   # production build → dist/ (+ 404.html for SPA)
 npm run preview
 ```
 
+
+## Deploy · 部署（自動）
+
+Push to **`main`** → GitHub Actions builds → deploys **`gh-pages`** → live in ~1–2 min at  
+https://vincentsckan.github.io/vincent-games-studio/
+
+See **[DEPLOY.md](DEPLOY.md)** for secrets, cache notes (`?v=` + HTML meta), and manual fallback.
+
 ## Phase 1 · Supabase + Admin
 
 ### 1. Create a Supabase project
