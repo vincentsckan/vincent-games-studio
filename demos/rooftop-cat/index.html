@@ -34,7 +34,6 @@ button.play{margin-top:20px;min-height:48px;padding:0 28px;border:0;border-radiu
 #vg-back-root{position:fixed;left:0;right:0;bottom:0;top:0;z-index:2147483647;pointer-events:none}
 #vg-back-root a.vg-back-btn{pointer-events:auto;position:fixed;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;min-width:48px;padding:12px 18px;border-radius:14px;font:800 16px/1.2 "Noto Sans TC",system-ui,sans-serif;text-decoration:none;letter-spacing:.02em;border:2px solid #ffd36a;background:#1a1028;color:#ffd36a;box-shadow:0 6px 28px rgba(0,0,0,.65),0 0 0 1px rgba(255,255,255,.08);-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 #vg-back-root a.vg-back-btn:active{transform:scale(.97)}
-#vg-back-bl{left:max(12px,env(safe-area-inset-left));bottom:max(calc(30% + 16px),72px)}
 #vg-back-tr{right:max(12px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));left:auto;bottom:auto;font-size:15px!important;min-height:44px;padding:10px 14px;opacity:.95}
 a.vg-catalog{display:inline-flex!important;align-items:center;justify-content:center;margin-top:14px;min-height:52px;padding:14px 22px;border-radius:999px;font:800 17px/1.2 "Noto Sans TC",system-ui,sans-serif;text-decoration:none!important;border:2px solid #ffd36a;background:#1a1028;color:#ffd36a!important;box-shadow:0 6px 20px rgba(0,0,0,.4);opacity:1!important;width:100%;max-width:320px;box-sizing:border-box}
 a.vg-catalog:hover{filter:brightness(1.12);text-decoration:none!important}
@@ -48,7 +47,6 @@ a.vg-catalog:hover{filter:brightness(1.12);text-decoration:none!important}
 </div>
 <div id="overlay">
   <div class="card">
-    <a class="vg-catalog" href="/vincent-games-studio/games">← 返回遊戲目錄</a>
     <h1>ROOFTOP CAT</h1>
     <div class="sub">天台貓 · 跳到最遠那座屋頂</div>
     <p id="msg">帶著紅領巾的小貓，要在日落前跳過水塔與晾衣架，抵達遠端天台。<br/>← → / A D 移動 · Space / ↑ / 點按跳躍（可短按輕跳）</p>
@@ -308,7 +306,7 @@ function drawCat(x,y,facing,ground,t){
 reset(); draw();
 })();
 </script>
-<div id="vg-back-root" aria-label="catalog"><a id="vg-back-bl" class="vg-back-btn" href="/vincent-games-studio/games" title="← 返回遊戲目錄">← 返回遊戲目錄</a><a id="vg-back-tr" class="vg-back-btn" href="/vincent-games-studio/games" title="← 返回遊戲目錄">← 返回遊戲目錄</a></div>
+<div id="vg-back-root" aria-label="catalog"><a id="vg-back-tr" class="vg-back-btn" href="/vincent-games-studio/games" title="← 返回遊戲目錄">← 返回遊戲目錄</a></div>
 <script>
 (function(){
   var HREF='/vincent-games-studio/games', LABEL='← 返回遊戲目錄';
@@ -326,13 +324,17 @@ reset(); draw();
       root=document.createElement('div');
       root.id='vg-back-root';
       root.setAttribute('aria-label','catalog');
-      function mk(id){
-        var a=document.createElement('a');
-        a.id=id; a.className='vg-back-btn'; a.href=HREF; a.title=LABEL; a.textContent=LABEL;
-        return a;
-      }
-      root.appendChild(mk('vg-back-bl'));
-      root.appendChild(mk('vg-back-tr'));
+      document.body.appendChild(root);
+    }
+    // remove legacy bottom-left fixed pill if present
+    var bl=document.getElementById('vg-back-bl');
+    if(bl && bl.parentNode) bl.parentNode.removeChild(bl);
+    var tr=document.getElementById('vg-back-tr');
+    if(!tr){
+      tr=document.createElement('a');
+      tr.id='vg-back-tr';
+      tr.className='vg-back-btn';
+      root.appendChild(tr);
     }
     root.style.setProperty('position','fixed');
     root.style.setProperty('inset','0');
@@ -341,59 +343,71 @@ reset(); draw();
     root.style.setProperty('display','block');
     root.style.setProperty('visibility','visible');
     root.style.setProperty('opacity','1');
-    var bl=document.getElementById('vg-back-bl');
-    var tr=document.getElementById('vg-back-tr');
-    function styleBtn(el, where){
-      if(!el) return;
-      el.href=HREF; el.title=LABEL; el.textContent=LABEL;
-      el.style.pointerEvents='auto';
-      el.style.position='fixed';
-      el.style.display='inline-flex';
-      el.style.visibility='visible';
-      el.style.opacity='1';
-      el.style.zIndex='2147483647';
-      if(where==='bl'){
-        el.style.left='max(12px, env(safe-area-inset-left))';
-        el.style.right='auto';
-        el.style.top='auto';
-        el.style.bottom='max(calc(30% + 16px), 72px)';
-      } else {
-        el.style.right='max(12px, env(safe-area-inset-right))';
-        el.style.top='max(12px, env(safe-area-inset-top))';
-        el.style.left='auto';
-        el.style.bottom='auto';
-      }
-    }
-    styleBtn(bl,'bl'); styleBtn(tr,'tr');
+    tr.href=HREF; tr.title=LABEL; tr.textContent=LABEL;
+    tr.className='vg-back-btn';
+    tr.style.pointerEvents='auto';
+    tr.style.position='fixed';
+    tr.style.display='inline-flex';
+    tr.style.visibility='visible';
+    tr.style.opacity='1';
+    tr.style.zIndex='2147483647';
+    tr.style.right='max(12px, env(safe-area-inset-right))';
+    tr.style.top='max(12px, env(safe-area-inset-top))';
+    tr.style.left='auto';
+    tr.style.bottom='auto';
     if(root.parentNode!==document.body) document.body.appendChild(root);
     else if(document.body.lastElementChild!==root) document.body.appendChild(root);
   }
   function ensureCardLinks(){
     document.querySelectorAll('.card').forEach(function(card){
-      var top = card.querySelector(':scope > a.vg-catalog, :scope > a[data-vg-catalog]');
-      if(!top || card.firstElementChild!==top){
-        var link = top || mkLink();
-        card.insertBefore(link, card.firstChild);
-      }
+      var links=card.querySelectorAll(':scope > a.vg-catalog, :scope > a[data-vg-catalog]');
       var play=card.querySelector('button.play,button#go,button#startBtn');
+      var keep=null;
       if(play){
-        var next=play.nextElementSibling;
-        if(!next || !(next.matches && (next.matches('a.vg-catalog') || next.matches('a[data-vg-catalog]')))){
-          play.insertAdjacentElement('afterend', mkLink());
+        // prefer single link under play/start
+        for(var i=0;i<links.length;i++){
+          if(links[i].previousElementSibling===play){ keep=links[i]; break; }
+        }
+        if(!keep){
+          keep = links[0] || mkLink();
+          play.insertAdjacentElement('afterend', keep);
+        }
+      } else {
+        keep = links[0] || mkLink();
+        if(!links.length) card.appendChild(keep);
+      }
+      card.querySelectorAll(':scope > a.vg-catalog, :scope > a[data-vg-catalog]').forEach(function(a){
+        if(a!==keep) a.parentNode.removeChild(a);
+      });
+      keep.href=HREF; keep.title=LABEL; keep.textContent=LABEL;
+      keep.className='vg-catalog';
+      keep.setAttribute('data-vg-catalog','1');
+    });
+    // midnight-estate end card: keep one catalog link under actions
+    var copy=document.querySelector('[data-end-copy-panel], .ec-copy-panel');
+    var acts=document.getElementById('ecActs');
+    var endLinks=[];
+    if(copy) copy.querySelectorAll('a.vg-catalog, a[data-vg-catalog]').forEach(function(a){ endLinks.push(a); });
+    if(acts) acts.querySelectorAll('a.vg-catalog, a[data-vg-catalog]').forEach(function(a){ endLinks.push(a); });
+    if(acts || copy){
+      var keepEnd=null;
+      if(acts){
+        for(var j=0;j<endLinks.length;j++){
+          if(acts.contains(endLinks[j])){ keepEnd=endLinks[j]; break; }
         }
       }
-    });
-    var copy=document.querySelector('[data-end-copy-panel], .ec-copy-panel');
-    if(copy && !copy.querySelector('[data-vg-catalog]')){
-      var top=mkLink();
-      top.style.cssText='display:inline-flex!important;align-items:center;justify-content:center;margin:0 0 12px;min-height:52px;padding:14px 22px;border-radius:999px;font:800 17px/1.2 sans-serif;text-decoration:none!important;border:2px solid #E8A33A;background:#0a0a12;color:#E8A33A!important;width:100%;max-width:320px;box-sizing:border-box;pointer-events:auto;position:relative;z-index:20';
-      copy.insertBefore(top, copy.firstChild);
-    }
-    var acts=document.getElementById('ecActs');
-    if(acts && !acts.querySelector('[data-vg-catalog]')){
-      var under=mkLink();
-      under.style.cssText='display:inline-flex!important;align-items:center;justify-content:center;margin:12px 0 0;min-height:52px;padding:14px 22px;border-radius:999px;font:800 17px/1.2 sans-serif;text-decoration:none!important;border:2px solid #E8A33A;background:#0a0a12;color:#E8A33A!important;width:100%;max-width:320px;box-sizing:border-box;pointer-events:auto;position:relative;z-index:20';
-      acts.appendChild(under);
+      if(!keepEnd && endLinks.length) keepEnd=endLinks[0];
+      if(!keepEnd){
+        keepEnd=mkLink();
+        keepEnd.style.cssText='display:inline-flex!important;align-items:center;justify-content:center;margin:12px 0 0;min-height:52px;padding:14px 22px;border-radius:999px;font:800 17px/1.2 sans-serif;text-decoration:none!important;border:2px solid #E8A33A;background:#0a0a12;color:#E8A33A!important;width:100%;max-width:320px;box-sizing:border-box;pointer-events:auto;position:relative;z-index:20';
+        if(acts) acts.appendChild(keepEnd);
+        else copy.appendChild(keepEnd);
+      } else if(acts && keepEnd.parentNode!==acts){
+        acts.appendChild(keepEnd);
+      }
+      endLinks.forEach(function(a){ if(a!==keepEnd && a.parentNode) a.parentNode.removeChild(a); });
+      keepEnd.href=HREF; keepEnd.title=LABEL; keepEnd.textContent=LABEL;
+      keepEnd.setAttribute('data-vg-catalog','1');
     }
     var end=document.getElementById('end');
     if(end && end.style && end.style.display==='block'){
