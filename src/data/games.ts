@@ -74,19 +74,19 @@ export const games: Game[] = [
     year: 2026,
     genres: ['射擊', '競技'],
     hookZh:
-      'Frag Channel 開播——快一步，今晚先有糧。你加入 Channel 7；十張地圖——貨櫃、廟市、招牌街、公屋天台、茶餐廳後巷、電車街、啟德天台、小巴巷、唐樓轉角同霓虹屋頂，打贏先有收視。',
+      'Frag Channel 開播——快一步，今晚先有糧。你加入 Channel 7；二十張完全唔同場景＋戰役廿關、自由混戰、佔領據點；拾取補給同額外槍械，仲有 Boss 收視戰。',
     hookEn:
-      'Frag Channel is live—half a step faster and tonight you eat. You join Channel 7 across ten maps: cargo, temple, sign street, estate roof, cha chaan back, Tram Street, Kai Tak Roof, minibus alley, Tong Lau bend and neon rooftop—win the fight, win the ratings.',
+      'Frag Channel is live—half a step faster and tonight you eat. Channel 7: twenty unique scenes, a 20-stage campaign, FFA, Hold the Point, pickups, extra firearms and boss fights.',
     gameplayZh:
-      '瀏覽器第一人稱射擊試玩：四種角色（閃／隼／石／影）、十張地圖（貨櫃碼頭／霓虹廟市／招牌街／公屋天台／茶餐廳後巷／電車街／啟德天台／夜間小巴巷／唐樓轉角／霓虹屋頂）、對戰 AI、跳與蹲滑。約 2.5 分鐘或先到 20 殺。',
+      '瀏覽器第一人稱射擊試玩：四種角色（閃／隼／石／影）、二十張獨立地圖、三種模式（FFA／Channel 7 戰役／佔領據點）、資源拾取、額外槍械、多場 Boss。約 2.5 分鐘或先到 20 殺；戰役有擊殺／存活／佔領目標。',
     gameplayEn:
-      'Browser FPS demo: four classes (Spark / Falcon / Rock / Shade), ten maps (Cargo Pier / Neon Temple / Sign Street / Estate Roof / Cha Chaan Back / Tram Street / Kai Tak Roof / Night Minibus Alley / Tong Lau Bend / Neon Rooftop), FFA vs AI, jump and crouch-slide. ~2.5 min or first to 20 kills.',
+      'Browser FPS demo: four classes (Spark / Falcon / Rock / Shade), twenty unique maps, three modes (FFA / Channel 7 campaign / Hold), pickups, extra firearms, bosses. ~2.5 min or first to 20 kills; campaign uses kill / survive / hold objectives.',
     features: [
       {
         titleZh: '港式霓虹競技場',
         titleEn: 'Neon harbour arenas',
-        bodyZh: '貨櫃碼頭、廟市、招牌街、公屋天台、茶餐廳後巷、電車街、啟德天台、小巴巷、唐樓轉角與霓虹屋頂——洋紅／青／琥珀霓虹低模。',
-        bodyEn: 'Cargo, temple, sign street, estate roof, cha chaan back, Tram Street, Kai Tak Roof, minibus alley, Tong Lau bend & neon rooftop—magenta/cyan/amber low-poly.',
+        bodyZh: '二十張完全獨立場景——招牌街、小巴巷、唐樓轉角、電車、夜市、霓虹屋頂、啟德、公屋、天橋、水塔、貨櫃、廟市、茶餐廳、卸貨、塔吊、當舖街機、招牌峽谷、雙軌電車、Channel 7 片場、維港終章。',
+        bodyEn: 'Twenty fully distinct arenas from sign street to harbour finale—magenta/cyan/amber low-poly Hong Kong nights.',
       },
       {
         titleZh: '四種港戰角色',
