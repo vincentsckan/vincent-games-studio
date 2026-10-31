@@ -954,9 +954,9 @@ function buildNeonSignStreet(root) {
   root.add(ground);
   solidBoxes.push(boxSolid(0, -1, 0, 48, 1, 52));
 
-  // wet-ground neon reflections down the alley
-  for (let i = -5; i <= 5; i++) {
-    addBox(root, 0, 0.02, i * 4.2, 2.2, 0.04, 3.4, 0x080810, i % 2 ? 0xff2d9b : 0x00e8ff, 1.15, false);
+  // subtle wet-ground sheen (low emit — was loud cyan/pink slabs)
+  for (let i = -2; i <= 2; i++) {
+    addBox(root, 0, 0.02, i * 8.5, 1.6, 0.03, 2.4, 0x0c1018, i % 2 ? 0x401828 : 0x102030, 0.25, false);
   }
   // zebra crossing mid-alley
   addZebraCrossing(root, 0, 0, false);
@@ -999,37 +999,31 @@ function buildNeonSignStreet(root) {
         vertical: true, bg: '#b01028', fg: '#fff4d0', emissive: 0xff2d3a, emitInt: 1.2,
       });
 
-      // dense horizontal neon boards
+      // one façade neon board + one strip (was dense forest)
       const c0 = neonPalette[(i + 4 + ri * 5) % neonPalette.length];
-      const c1 = neonPalette[(i + 6 + ri * 3) % neonPalette.length];
-      const c2 = neonPalette[(i + 1 + ri) % neonPalette.length];
-      addNeonSign(root, faceX, 4.0 + (i % 3) * 0.15, z - 0.9, 2.6 + (i % 2) * 0.4, 0.95, c0);
-      addNeonSign(root, faceX, 5.4, z + 0.85, 1.8, 0.7, c1);
-      if (h > 9) addNeonSign(root, faceX, 7.2, z, 2.2, 0.55, c2);
-
-      // 密排垂直霓虹 strips (red / cyan / amber)
-      const stripCols = [0xff2d3a, 0x00e8ff, 0xffd36a];
-      for (let s = 0; s < 3; s++) {
-        const sc = stripCols[(i + s + ri) % 3];
-        addBox(root, faceX, 2.0 + s * 0.15, z + (ri ? -1.9 : 1.9) + s * 0.35, 0.1, 3.8 + s * 0.4, 0.1, 0x080810, sc, 2.6, false);
+      if ((i + ri) % 2 === 0) {
+        addNeonSign(root, faceX, 4.2, z, 2.2, 0.7, c0);
       }
+      const stripCols = [0xff2d3a, 0x00e8ff, 0xffd36a];
+      const sc = stripCols[(i + ri) % 3];
+      addBox(root, faceX, 2.2, z + (ri ? -1.7 : 1.7), 0.08, 3.2, 0.08, 0x080810, sc, 1.4, false);
     }
   });
 
-  // hero vertical neon: 江記東江菜
-  addZhPanel(root, -5.8, 2.2, -2.5, 0.55, 4.6, 0.22, ZH_VERT_NEON, {
-    vertical: true, bg: '#b01028', fg: '#ffe8a0', emissive: 0xff2d3a, emitInt: 2.4,
+  // hero vertical neon pushed to façades (not center lane)
+  addZhPanel(root, -6.4, 2.2, -2.5, 0.45, 4.0, 0.18, ZH_VERT_NEON, {
+    vertical: true, bg: '#b01028', fg: '#ffe8a0', emissive: 0xff2d3a, emitInt: 1.6,
   });
-  addZhPanel(root, 5.8, 2.4, 4.0, 0.5, 4.2, 0.2, ZH_VERT_NEON, {
-    vertical: true, bg: '#b01028', fg: '#ffe8a0', emissive: 0xff2d3a, emitInt: 2.2,
+  addZhPanel(root, 6.4, 2.4, 4.0, 0.42, 3.8, 0.16, ZH_VERT_NEON, {
+    vertical: true, bg: '#b01028', fg: '#ffe8a0', emissive: 0xff2d3a, emitInt: 1.5,
   });
 
-  // horizontal banner boards with locked names
-  addZhPanel(root, 0, 4.6, -8.5, 3.6, 0.7, 0.16, ZH_BANNERS[0], {
-    vertical: false, bg: '#0a3a7a', fg: '#ffffff', emissive: 0x2080ff, emitInt: 1.8,
+  // horizontal banners on side façades only
+  addZhPanel(root, -6.0, 5.0, -8.5, 2.4, 0.55, 0.14, ZH_BANNERS[0], {
+    vertical: false, bg: '#0a3a7a', fg: '#ffffff', emissive: 0x2080ff, emitInt: 1.2,
   });
-  addZhPanel(root, 0, 5.0, 8.5, 2.8, 0.55, 0.14, ZH_BANNERS[1], {
-    vertical: false, bg: '#b01028', fg: '#ffe8a0', emissive: 0xff2d3a, emitInt: 1.7,
+  addZhPanel(root, 6.0, 5.0, 8.5, 2.2, 0.5, 0.12, ZH_BANNERS[1], {
+    vertical: false, bg: '#b01028', fg: '#ffe8a0', emissive: 0xff2d3a, emitInt: 1.1,
   });
 
   // 竹竿晾衫 spanning overhead
@@ -1052,32 +1046,26 @@ function buildNeonSignStreet(root) {
   addYellowTaxi(root, 3.2, -17.5, 0);
   addYellowTaxi(root, -3.2, 17.2, Math.PI);
 
-  // === HANGING SIGN CANYON (day ref: overlapping boards fill upper 2/3) ===
+  // Sparse hanging signs on façades only (was a dense canyon that buried the env plate)
   const hangStyles = [
     { bg: '#b01028', fg: '#fff4d0', em: 0xff2d3a },
     { bg: '#0a3a7a', fg: '#ffffff', em: 0x2080ff },
     { bg: '#0d5c3a', fg: '#ffe8a0', em: 0x40f080 },
-    { bg: '#f0e8d8', fg: '#8b1515', em: 0x401010 },
-    { bg: '#1a1a22', fg: '#ff4dc8', em: 0xff2d9b },
     { bg: '#c47800', fg: '#ffffff', em: 0xffa040 },
   ];
   const hangTexts = [...ZH_BANNERS, ...ZH_WALL, ZH_VERT_NEON];
   for (let side = 0; side < 2; side++) {
     const toward = side === 0 ? 1 : -1;
-    const baseX = side === 0 ? -5.4 : 5.4;
-    for (let row = 0; row < 5; row++) {
-      for (let col = 0; col < 9; col++) {
-        const z = -18 + col * 4.4 + (row % 2) * 0.7 + side * 0.35;
-        const y = 3.4 + row * 0.95 + ((col + side) % 3) * 0.2;
-        const st = hangStyles[(col + row * 2 + side) % hangStyles.length];
-        const txt = hangTexts[(col + row + side * 3) % hangTexts.length];
-        const w = 1.4 + (col % 3) * 0.55;
-        const h = 0.45 + (row % 2) * 0.2;
-        const x = baseX + toward * (0.4 + (row % 3) * 0.35 + (col % 2) * 0.25);
-        addHangSign(root, x, y, z, w, h, txt, {
-          bg: st.bg, fg: st.fg, emissive: st.em, emitInt: 1.35 + (row % 3) * 0.25,
-        });
-      }
+    const baseX = side === 0 ? -6.2 : 6.2;
+    for (let col = 0; col < 5; col++) {
+      const z = -14 + col * 7.0;
+      const y = 4.0 + (col % 3) * 0.55;
+      const st = hangStyles[(col + side * 2) % hangStyles.length];
+      const txt = hangTexts[(col + side * 3) % hangTexts.length];
+      const x = baseX + toward * 0.35;
+      addHangSign(root, x, y, z, 1.6, 0.45, txt, {
+        bg: st.bg, fg: st.fg, emissive: st.em, emitInt: 1.1,
+      });
     }
   }
   // vertical drain pipes + cable clutter along façades
@@ -1104,86 +1092,44 @@ function buildNeonSignStreet(root) {
     }
   });
 
-  // === V4 SIGN FOREST (banner canopy / metal arms / minibuses / scaffold) ===
+  // Sparse lexicon lightboxes on sides only (V4 forest removed — buried env plate)
   const ZH_LIGHTBOX = [
     '安和堂涼茶', '港南米線', '雅翠火鍋', '晶明鏡架', '星河書局',
     '跌打專科', '上海理髮', '足底舒壓 24H', '豬扒包 $26', '五金漆油',
-    '江記東江菜', '生興白米生油', '德成合記', '凉茶舖', '燒味',
-    '金蝠當舖', '江記東江菜', 'raymond 髮型', '通宵網吧', '按摩舒壓',
-    '牙齒保健', '喜筵壽宴',
-  ];
-  const ZH_EN = [
-    'ON WO TONG', 'KONG NAM NOODLE', 'JADE HOTPOT', 'CRYSTAL FRAMES', 'STAR RIVER BOOKS',
-    'BONE SETTING', 'SHANGHAI BARBER', 'FOOT SPA 24H', 'PORK BUN $26', 'HARDWARE',
-    'KONG KEE EAST', 'SANG HING RICE', 'TAK SING HOP', 'HERBAL TEA', 'SIU MEI',
+    '江記東江菜', '生興白米生油', '德成合記', '燒味', '金蝠當舖',
   ];
   const lbStyles = [
     { bg: '#b01028', fg: '#fff4d0', em: 0xff2d3a },
     { bg: '#0d5c3a', fg: '#ffe8a0', em: 0x40f080 },
     { bg: '#c47800', fg: '#1a1a22', em: 0xffa040 },
-    { bg: '#f0e8d8', fg: '#1a5c3a', em: 0x40f080 },
     { bg: '#0a3a7a', fg: '#ffffff', em: 0x2080ff },
-    { bg: '#ff4dc8', fg: '#ffffff', em: 0xff2d9b },
-    { bg: '#ffe060', fg: '#8b1515', em: 0xffd36a },
-    { bg: '#111110', fg: '#ffd36a', em: 0xffd36a },
   ];
-  // interlocking protruding lightboxes — sky slit only (ALL soft / non-solid)
   for (let side = 0; side < 2; side++) {
     const toward = side === 0 ? 1 : -1;
-    const baseX = side === 0 ? -4.4 : 4.4;
-    for (let tier = 0; tier < 7; tier++) {
-      for (let col = 0; col < 12; col++) {
-        const z = -20 + col * 3.4 + (tier % 2) * 0.5 + side * 0.15;
-        const y = 2.6 + tier * 0.78 + ((col + side) % 3) * 0.1;
-        const st = lbStyles[(col + tier * 3 + side) % lbStyles.length];
-        const txt = ZH_LIGHTBOX[(col + tier + side * 5) % ZH_LIGHTBOX.length];
-        const w = 1.3 + (col % 4) * 0.4;
-        const h = 0.38 + (tier % 2) * 0.16;
-        const x = baseX + toward * (0.2 + (tier % 4) * 0.32 + (col % 3) * 0.1);
-        addHangSign(root, x, y, z, w, h, txt, {
-          bg: st.bg, fg: st.fg, emissive: st.em, emitInt: 1.25 + (tier % 3) * 0.3,
-        });
-        // metal arm toward façade
-        addBox(root, x - toward * (w * 0.35 + 0.4), y + h * 0.4, z, 0.9, 0.05, 0.05, 0x4a5058, 0x000000, 0, false);
-        if ((col + tier) % 4 === 0) {
-          addHangSign(root, x, y - 0.3, z + 0.04, w * 0.85, 0.26, ZH_EN[(col + tier) % ZH_EN.length], {
-            bg: '#0a0a12', fg: '#e8e0d0', emissive: st.em, emitInt: 0.85,
-          });
-        }
-      }
+    const baseX = side === 0 ? -6.4 : 6.4;
+    for (let col = 0; col < 4; col++) {
+      const z = -12 + col * 8;
+      const y = 3.6 + (col % 2) * 0.8;
+      const st = lbStyles[(col + side) % lbStyles.length];
+      const txt = ZH_LIGHTBOX[(col + side * 4) % ZH_LIGHTBOX.length];
+      addHangSign(root, baseX + toward * 0.25, y, z, 1.8, 0.48, txt, {
+        bg: st.bg, fg: st.fg, emissive: st.em, emitInt: 1.2,
+      });
     }
   }
-  // hero lexicon row (v5 / Translation fictional set)
+  // A few hero lexicon signs parked on façades (not center lane)
   const heroRow = [
-    [-3.2, 6.2, -4, '安和堂涼茶', '#0d5c3a', '#ffffff', 0x40f080],
-    [3.2, 6.2, -4, '港南米線', '#ffe060', '#0a3a7a', 0xffd36a],
-    [-3.2, 5.3, -2, '雅翠火鍋', '#b01028', '#fff4d0', 0xff2d3a],
-    [3.2, 5.3, -2, '晶明鏡架', '#0d5c3a', '#ffe8a0', 0x40f080],
-    [-3.2, 4.4, 0, '星河書局', '#0a3a7a', '#ffffff', 0x2080ff],
-    [3.2, 4.4, 0, '跌打專科', '#c47800', '#1a1a22', 0xffa040],
-    [-3.2, 3.5, 2, '上海理髮', '#f0e8d8', '#8b1515', 0x401010],
-    [3.2, 3.5, 2, '足底舒壓 24H', '#ff4dc8', '#ffffff', 0xff2d9b],
-    [-3.2, 2.7, 4, '江記東江菜', '#b01028', '#ffe8a0', 0xff2d3a],
-    [3.2, 2.7, 4, '生興白米生油', '#f0e8d8', '#1a5c3a', 0x40f080],
-    [-3.2, 2.0, 6, '豬扒包 $26', '#ffe060', '#8b1515', 0xffd36a],
-    [3.2, 2.0, 6, '五金漆油', '#0d5c3a', '#ffffff', 0x40f080],
+    [-6.0, 5.2, -4, '安和堂涼茶', '#0d5c3a', '#ffffff', 0x40f080],
+    [6.0, 5.2, -4, '港南米線', '#ffe060', '#0a3a7a', 0xffd36a],
+    [-6.0, 4.2, 4, '上海理髮', '#f0e8d8', '#8b1515', 0x401010],
+    [6.0, 4.2, 4, '足底舒壓 24H', '#ff4dc8', '#ffffff', 0xff2d9b],
+    [-6.0, 3.4, 12, '江記東江菜', '#b01028', '#ffe8a0', 0xff2d3a],
+    [6.0, 3.4, 12, '德成合記', '#0a3a7a', '#ffffff', 0x2080ff],
   ];
   heroRow.forEach(([x, y, z, txt, bg, fg, em]) => {
-    addHangSign(root, x, y, z, 2.4, 0.55, txt, { bg, fg, emissive: em, emitInt: 2.0 });
+    addHangSign(root, x, y, z, 2.0, 0.5, txt, { bg, fg, emissive: em, emitInt: 1.35 });
   });
-  addHangSign(root, -4.0, 4.8, 8, 2.2, 0.65, '安和堂涼茶', {
-    bg: '#0d5c3a', fg: '#ffffff', emissive: 0x40f080, emitInt: 2.1,
-  });
-  addHangSign(root, 4.0, 4.6, 8, 2.0, 0.55, '港南米線', {
-    bg: '#ffe060', fg: '#0a3a7a', emissive: 0xffd36a, emitInt: 2.0,
-  });
-  addPawnSign(root, -4.5, 5.6, 12);
-  addHangSign(root, -4.5, 4.3, 12, 1.5, 0.38, '金蝠當舖', {
-    bg: '#b01028', fg: '#ffe8a0', emissive: 0xff2d3a, emitInt: 1.5,
-  });
-  addHangSign(root, 4.2, 5.0, 12, 1.8, 0.45, '德成合記', {
-    bg: '#0a3a7a', fg: '#ffffff', emissive: 0x2080ff, emitInt: 1.8,
-  });
+  addPawnSign(root, -6.2, 5.4, 16);
   // barber pole + 上海理髮 near arcade
   addBarberPole(root, -4.6, -6.5, 2.5);
   addZhPanel(root, -4.6, 0.35, -5.6, 0.12, 1.6, 0.35, '上海理髮', {
@@ -1211,17 +1157,15 @@ function buildNeonSignStreet(root) {
   addSmallTruck(root, 3.0, 22.0, Math.PI / 2);
 
 
-    // end walls
-  addBox(root, 0, 0, 24, 28, 6, 1.2, 0x100c18, 0xff2d9b, 0.35, true);
-  addBox(root, 0, 0, -24, 28, 6, 1.2, 0x100c18, 0x00e8ff, 0.35, true);
-  addBox(root, 16, 0, 0, 1.2, 6, 48, 0x100c18, 0x40f0ff, 0.2, true);
-  addBox(root, -16, 0, 0, 1.2, 6, 48, 0x100c18, 0xff4dc8, 0.2, true);
+  // dark end barriers — no loud cyan/pink emissive walls near FOV
+  addBox(root, 0, 0, 24, 28, 5, 1.2, 0x0c1018, 0x000000, 0, true);
+  addBox(root, 0, 0, -24, 28, 5, 1.2, 0x0c1018, 0x000000, 0, true);
+  addBox(root, 16, 0, 0, 1.2, 5, 48, 0x0c1018, 0x000000, 0, true);
+  addBox(root, -16, 0, 0, 1.2, 5, 48, 0x0c1018, 0x000000, 0, true);
 
-  // hanging cross-street neon wires + denser strips
-  for (let i = -4; i <= 4; i++) {
-    addBox(root, 0, 5.2, i * 4.5, 14, 0.06, 0.06, 0x080810, 0xff4dc8, 1.8, false);
-    addBox(root, -3 + (i % 3), 4.8, i * 4.5, 0.5, 0.5, 0.12, 0x111118, i % 2 ? 0x00e8ff : 0xffd36a, 2.6, false);
-    addBox(root, 2.5 - (i % 2), 6.0, i * 4.5, 0.1, 2.8, 0.1, 0x080810, i % 3 === 0 ? 0xff2d3a : 0x00e8ff, 2.4, false);
+  // light cross-street cables only (no floating neon boxes in center)
+  for (let i = -2; i <= 2; i++) {
+    addBox(root, 0, 6.0, i * 8, 12, 0.04, 0.04, 0x1a1a20, 0x000000, 0, false);
   }
 }
 
@@ -1964,7 +1908,7 @@ function disposeEnvGroup(root) {
   });
 }
 
-/** Apply photographic plate as sky/backdrop + ground/wall materials when present. */
+/** Apply photographic plate as sky/backdrop. Plate must dominate — no near cyclorama slabs. */
 function applyCinematicEnv(root, mapId, tex) {
   if (!root || !tex || !scene) return false;
   disposeEnvGroup(root);
@@ -1972,122 +1916,73 @@ function applyCinematicEnv(root, mapId, tex) {
   const envGroup = new THREE.Group();
   envGroup.name = 'cinematicEnv';
 
-  // Large photographic sky cylinder — cinematic HK neon city backdrop
+  // Photographic sky cylinder only (no ±42 cyclorama wall quads — those read as teal slabs)
   const skyMat = new THREE.MeshBasicMaterial({
     map: tex,
     side: THREE.BackSide,
     fog: false,
     depthWrite: false,
   });
-  const sky = new THREE.Mesh(new THREE.CylinderGeometry(88, 88, 52, 64, 1, true), skyMat);
-  sky.position.y = 16;
+  const sky = new THREE.Mesh(new THREE.CylinderGeometry(96, 96, 56, 64, 1, true), skyMat);
+  sky.position.y = 18;
   sky.renderOrder = -2;
   envGroup.add(sky);
 
-  // Soft ground wash from the same plate
-  const groundMap = tex.clone();
-  groundMap.wrapS = THREE.RepeatWrapping;
-  groundMap.wrapT = THREE.RepeatWrapping;
-  groundMap.repeat.set(3.2, 3.2);
-  groundMap.needsUpdate = true;
-  const groundMat = new THREE.MeshStandardMaterial({
-    map: groundMap,
-    color: 0xffffff,
-    roughness: 0.92,
-    metalness: 0.06,
-  });
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(96, 96), groundMat);
-  ground.rotation.x = -Math.PI / 2;
-  ground.position.y = 0.015;
-  ground.receiveShadow = false;
-  ground.renderOrder = -1;
-  envGroup.add(ground);
+  // One distant flat backdrop behind play (far Z−) — plate readable, not clipping FOV
+  const backdrop = new THREE.Mesh(
+    new THREE.PlaneGeometry(120, 48),
+    new THREE.MeshBasicMaterial({ map: tex, fog: false, depthWrite: false })
+  );
+  backdrop.position.set(0, 18, -70);
+  backdrop.renderOrder = -3;
+  envGroup.add(backdrop);
 
-  // Road stripe strip (wet asphalt feel under the plate)
+  // Dark asphalt lane — solid dark, NOT tiled env plate (tiled plate looked broken/noisy)
   const roadMat = new THREE.MeshStandardMaterial({
-    color: 0x1a1e28,
-    roughness: 0.35,
-    metalness: 0.45,
-    emissive: 0x102030,
-    emissiveIntensity: 0.25,
+    color: 0x141820,
+    roughness: 0.88,
+    metalness: 0.12,
+    emissive: 0x000000,
+    emissiveIntensity: 0,
   });
-  const road = new THREE.Mesh(new THREE.PlaneGeometry(14, 72), roadMat);
+  const road = new THREE.Mesh(new THREE.PlaneGeometry(12, 64), roadMat);
   road.rotation.x = -Math.PI / 2;
   road.position.set(0, 0.02, 0);
   envGroup.add(road);
-  for (let i = -8; i <= 8; i++) {
+  for (let i = -6; i <= 6; i++) {
     const dash = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.35, 2.2),
-      new THREE.MeshBasicMaterial({ color: 0xffe080 })
+      new THREE.PlaneGeometry(0.28, 1.8),
+      new THREE.MeshBasicMaterial({ color: 0xc8b060 })
     );
     dash.rotation.x = -Math.PI / 2;
-    dash.position.set(0, 0.03, i * 4.2);
+    dash.position.set(0, 0.03, i * 4.5);
     envGroup.add(dash);
   }
 
-  // Far cyclorama walls so FPS views stay photographic
-  const wallMat = new THREE.MeshBasicMaterial({
-    map: tex,
-    side: THREE.DoubleSide,
-    fog: true,
-    transparent: true,
-    opacity: 0.92,
-  });
-  const wallSpecs = [
-    [0, 14, -42, 84, 28, 0],
-    [0, 14, 42, 84, 28, 0],
-    [-42, 14, 0, 84, 28, Math.PI / 2],
-    [42, 14, 0, 84, 28, Math.PI / 2],
-  ];
-  wallSpecs.forEach(([x, y, z, w, h, rotY]) => {
-    const wall = new THREE.Mesh(new THREE.PlaneGeometry(w, h), wallMat.clone());
-    wall.position.set(x, y, z);
-    wall.rotation.y = rotY;
-    wall.renderOrder = -1;
-    envGroup.add(wall);
-  });
-
-  // Retexture existing ground planes from map builders
-  root.traverse((obj) => {
-    if (!obj.isMesh || !obj.geometry) return;
-    if (obj.geometry.type !== 'PlaneGeometry') return;
-    if (Math.abs(obj.rotation.x + Math.PI / 2) > 0.05) return;
-    const mat = obj.material;
-    if (!mat || !mat.isMeshStandardMaterial) return;
-    const gmap = tex.clone();
-    gmap.wrapS = THREE.RepeatWrapping;
-    gmap.wrapT = THREE.RepeatWrapping;
-    gmap.repeat.set(2.5, 2.5);
-    gmap.needsUpdate = true;
-    mat.map = gmap;
-    mat.color.set(0xffffff);
-    mat.needsUpdate = true;
-  });
-
-  // Living neon-city slice densify (vehicles / billboards / curb clutter) — not open-world GTA
+  // Sparse curb silhouettes + soft neon props (plate stays the hero)
   densifyCinematicCitySlice(envGroup, root, mapId);
 
-  // Richer cinematic lighting keyed off the plate
-  const neonPink = new THREE.PointLight(0xff4dc8, 1.35, 55, 2);
-  neonPink.position.set(-10, 8, 6);
+  // Soft cinematic fill — keep intensity modest so plate reads
+  const neonPink = new THREE.PointLight(0xff4dc8, 0.85, 48, 2);
+  neonPink.position.set(-12, 9, 8);
   envGroup.add(neonPink);
-  const neonCyan = new THREE.PointLight(0x40f0ff, 1.25, 55, 2);
-  neonCyan.position.set(12, 7, -8);
+  const neonCyan = new THREE.PointLight(0x40f0ff, 0.75, 48, 2);
+  neonCyan.position.set(14, 8, -10);
   envGroup.add(neonCyan);
-  const amberFill = new THREE.PointLight(0xffd36a, 0.85, 40, 2);
-  amberFill.position.set(0, 5, 10);
+  const amberFill = new THREE.PointLight(0xffd36a, 0.55, 36, 2);
+  amberFill.position.set(0, 6, 12);
   envGroup.add(amberFill);
-  const rim = new THREE.DirectionalLight(0xff80c8, 0.55);
+  const rim = new THREE.DirectionalLight(0xff80c8, 0.35);
   rim.position.set(-8, 22, -14);
   envGroup.add(rim);
 
   scene.background = tex;
-  scene.fog = new THREE.FogExp2(0x0a1020, 0.0075);
+  scene.fog = new THREE.FogExp2(0x080e1a, 0.0055);
   root.add(envGroup);
   return true;
 }
 
-/** Denser HK neon street silhouettes when an env plate is live (browser FPS city slice). */
+/** Sparse HK curb silhouettes when env plate is live — plate stays the main visual. */
 function densifyCinematicCitySlice(envGroup, root, mapId) {
   const seed = String(mapId || 'cargo').split('').reduce((a, c) => a + c.charCodeAt(0), 0);
   const rnd = (i) => {
@@ -2095,63 +1990,52 @@ function densifyCinematicCitySlice(envGroup, root, mapId) {
     return x - Math.floor(x);
   };
 
-  // Parked vehicle silhouettes along curb lines (reuse existing prop builders; collision on)
+  // Fewer parked vehicles, curb-only (never center lane)
   const vehicleSlots = [
-    [-9.5, -18, 0], [9.5, -14, Math.PI], [-9.5, -6, 0], [9.5, -2, Math.PI],
-    [-9.5, 8, 0], [9.5, 12, Math.PI], [-9.5, 20, 0], [9.5, 22, Math.PI],
+    [-10.5, -16, 0], [10.5, -8, Math.PI], [-10.5, 6, 0], [10.5, 16, Math.PI],
   ];
   vehicleSlots.forEach(([x, z, rot], i) => {
-    const pick = Math.floor(rnd(i + 1) * 5);
+    const pick = Math.floor(rnd(i + 1) * 4);
     try {
       if (pick === 0) addYellowTaxi(root, x, z, rot);
       else if (pick === 1) addMinibus(root, x, z, rnd(i + 2) > 0.5 ? 'red' : 'green', rot);
       else if (pick === 2) addVintageSedan(root, x, z, rot, rnd(i + 3) > 0.5 ? 0xf2f0ea : 0x2a3344);
-      else if (pick === 3) addSmallTruck(root, x, z, rot);
-      else addYellowTaxi(root, x, z, rot + 0.05);
-    } catch (_) { /* keep soft if a prop helper throws */ }
+      else addSmallTruck(root, x, z, rot);
+    } catch (_) { /* soft */ }
   });
 
-  // Billboard / hanging sign canopy densify
+  // 5 neon signs only — far on sides (x ±14+), never center FOV
   const billboardCols = [0xff2d9b, 0x00e8ff, 0xffd36a, 0xff4dc8, 0x40f0ff];
-  for (let i = 0; i < 14; i++) {
-    const side = rnd(i + 40) > 0.5 ? 1 : -1;
-    const x = side * (11 + rnd(i + 41) * 2.5);
-    const z = -28 + i * 4.2 + rnd(i + 42) * 1.2;
-    const y = 3.2 + rnd(i + 43) * 4.5;
+  for (let i = 0; i < 5; i++) {
+    const side = i % 2 === 0 ? -1 : 1;
+    const x = side * (14.5 + rnd(i + 41) * 2.0);
+    const z = -18 + i * 8.5 + rnd(i + 42) * 1.5;
+    const y = 3.8 + rnd(i + 43) * 2.5;
     const col = billboardCols[i % billboardCols.length];
-    addNeonSign(root, x, y, z, 2.4 + rnd(i + 44) * 2.2, 0.7 + rnd(i + 45) * 1.1, col);
+    addNeonSign(root, x, y, z, 1.8 + rnd(i + 44) * 1.0, 0.55 + rnd(i + 45) * 0.35, col);
   }
 
-  // Curb clutter — handcarts, stools, bins, barber poles
-  for (let i = 0; i < 10; i++) {
+  // Light curb clutter
+  for (let i = 0; i < 5; i++) {
     const side = rnd(i + 80) > 0.5 ? 1 : -1;
-    const x = side * (7.2 + rnd(i + 81) * 1.8);
-    const z = -24 + i * 5.1;
-    const kind = Math.floor(rnd(i + 82) * 4);
-    if (kind === 0) addRedHandcart(root, x, z, side > 0 ? Math.PI / 2 : -Math.PI / 2, false);
-    else if (kind === 1) addTrashBin(root, x, z, i % 2);
-    else if (kind === 2) addRedStool(root, x, z, false);
-    else addBarberPole(root, x, z, 2.2 + rnd(i + 83));
+    const x = side * (8.5 + rnd(i + 81) * 1.2);
+    const z = -20 + i * 9;
+    const kind = Math.floor(rnd(i + 82) * 3);
+    if (kind === 0) addTrashBin(root, x, z, i % 2);
+    else if (kind === 1) addRedStool(root, x, z, false);
+    else addBarberPole(root, x, z, 2.0 + rnd(i + 83) * 0.4);
   }
 
-  // Extra zebra + wet neon ground glow strips
   try {
-    addZebraCrossing(root, 0, -10, true);
-    addZebraCrossing(root, 0, 10, true);
+    addZebraCrossing(root, 0, 0, true);
   } catch (_) {}
-  for (let i = -4; i <= 4; i++) {
-    addBox(envGroup, i * 7, 0.01, 0, 5.5, 0.04, 0.35, 0x081018, i % 2 ? 0xff2d9b : 0x00e8ff, 1.1, false);
-  }
 
-  // Tall facade silhouettes framing the plate (soft — no solid, keep lanes open)
-  for (let i = -3; i <= 3; i++) {
+  // Distant dark facade frames only (no emissive neon slabs) — keep plate readable
+  for (let i = -2; i <= 2; i++) {
     if (i === 0) continue;
-    const h = 10 + Math.abs(i) * 2.5 + rnd(i + 100) * 4;
-    addBox(envGroup, -30, 0, i * 10, 6, h, 8, 0x10141c, 0x000000, 0, false);
-    addBox(envGroup, 30, 0, i * 10, 6, h * 0.9, 8, 0x12101a, 0x000000, 0, false);
-    const neon = i % 2 ? 0xff2d9b : 0x40f0ff;
-    addNeonSign(envGroup, -26.8, 4 + rnd(i + 110) * 3, i * 10, 3.5, 1.2, neon);
-    addNeonSign(envGroup, 26.8, 5 + rnd(i + 111) * 3, i * 10, 3.2, 1.0, neon === 0xff2d9b ? 0x00e8ff : 0xffd36a);
+    const h = 12 + Math.abs(i) * 2 + rnd(i + 100) * 3;
+    addBox(envGroup, -34, 0, i * 14, 5, h, 7, 0x0c1018, 0x000000, 0, false);
+    addBox(envGroup, 34, 0, i * 14, 5, h * 0.92, 7, 0x0e0c14, 0x000000, 0, false);
   }
 }
 
