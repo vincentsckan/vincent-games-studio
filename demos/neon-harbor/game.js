@@ -33,21 +33,42 @@ const MAPS = [
     nameZh: '霓虹招牌街',
     nameEn: 'Neon Sign Street',
     desc: '呢度啲燈仲亮緊——不過人已經唔同。',
-    thumb: 'refs/map-neon-sign-street.jpg',
+    thumb: 'refs/map-sign-street-densify.jpg',
   },
   {
-    id: 'estate',
-    nameZh: '公屋天台',
-    nameEn: 'Estate Roof',
-    desc: '晾衫未收——天台已經係賽場。',
-    thumb: 'refs/map-estate-roof.jpg',
+    id: 'minibus',
+    nameZh: '夜間小巴巷',
+    nameEn: 'Night Minibus Alley',
+    desc: '小巴未埋站，槍火先到。',
+    thumb: 'refs/map-minibus-night.jpg',
   },
   {
-    id: 'teahouse',
-    nameZh: '茶餐廳後巷',
-    nameEn: 'Cha Chaan Back',
-    desc: '花磚仲在，霓虹只剩半個字。',
-    thumb: 'refs/map-cha-chaan-back.jpg',
+    id: 'tonglau',
+    nameZh: '唐樓轉角',
+    nameEn: 'Tong Lau Bend',
+    desc: '轉角有燈，轉角有槍。',
+    thumb: 'refs/map-tonglau-bend.jpg',
+  },
+  {
+    id: 'neonroof',
+    nameZh: '霓虹屋頂',
+    nameEn: 'Neon Rooftop',
+    desc: '屋頂燈火，唔見天光。',
+    thumb: 'refs/map-neon-rooftop.jpg',
+  },
+  {
+    id: 'tram',
+    nameZh: '電車街',
+    nameEn: 'Tram Street',
+    desc: '叮叮未到，槍口先響。',
+    thumb: 'refs/map-tram-street.jpg',
+  },
+  {
+    id: 'kaitak',
+    nameZh: '啟德天台',
+    nameEn: 'Kai Tak Roof',
+    desc: '飛機唔再落，晾衫仲在。',
+    thumb: 'refs/map-kai-tak-roof.jpg',
   },
 ];
 
@@ -815,8 +836,8 @@ function buildNeonSignStreet(root) {
   // 霓虹招牌街 — densified Tong Lau alley (綠窗/冷氣/密霓虹/晾衫/黃的)
   // keep spawns in central walk corridor (signs soft-only; avoid arcade pillars)
   spawnPoints = [
-    [0, 0, 0], [1.2, 0, 8], [-1.2, 0, 8], [1.2, 0, -8],
-    [-1.2, 0, -8], [0, 0, 12], [0, 0, -12], [0.8, 0, 4],
+    [0, 0, 0], [1.2, 0, 6], [-1.2, 0, 6], [1.2, 0, -6],
+    [-1.2, 0, -6], [0, 0, 9], [0, 0, -9], [0.8, 0, 3],
   ];
   const ground = new THREE.Mesh(
     new THREE.PlaneGeometry(48, 52),
@@ -1097,8 +1118,8 @@ function buildNeonSignStreet(root) {
   }
 }
 
-function buildEstateRoof(root) {
-  // 公屋天台 — water tanks, denser 晾衫, 冷氣, iron gates (no new map)
+function buildKaiTakRoof(root) {
+  // 啟德天台 — water-tower emphasis, denser 晾衫, 冷氣, iron gates
   spawnPoints = [
     [0, 0, 0], [12, 0, 10], [-12, 0, 10], [12, 0, -10],
     [-12, 0, -10], [0, 0, 16], [18, 0, 0], [-18, 0, 0],
@@ -1132,11 +1153,15 @@ function buildEstateRoof(root) {
     });
   });
 
-  // water tanks
-  [[-8, 8], [10, 6], [-6, -8], [8, -6]].forEach(([x, z]) => {
-    addBox(root, x, 0, z, 3.2, 2.8, 3.2, 0x5a6870, 0x000000, 0, true);
-    addBox(root, x, 2.8, z, 3.4, 0.2, 3.4, 0x3a4850, 0x40f0ff, 0.4, true);
-    addBox(root, x, 0, z, 0.5, 3.4, 0.5, 0x2a3038, 0x000000, 0, true);
+  // water towers (Kai Tak emphasis) — larger tanks + elevated stilts
+  [[-8, 8], [10, 6], [-6, -8], [8, -6], [0, 0]].forEach(([x, z], ti) => {
+    const s = ti === 4 ? 4.2 : 3.6;
+    const h = ti === 4 ? 4.0 : 3.2;
+    addBox(root, x, 0, z, s, h, s, 0x5a6870, 0x000000, 0, true);
+    addBox(root, x, h, z, s + 0.25, 0.25, s + 0.25, 0x3a4850, 0x40f0ff, 0.55, true);
+    addBox(root, x, 0, z, 0.55, h + 0.8, 0.55, 0x2a3038, 0x000000, 0, true);
+    // cyan rim glow ring
+    addBox(root, x, h + 0.15, z, s + 0.5, 0.08, s + 0.5, 0x101018, 0x40f0ff, 1.4, false);
   });
 
   // denser 竹竿晾衫 racks
@@ -1169,8 +1194,10 @@ function buildEstateRoof(root) {
   }
 }
 
-function buildTeahouseBack(root) {
-  // 茶餐廳後巷 — white Tong Lau, 綠窗, pillar 直寫, 江記 neon, 黃的, stools
+
+const buildEstateRoof = buildKaiTakRoof;
+function buildTramStreet(root) {
+  // 電車街 — Tong Lau façades + light tram poles / track stripes
   spawnPoints = [
     [0, 0, 0], [5, 0, 8], [-5, 0, 8], [5, 0, -8],
     [-5, 0, -8], [0, 0, 14], [8, 0, 0], [-8, 0, 0],
@@ -1272,6 +1299,18 @@ function buildTeahouseBack(root) {
     bg: '#ffe060', fg: '#0a3a7a', emissive: 0xffd36a, emitInt: 1.5,
   });
 
+
+  // tram track stripes down the street center + poles
+  for (let i = -8; i <= 8; i++) {
+    addBox(root, -0.55, 0.02, i * 2.4, 0.18, 0.04, 2.2, 0x3a3a42, 0x000000, 0, false);
+    addBox(root, 0.55, 0.02, i * 2.4, 0.18, 0.04, 2.2, 0x3a3a42, 0x000000, 0, false);
+  }
+  [[-3.2, -12], [3.2, -6], [-3.2, 0], [3.2, 6], [-3.2, 12], [3.2, 16]].forEach(([x, z], i) => {
+    addBox(root, x, 0, z, 0.22, 5.2, 0.22, 0x2a3038, 0x000000, 0, true);
+    addBox(root, x, 5.0, z, 1.6, 0.12, 0.12, 0x1a2030, 0xffd36a, 1.4, false);
+    addBox(root, 0, 4.6, z, Math.abs(x) * 2, 0.06, 0.06, 0x080810, i % 2 ? 0xff4dc8 : 0x40f0ff, 1.2, false);
+  });
+
   // back kitchen doorway
   addBox(root, 0, 0, 0, 2.2, 2.6, 0.8, 0x221828, 0xff4dc8, 0.35, true);
   addBox(root, 0, 2.5, 0, 2.6, 0.15, 1.0, 0x101018, 0xffd36a, 1.5, false);
@@ -1287,6 +1326,8 @@ function buildTeahouseBack(root) {
   }
 }
 
+
+const buildTeahouseBack = buildTramStreet;
 function makeBotMesh(color) {
   const g = new THREE.Group();
   const body = new THREE.Mesh(
@@ -1401,9 +1442,9 @@ function buildWorld(mapId) {
   const root = new THREE.Group();
   scene.add(root);
   if (mapId === 'temple') buildNeonTemple(root);
-  else if (mapId === 'signs') buildNeonSignStreet(root);
-  else if (mapId === 'estate') buildEstateRoof(root);
-  else if (mapId === 'teahouse') buildTeahouseBack(root);
+  else if (mapId === 'signs' || mapId === 'minibus') buildNeonSignStreet(root);
+  else if (mapId === 'kaitak' || mapId === 'neonroof' || mapId === 'estate') buildKaiTakRoof(root);
+  else if (mapId === 'tram' || mapId === 'tonglau' || mapId === 'teahouse') buildTramStreet(root);
   else buildCargoPier(root);
 
   // viewmodel gun
@@ -1459,9 +1500,10 @@ function collideXZ(x, z, y, radius) {
     }
   }
   // soft bounds
-  const lim = state.mapId === 'temple' || state.mapId === 'signs' || state.mapId === 'teahouse'
-    ? 22
-    : state.mapId === 'estate' ? 25 : 36;
+  // soft bounds ~1.5× (Vincent: 很大地圖) — corridor / roof / pier families
+  const corridor = new Set(['temple', 'signs', 'minibus', 'tram', 'tonglau', 'teahouse']);
+  const roof = new Set(['kaitak', 'neonroof', 'estate']);
+  const lim = corridor.has(state.mapId) ? 33 : roof.has(state.mapId) ? 38 : 54;
   nx = Math.max(-lim, Math.min(lim, nx));
   nz = Math.max(-lim, Math.min(lim, nz));
   return { x: nx, z: nz };
