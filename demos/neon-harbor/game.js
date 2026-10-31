@@ -699,7 +699,7 @@ function addPawnSign(group, x, y, z) {
 
 
 // Locked zh-Hant sign copy (Translation) — fully fictional / non-trademark
-const ZH_VERT_NEON = '富龍大茶樓';
+const ZH_VERT_NEON = '江記東江菜';
 const ZH_WALL = ['罐頭食品', '名茶', '茶莊禮品', '乾餅菓', '生興白米生油'];
 const ZH_BANNERS = ['德成合記', '喜筵壽宴', '上海理髮', '安和堂涼茶', '燒味'];
 
@@ -888,7 +888,7 @@ function buildNeonSignStreet(root) {
     }
   });
 
-  // hero vertical neon: 富龍大茶樓
+  // hero vertical neon: 江記東江菜
   addZhPanel(root, -5.8, 2.2, -2.5, 0.55, 4.6, 0.22, ZH_VERT_NEON, {
     vertical: true, bg: '#b01028', fg: '#ffe8a0', emissive: 0xff2d3a, emitInt: 2.4,
   });
@@ -981,7 +981,7 @@ function buildNeonSignStreet(root) {
     '安和堂涼茶', '港南米線', '雅翠火鍋', '晶明鏡架', '星河書局',
     '跌打專科', '上海理髮', '足底舒壓 24H', '豬扒包 $26', '五金漆油',
     '江記東江菜', '生興白米生油', '德成合記', '凉茶舖', '燒味',
-    '金蝠當舖', '富龍大茶樓', 'raymond 髮型', '通宵網吧', '按摩舒壓',
+    '金蝠當舖', '江記東江菜', 'raymond 髮型', '通宵網吧', '按摩舒壓',
     '牙齒保健', '喜筵壽宴',
   ];
   const ZH_EN = [
@@ -1170,7 +1170,7 @@ function buildEstateRoof(root) {
 }
 
 function buildTeahouseBack(root) {
-  // 茶餐廳後巷 — white Tong Lau, 綠窗, pillar 直寫, 富龍 neon, 黃的, stools
+  // 茶餐廳後巷 — white Tong Lau, 綠窗, pillar 直寫, 江記 neon, 黃的, stools
   spawnPoints = [
     [0, 0, 0], [5, 0, 8], [-5, 0, 8], [5, 0, -8],
     [-5, 0, -8], [0, 0, 14], [8, 0, 0], [-8, 0, 0],
@@ -1232,7 +1232,7 @@ function buildTeahouseBack(root) {
     }
   });
 
-  // 富龍大茶樓 hero neon
+  // 江記東江菜 hero neon
   addZhPanel(root, -4.6, 1.8, 3.5, 0.5, 4.0, 0.2, ZH_VERT_NEON, {
     vertical: true, bg: '#b01028', fg: '#ffe8a0', emissive: 0xff2d3a, emitInt: 2.5,
   });
