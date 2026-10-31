@@ -1870,16 +1870,16 @@ function chromaKeyPlayerTexture(img) {
     const r = px[i], g = px[i + 1], b = px[i + 2];
     // Only key true chroma-green screen (high G, low R/B).
     // NEVER treat dark jacket/pants (low lum) as transparent — Multimedia confirmed lum<36 punched coats.
+    // Strict chroma-green only. Dark coats/pants (low R≈G≈B) must stay opaque.
     const maxRB = Math.max(r, b);
-    const greenDominates = g > 88 && g > maxRB * 1.45 && (g - maxRB) > 28;
-    const greenScreen = greenDominates && (r + b) < g * 1.15;
+    const greenDominates = g >= 110 && g > r + 40 && g > b + 40 && g > maxRB * 1.65;
+    const notNeutralDark = (r + g + b) > 90; // never key near-black / charcoal fabric
+    const greenScreen = greenDominates && notNeutralDark && (r + b) < g * 1.05;
     if (greenScreen) {
-      // soft edge: stronger green excess → more transparent
-      const excess = Math.min(1, (g - maxRB) / 90);
-      px[i + 3] = Math.min(px[i + 3], Math.floor((1 - excess) * 40));
-      if (excess > 0.55) px[i + 3] = 0;
+      const excess = Math.min(1, (g - maxRB) / 100);
+      if (excess > 0.5) px[i + 3] = 0;
+      else px[i + 3] = Math.min(px[i + 3], Math.floor((1 - excess) * 55));
     }
-    // dark pixels stay fully opaque (no lum key)
   }
   ctx.putImageData(data, 0, 0);
   const tex = new THREE.CanvasTexture(c);
@@ -1977,23 +1977,31 @@ function syncPlayerPoseBillboard() {
 function makeBotMesh(color) {
   const g = new THREE.Group();
   g.name = 'botActor';
+  // Dark muted capsule body — never bright cyan/magenta emissive slabs in near FOV
   const body = new THREE.Mesh(
-    new THREE.BoxGeometry(0.7, 1.1, 0.45),
-    new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.25, roughness: 0.6 })
+    new THREE.CylinderGeometry(0.28, 0.3, 1.15, 10),
+    new THREE.MeshStandardMaterial({ color: 0x1a1e28, emissive: 0x101018, emissiveIntensity: 0.15, roughness: 0.75 })
   );
   body.position.y = 0.95;
   g.add(body);
   const head = new THREE.Mesh(
-    new THREE.BoxGeometry(0.42, 0.42, 0.42),
-    new THREE.MeshStandardMaterial({ color: 0x1a2030, emissive: 0x40f0ff, emissiveIntensity: 0.5 })
+    new THREE.SphereGeometry(0.22, 10, 8),
+    new THREE.MeshStandardMaterial({ color: 0x12161e, emissive: 0x182028, emissiveIntensity: 0.2, roughness: 0.65 })
   );
-  head.position.y = 1.7;
+  head.position.y = 1.72;
   g.add(head);
+  // tiny team tint — small, not a façade slab
+  const tint = new THREE.Mesh(
+    new THREE.SphereGeometry(0.07, 8, 6),
+    new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.55, roughness: 0.4 })
+  );
+  tint.position.set(0, 1.72, 0.2);
+  g.add(tint);
   const gun = new THREE.Mesh(
-    new THREE.BoxGeometry(0.12, 0.12, 0.7),
+    new THREE.BoxGeometry(0.1, 0.1, 0.55),
     new THREE.MeshStandardMaterial({ color: 0x222830, metalness: 0.6, roughness: 0.4 })
   );
-  gun.position.set(0.35, 1.15, -0.35);
+  gun.position.set(0.32, 1.1, -0.3);
   g.add(gun);
   return g;
 }
@@ -2020,11 +2028,12 @@ function spawnBots(root) {
     const sp = randomSpawn();
     const team = isTdm ? (i < 3 ? 0 : 1) : 1; // TDM: 3 allies + rest enemies
     const mesh = makeBotMesh(team === 0 ? allyColor : enemyColors[i % enemyColors.length]);
-    mesh.position.set(sp.x, 0, sp.z);
+    const cleared = resolveBotClear(sp.x, sp.z, PLAYER_HEIGHT, 0.45);
+    mesh.position.set(cleared.x, 0, cleared.z);
     root.add(mesh);
     bots.push({
       mesh,
-      x: sp.x, y: PLAYER_HEIGHT, z: sp.z,
+      x: cleared.x, y: PLAYER_HEIGHT, z: cleared.z,
       vx: 0, vz: 0, vy: 0,
       hp: cls.hp,
       maxHp: cls.hp,
@@ -2033,13 +2042,14 @@ function spawnBots(root) {
         ? (team === 0 ? `隊友-${cls.nameEn}-${i + 1}` : `敵隊-${cls.nameEn}-${i + 1}`)
         : `BOT-${cls.nameEn}-${i + 1}`,
       team,
-      shootCd: 0.5 + Math.random(),
+      shootCd: 0.2 + Math.random() * 0.4,
       aimYaw: 0,
       stateT: 0,
       mode: 'chase',
       alive: true,
       respawnT: 0,
       isBoss: false,
+      stuckT: 0,
     });
   }
 }
@@ -2226,7 +2236,7 @@ function applyCinematicEnv(root, mapId, tex) {
  *  Not hide — remove from scene + dispose. Collision AABBs kept. Whitelist: cinematicEnv, hero, bots, gun, pickups, hold. */
 function stripBlockyArena(root) {
   if (!root) return;
-  const keepName = new Set(['cinematicEnv', 'playerHero', 'botActor', 'heroGun', 'pickupOrb', 'holdZone']);
+  const keepName = new Set(['cinematicEnv', 'playerHero', 'botActor', 'heroGun', 'holdZone']);
   const doomed = [];
   root.traverse((obj) => {
     if (!obj.isMesh || !obj.geometry) return;
@@ -2269,9 +2279,10 @@ function stripBlockyArena(root) {
 
 function arenaVisualAudit(root) {
   const r = root || worldRoot;
-  let box = 0, plane = 0, canvas = 0, samples = [];
-  if (!r) return { box, plane, canvas, samples, solids: solidBoxes.length };
-  const keepName = new Set(['cinematicEnv', 'playerHero', 'botActor', 'heroGun', 'pickupOrb', 'holdZone']);
+  let box = 0, plane = 0, canvas = 0, solidColorBoxes = 0, samples = [];
+  if (!r) return { box, plane, canvas, solidColorBoxes, samples, solids: solidBoxes.length };
+  // pickupOrb no longer BoxGeometry; never whitelist solid-color arena slabs
+  const keepName = new Set(['cinematicEnv', 'playerHero', 'botActor', 'heroGun', 'holdZone']);
   r.traverse((obj) => {
     if (!obj.isMesh || !obj.geometry || obj.visible === false) return;
     let p = obj;
@@ -2285,15 +2296,20 @@ function arenaVisualAudit(root) {
     const mat = obj.material;
     const mats = Array.isArray(mat) ? mat : (mat ? [mat] : []);
     const hasCanvas = mats.some((m) => m && m.map && m.map.isCanvasTexture);
-    if (t === 'BoxGeometry') box++;
-    if (t === 'PlaneGeometry') plane++;
+    const hasMap = mats.some((m) => m && m.map);
+    if (t === 'BoxGeometry') {
+      box++;
+      if (!hasMap) solidColorBoxes++;
+    }
+    if (t === 'PlaneGeometry' && !hasMap) plane++;
+    else if (t === 'PlaneGeometry') { /* textured plate ok if somehow outside env */ }
     if (hasCanvas) canvas++;
-    if (samples.length < 8 && (t === 'BoxGeometry' || t === 'PlaneGeometry' || hasCanvas)) {
+    if (samples.length < 8 && (t === 'BoxGeometry' || (t === 'PlaneGeometry' && !hasMap) || hasCanvas)) {
       const prm = obj.geometry.parameters || {};
-      samples.push({ t, w: prm.width, h: prm.height, d: prm.depth, canvas: !!hasCanvas });
+      samples.push({ t, w: prm.width, h: prm.height, d: prm.depth, canvas: !!hasCanvas, name: obj.name || '' });
     }
   });
-  return { box, plane, canvas, samples, solids: solidBoxes.length };
+  return { box, plane, canvas, solidColorBoxes, samples, solids: solidBoxes.length };
 }
 
 /** Sparse HK curb silhouettes when env plate is live — plate stays the main visual. */
@@ -2745,17 +2761,29 @@ function spawnPickups(root) {
   spots.forEach((sp, i) => {
     const kind = kinds[i % kinds.length];
     const col = kindColor[kind] || 0x40f0ff;
-    const mesh = new THREE.Mesh(
-      new THREE.BoxGeometry(0.7, 0.7, 0.7),
-      new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 1.4, roughness: 0.4 })
-    );
+    // Vincent FAIL: solid neon cubes around spawn read as 大色塊積木 — DELETE BoxGeometry pickups.
+    // Soft sprite glow only (not a rectangular slab).
+    const c = document.createElement('canvas');
+    c.width = 64; c.height = 64;
+    const ctx = c.getContext('2d');
+    const hex = '#' + (col >>> 0).toString(16).padStart(6, '0');
+    const grd = ctx.createRadialGradient(32, 32, 2, 32, 32, 30);
+    grd.addColorStop(0, hex);
+    grd.addColorStop(0.45, hex + '99');
+    grd.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = grd;
+    ctx.fillRect(0, 0, 64, 64);
+    const tex = new THREE.CanvasTexture(c);
+    if (THREE.SRGBColorSpace) tex.colorSpace = THREE.SRGBColorSpace;
+    const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, opacity: 0.9 });
+    const mesh = new THREE.Sprite(mat);
+    mesh.scale.set(0.5, 0.5, 0.5);
     mesh.name = 'pickupOrb';
     mesh.userData.keepVisual = true;
     const x = (sp[0] || 0) + (i % 2 ? 3 : -3);
     const z = (sp[2] || 0) + (i % 3 === 0 ? 2 : -2);
     mesh.position.set(x, 0.55, z);
     root.add(mesh);
-    neonMats.push(mesh.material);
     pickups.push({
       kind,
       x, z,
@@ -3239,6 +3267,48 @@ function startReload() {
   state.reloadT = cls.reload;
 }
 
+function resolveBotClear(x, z, y, radius) {
+  let cx = x, cz = z;
+  for (let iter = 0; iter < 6; iter++) {
+    const c = collideXZ(cx, cz, y, radius);
+    if (Math.hypot(c.x - cx, c.z - cz) < 1e-4) return c;
+    cx = c.x; cz = c.z;
+  }
+  return { x: cx, z: cz };
+}
+
+function steerBot(b, wishX, wishZ, spd, dt) {
+  const tryDirs = [
+    [wishX, wishZ],
+    [wishX * 0.7 - wishZ * 0.7, wishZ * 0.7 + wishX * 0.7],
+    [wishX * 0.7 + wishZ * 0.7, wishZ * 0.7 - wishX * 0.7],
+    [-wishZ, wishX],
+    [wishZ, -wishX],
+    [-wishX, -wishZ],
+  ];
+  const ox = b.x, oz = b.z;
+  for (const [wx, wz] of tryDirs) {
+    const len = Math.hypot(wx, wz) || 1;
+    const nx = ox + (wx / len) * spd * dt;
+    const nz = oz + (wz / len) * spd * dt;
+    const c = collideXZ(nx, nz, b.y, 0.4);
+    const moved = Math.hypot(c.x - ox, c.z - oz);
+    if (moved > spd * dt * 0.12) {
+      b.vx = (c.x - ox) / Math.max(dt, 1e-4);
+      b.vz = (c.z - oz) / Math.max(dt, 1e-4);
+      return c;
+    }
+  }
+  // stuck — micro-nudge toward open spawn corridor
+  const sp = randomSpawn();
+  const pullX = (sp.x - ox) * 0.35;
+  const pullZ = (sp.z - oz) * 0.35;
+  const c = resolveBotClear(ox + pullX, oz + pullZ, b.y, 0.4);
+  b.vx = (c.x - ox) / Math.max(dt, 1e-4);
+  b.vz = (c.z - oz) / Math.max(dt, 1e-4);
+  return c;
+}
+
 function updateBots(dt) {
   for (const b of bots) {
     if (!b.alive) {
@@ -3246,11 +3316,16 @@ function updateBots(dt) {
       b.respawnT -= dt;
       if (b.respawnT <= 0) {
         const sp = randomSpawn();
-        b.x = sp.x; b.y = PLAYER_HEIGHT; b.z = sp.z;
+        const cleared = resolveBotClear(sp.x, sp.z, PLAYER_HEIGHT, 0.45);
+        b.x = cleared.x; b.y = PLAYER_HEIGHT; b.z = cleared.z;
         b.hp = b.maxHp;
         b.alive = true;
         b.mesh.visible = true;
-        b.shootCd = 0.8;
+        b.shootCd = 0.35;
+        b.mode = 'chase';
+        b.stateT = 0;
+        b.stuckT = 0;
+        b.mesh.position.set(b.x, 0, b.z);
       }
       continue;
     }
@@ -3269,10 +3344,12 @@ function updateBots(dt) {
     const dist = Math.hypot(dx, dz) + 0.001;
     b.aimYaw = Math.atan2(-dx, -dz);
 
-    // simple chase / strafe
+    // Aggressive chase / close strafe — never idle stand (Vincent: 唔好企定)
     if (b.stateT <= 0) {
-      b.mode = dist > 14 ? 'chase' : (Math.random() < 0.4 ? 'strafe' : 'chase');
-      b.stateT = 0.6 + Math.random() * 1.2;
+      if (dist > 8) b.mode = 'chase';
+      else if (dist < 2.8) b.mode = Math.random() < 0.55 ? 'strafe' : 'chase';
+      else b.mode = Math.random() < 0.25 ? 'strafe' : 'chase';
+      b.stateT = 0.35 + Math.random() * 0.55;
     }
     let wishX = 0, wishZ = 0;
     if (b.mode === 'chase') {
@@ -3281,16 +3358,26 @@ function updateBots(dt) {
     } else {
       wishX = -dz / dist;
       wishZ = dx / dist;
-      if (dist > 10) { wishX += dx / dist; wishZ += dz / dist; }
+      if (dist > 6) { wishX += dx / dist; wishZ += dz / dist; }
+      if (dist < 2.2) { wishX -= dx / dist; wishZ -= dz / dist; } // back off for gun space
     }
-    const spd = b.cls.speed * 0.72;
-    b.vx = wishX * spd;
-    b.vz = wishZ * spd;
-    const nx = b.x + b.vx * dt;
-    const nz = b.z + b.vz * dt;
-    const c = collideXZ(nx, nz, b.y, 0.4);
+    // Match player pace so chase is visible on plate-only arenas
+    const spd = Math.max(6.5, (b.cls.speed || 8) * 0.92);
+    const beforeX = b.x, beforeZ = b.z;
+    const c = steerBot(b, wishX, wishZ, spd, dt);
     b.x = c.x; b.z = c.z;
-    b.mesh.position.set(b.x, 0, b.z);
+    const step = Math.hypot(b.x - beforeX, b.z - beforeZ);
+    b.stuckT = (b.stuckT || 0) + (step < 0.02 ? dt : -Math.min(b.stuckT || 0, dt * 2));
+    if ((b.stuckT || 0) > 1.1) {
+      const sp = randomSpawn();
+      const cleared = resolveBotClear(sp.x, sp.z, b.y, 0.45);
+      b.x = cleared.x; b.z = cleared.z;
+      b.stuckT = 0;
+      b.mode = 'chase';
+    }
+    // walk bob — visible anim so NPCs never look frozen
+    const bob = Math.sin(performance.now() * 0.014 + (b.x + b.z) * 0.35) * Math.min(0.08, step * 2.5);
+    b.mesh.position.set(b.x, bob, b.z);
     b.mesh.rotation.y = b.aimYaw;
 
     // shoot at target if LOS roughly (allies never shoot player)
@@ -3766,6 +3853,33 @@ window.__mapBuilders = () => ({
 });
 
 // expose start helpers for automated tests
+
+
+window.__botMotionProbe = (seconds = 0.85) => {
+  const alive = bots.filter((b) => b.alive);
+  if (!alive.length) return { ok: false, reason: 'no-alive-bot' };
+  const snaps = alive.map((b) => ({ bot: b, x: b.x, z: b.z }));
+  // Drive AI synchronously so smoke does not depend on rAF timing
+  const steps = Math.max(12, Math.ceil(seconds / 0.05));
+  for (let i = 0; i < steps; i++) updateBots(0.05);
+  let moved = 0;
+  let maxDist = 0;
+  const samples = [];
+  for (const s of snaps) {
+    if (!s.bot.alive) continue;
+    const d = Math.hypot(s.bot.x - s.x, s.bot.z - s.z);
+    maxDist = Math.max(maxDist, d);
+    if (d > 0.45) moved += 1;
+    samples.push({ name: s.bot.name, d: +d.toFixed(3), mode: s.bot.mode, x: +s.bot.x.toFixed(2), z: +s.bot.z.toFixed(2) });
+  }
+  return {
+    ok: moved >= 1 && maxDist > 0.45,
+    moved,
+    maxDist: +maxDist.toFixed(3),
+    alive: alive.length,
+    samples: samples.slice(0, 6),
+  };
+};
 
 window.__forceHitTest = () => {
   const bot = bots.find((b) => b.alive);
