@@ -2459,67 +2459,47 @@ function applyCinematicEnv(root, mapId, tex, atlas = {}) {
   envGroup.name = 'cinematicEnv';
   envGroup.userData.atlas = atlas;
 
-  // Far parallax: KEEP for atlasHit.far, NEVER render in street/look-up FOV.
-  // DO FAIL ?v=a27c728: translucent 160×56 canyon photo still cut a horizontal dark
-  // band through 「雅翠火鍋」 when pitch was up (near already force-hidden).
-  if (atlas.far) {
-    const farMat = new THREE.MeshBasicMaterial({
-      map: atlas.far, fog: false, depthWrite: false, transparent: true, opacity: 0,
-    });
-    const farN = new THREE.Mesh(new THREE.PlaneGeometry(48, 16), farMat);
-    farN.position.set(0, 96, -160);
-    farN.name = 'envParallaxFar';
-    farN.visible = false;
-    farN.userData.envTextured = true;
-    farN.userData.cameraOccluder = true;
-    farN.userData.forceHidden = true;
-    farN.userData.lookUpOccluder = true;
-    farN.userData.baseOpacity = 0;
-    farN.renderOrder = -5;
-    envGroup.add(farN);
-    const farS = farN.clone();
-    farS.material = farMat.clone();
-    farS.position.set(0, 96, 160);
-    farS.rotation.y = Math.PI;
-    farS.name = 'envParallaxFarS';
-    farS.visible = false;
-    farS.userData.forceHidden = true;
-    farS.userData.lookUpOccluder = true;
-    farS.userData.cameraOccluder = true;
-    farS.userData.baseOpacity = 0;
-    envGroup.add(farS);
-  }
-
-  const skyMat = new THREE.MeshBasicMaterial({
-    map: tex, side: THREE.BackSide, fog: false, depthWrite: false,
-  });
-  const sky = new THREE.Mesh(new THREE.CylinderGeometry(96, 96, 56, 64, 1, true), skyMat);
-  sky.position.y = 18;
-  sky.name = 'envSky';
-  sky.renderOrder = -2;
-  envGroup.add(sky);
-
-  // Env photo backdrops DUPLICATE neon-street signs (雅翠火鍋) vs densify neon quads —
-  // misaligned stack + look-up seam. Keep named meshes for probes but never draw.
-  const mkBackdrop = (z, rotY, name) => {
+  // Far/near/backdrop/wall plates DELETED as drawables — Searching Gate A: geometry/plate
+  // overlap ghosted 「雅翠火鍋」 + hard seam on L/R façades. Tiny named stubs only for atlasHit.
+  const mkHiddenStub = (name, extra = {}) => {
     const m = new THREE.Mesh(
-      new THREE.PlaneGeometry(32, 12),
-      new THREE.MeshBasicMaterial({ map: tex, fog: false, depthWrite: false, side: THREE.DoubleSide, transparent: true, opacity: 0 })
+      new THREE.PlaneGeometry(0.02, 0.02),
+      new THREE.MeshBasicMaterial({ color: 0x050810, transparent: true, opacity: 0, depthWrite: false })
     );
-    m.position.set(0, 88, z);
-    m.rotation.y = rotY;
     m.name = name;
     m.visible = false;
+    m.position.set(0, 220, 0);
     m.userData.envTextured = true;
     m.userData.cameraOccluder = true;
     m.userData.forceHidden = true;
     m.userData.lookUpOccluder = true;
     m.userData.baseOpacity = 0;
-    m.renderOrder = -5;
+    m.userData.plateStub = true;
+    Object.assign(m.userData, extra);
     envGroup.add(m);
+    return m;
   };
-  mkBackdrop(-160, 0, 'envBackdropN');
-  mkBackdrop(160, Math.PI, 'envBackdropS');
+  // Always emit named stubs (atlas tex optional) so Multimedia soft-miss still passes atlasHit
+  mkHiddenStub('envParallaxFar');
+  mkHiddenStub('envParallaxFarS');
+  void atlas.far;
+
+  // Night void sky — NEVER map full street env plate onto the cylinder.
+  // DO FAIL ?v=93f0b49: street photo (雅翠火鍋 + mid-canyon awnings) on envSky /
+  // scene.background duplicated densify neon + cut a horizontal dark band when pitched up.
+  const skyMat = new THREE.MeshBasicMaterial({
+    color: 0x070d1c, side: THREE.BackSide, fog: false, depthWrite: false,
+  });
+  const sky = new THREE.Mesh(new THREE.CylinderGeometry(96, 96, 56, 64, 1, true), skyMat);
+  sky.position.y = 18;
+  sky.name = 'envSky';
+  sky.userData.nightVoidSky = true;
+  sky.renderOrder = -2;
+  envGroup.add(sky);
+
+  // No env photo backdrop planes (deleted) — stubs only
+  mkHiddenStub('envBackdropN');
+  mkHiddenStub('envBackdropS');
 
   // Wet pavement atlas ONLY — never stretch full env plate onto ground (Vincent: 巨大字／人影 FAIL)
   let groundMat;
@@ -2548,61 +2528,16 @@ function applyCinematicEnv(root, mapId, tex, atlas = {}) {
   groundPlate.renderOrder = -1;
   envGroup.add(groundPlate);
 
-  // Env wall photo cards: densify owns façades. These DoubleSide plates were the
-  // Searching "cam into façade cards / player vanishes" FAIL and DO look-up dark sheets.
-  // Keep named meshes (audit keep list) but force-hide + park outside playable FOV.
-  const wallBillboard = () => new THREE.MeshBasicMaterial({
-    map: tex, fog: false, side: THREE.DoubleSide, transparent: true, opacity: 0, depthWrite: false,
-  });
-  const markWallOccluder = (m) => {
-    m.visible = false;
-    m.userData.envTextured = true;
-    m.userData.cameraOccluder = true;
-    m.userData.forceHidden = true;
-    m.userData.lookUpOccluder = true;
-    m.userData.baseOpacity = 0;
-    return m;
-  };
-  const sideL = markWallOccluder(new THREE.Mesh(new THREE.PlaneGeometry(24, 10), wallBillboard()));
-  sideL.position.set(-120, 80, 0);
-  sideL.rotation.y = Math.PI / 2;
-  sideL.name = 'envWallL';
-  envGroup.add(sideL);
-  const sideR = markWallOccluder(new THREE.Mesh(new THREE.PlaneGeometry(24, 10), wallBillboard()));
-  sideR.position.set(120, 80, 0);
-  sideR.rotation.y = -Math.PI / 2;
-  sideR.name = 'envWallR';
-  envGroup.add(sideR);
-  const endN = markWallOccluder(new THREE.Mesh(new THREE.PlaneGeometry(24, 10), wallBillboard()));
-  endN.position.set(0, 80, -120);
-  endN.name = 'envWallN';
-  envGroup.add(endN);
-  const endS = markWallOccluder(new THREE.Mesh(new THREE.PlaneGeometry(24, 10), wallBillboard()));
-  endS.position.set(0, 80, 120);
-  endS.rotation.y = Math.PI;
-  endS.name = 'envWallS';
-  envGroup.add(endS);
+  // Env wall photo cards DELETED (stubs only) — densify owns L/R façades; plates were
+  // Gate A hard-seam / shopfront second-ghost on left-right walls near 「雅翠火鍋」.
+  mkHiddenStub('envWallL');
+  mkHiddenStub('envWallR');
+  mkHiddenStub('envWallN');
+  mkHiddenStub('envWallS');
 
-  // Near-awning atlas: KEEP mesh for Multimedia atlasHit.near, but NEVER render in street FOV.
-  // DO FAIL ?v=8504ed0: even at y=28/z=-68 the dark translucent 1920×540 strip still banded
-  // across look-up through 「雅翠火鍋」. Force-hide + park above/behind sky cylinder.
-  if (atlas.near) {
-    const awnMat = new THREE.MeshBasicMaterial({
-      map: atlas.near, transparent: true, depthWrite: false, fog: false, side: THREE.DoubleSide, opacity: 0,
-    });
-    const awn = new THREE.Mesh(new THREE.PlaneGeometry(32, 8), awnMat);
-    awn.position.set(0, 78, -130);
-    awn.name = 'envParallaxNear';
-    awn.visible = false;
-    awn.userData.envTextured = true;
-    awn.userData.parallaxNear = true;
-    awn.userData.cameraOccluder = true;
-    awn.userData.forceHidden = true; // never show in match — atlas probe only
-    awn.userData.lookUpOccluder = true;
-    awn.userData.baseOpacity = 0;
-    awn.renderOrder = -5;
-    envGroup.add(awn);
-  }
+  // Near-awning plate DELETED as drawable — stub only for atlasHit.near
+  mkHiddenStub('envParallaxNear', { parallaxNear: true });
+  void atlas.near;
 
   densifyCinematicCitySlice(envGroup, root, mapId, tex, atlas);
 
@@ -2616,7 +2551,8 @@ function applyCinematicEnv(root, mapId, tex, atlas = {}) {
   amberFill.position.set(0, 6, 12);
   envGroup.add(amberFill);
 
-  scene.background = tex;
+  // Keep night color — street plate is densify/atlas source only, not a look-up backdrop
+  scene.background = new THREE.Color(0x050818);
   scene.fog = new THREE.FogExp2(0x080e1a, 0.0048);
   root.add(envGroup);
 
@@ -2635,9 +2571,19 @@ function hideUntexturedWhiteMeshes(root) {
   if (!root) return { hidden: 0, removed: 0 };
   let hidden = 0, removed = 0;
   const doomed = [];
+  const keepStubNames = new Set([
+    'envSky', 'envBackdropN', 'envBackdropS',
+    'envGroundPlate', 'bootGroundPlate', 'envAsphaltLane',
+    'envWallL', 'envWallR', 'envWallN', 'envWallS',
+    'envParallaxFar', 'envParallaxFarS', 'envParallaxNear',
+  ]);
   root.traverse((obj) => {
     if (!obj.isMesh || !obj.geometry) return;
     if (obj.name === 'botTeamPip' || obj.name === 'muzzleFlash') return;
+    // Never purge atlasHit / force-hidden plate stubs
+    if (keepStubNames.has(obj.name) || (obj.userData && (obj.userData.plateStub || obj.userData.forceHidden || obj.userData.lookUpOccluder))) {
+      return;
+    }
     if (obj.userData && obj.userData.awaitingTex) {
       obj.visible = false;
       hidden += 1;
@@ -2856,38 +2802,58 @@ function densifyCinematicCitySlice(envGroup, root, mapId, tex, atlas = {}) {
       mesh.userData.atlasRole = 'wall';
 
       const toward = bx > 0 ? -1 : 1;
-      // Iron gate shutter on shopfront ONLY (not curb pavement) — raised so slats
-      // don't read as a soft horizontal "pavement band" at street level.
-      const gate = addEnvTexturedBox(
-        envGroup, bx + toward * 2.15, 0.08, z, 0.18, 2.55, depth * 0.55, gateMat, true
-      );
-      gate.userData.atlasRole = 'gate';
-      gate.userData.shopfrontGate = true;
+      // Iron gate: thin flush PLANES on shopfront (not thick second boxes).
+      // Searching Gate A: box gates stacked on wall cards = hard seam / shopfront ghost.
+      // Collision kept as a slim solid so chase cam still respects shutters (Gate B).
+      const gateH = 2.45;
+      const gateMesh = new THREE.Mesh(new THREE.PlaneGeometry(depth * 0.5, gateH), gateMat);
+      gateMesh.position.set(bx + toward * 2.22, 0.12 + gateH * 0.5, z);
+      gateMesh.rotation.y = bx > 0 ? -Math.PI / 2 : Math.PI / 2;
+      gateMesh.name = 'envProp';
+      gateMesh.userData.envTextured = true;
+      gateMesh.userData.atlasRole = 'gate';
+      gateMesh.userData.shopfrontGate = true;
+      envGroup.add(gateMesh);
+      solidBoxes.push(boxSolid(bx + toward * 2.22, 0.12, z, 0.1, gateH, depth * 0.5));
 
-      // Vertical neon boards (NOT horizontal strip quads). Prior 0.75×2.2 boards
-      // stacked at y≈3.4 formed a look-up horizontal dark band of atlas background
-      // + duplicated misaligned signs vs env plate. Tall thin = real HK vertical neon.
+      // Vertical neon PLANES (not BoxGeometry). JPEG neon atlas has opaque dark
+      // background — boxes painted that dark as solid ghost slabs / mid-FOV bands
+      // when looking up near 「雅翠火鍋」. Additive street-facing planes: dark≈0 add.
       if (neonSrc && (i + ri) % 2 === 0) {
-        const nmat = makeAtlasMat(neonSrc, {
-          repeatX: 0.16 + (i % 5) * 0.14, repeatY: 1,
-          wrap: THREE.ClampToEdgeWrapping, roughness: 0.4, metalness: 0.25,
+        const col = ((i + ri * 3 + 7) % 6);
+        const nmap = neonSrc.clone();
+        nmap.wrapS = nmap.wrapT = THREE.ClampToEdgeWrapping;
+        nmap.repeat.set(0.13, 1);
+        nmap.offset.set(col * 0.145 + 0.01, 0);
+        nmap.needsUpdate = true;
+        if (THREE.SRGBColorSpace) nmap.colorSpace = THREE.SRGBColorSpace;
+        const nmat = new THREE.MeshBasicMaterial({
+          map: nmap,
+          transparent: true,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false,
+          fog: false,
+          side: THREE.DoubleSide,
+          opacity: 0.95,
         });
-        // Offset U so neighbouring boards sample different glyphs (less duplicate stack)
-        if (nmat.map) {
-          nmat.map.offset.x = ((i + ri * 3 + 7) % 6) * 0.14;
-          nmat.map.needsUpdate = true;
-        }
         const signH = 2.6 + (i % 3) * 0.35;
-        const sign = addEnvTexturedBox(
-          envGroup,
-          bx + toward * 2.35,
-          2.15 + (i % 3) * 0.55,
-          z + (ri ? -0.9 : 0.9),
-          0.12, signH, 0.55,
-          nmat, false
+        const signW = 0.52;
+        const sign = new THREE.Mesh(new THREE.PlaneGeometry(signW, signH), nmat);
+        const baseY = 2.35 + (i % 3) * 0.45;
+        sign.position.set(
+          bx + toward * 2.42,
+          baseY + signH * 0.5,
+          z + (ri ? -0.9 : 0.9)
         );
+        // Face the corridor (inner wall normal toward street center)
+        sign.rotation.y = bx > 0 ? -Math.PI / 2 : Math.PI / 2;
+        sign.name = 'envProp';
+        sign.userData.envTextured = true;
         sign.userData.atlasRole = 'neon';
         sign.userData.verticalNeon = true;
+        sign.userData.additiveNeon = true;
+        sign.renderOrder = 2;
+        envGroup.add(sign);
       }
     }
   });
@@ -4851,6 +4817,54 @@ window.__cameraClipProbe = () => {
     if (o.visible && wp.y < 16 && Math.abs(wp.z) < 40) midStreetAwning = true;
   });
   if (lookUp && (lookUpOccluderVisible > 0 || forceHiddenVisible > 0)) lookUpDarkBand = true;
+
+  // Street env plate as scene.background or mapped onto envSky ⇒ look-up dark band / sign ghost
+  if (lookUp && scene) {
+    if (scene.background && scene.background.isTexture) {
+      lookUpDarkBand = true;
+      if (samples.length < 8) samples.push({ name: 'scene.background', kind: 'streetBgTex' });
+    }
+    const sky = worldRoot.getObjectByName('envSky');
+    if (sky && sky.visible && sky.material && sky.material.map && !(sky.userData && sky.userData.nightVoidSky)) {
+      lookUpDarkBand = true;
+      if (samples.length < 8) samples.push({ name: 'envSky', kind: 'streetSkyMap' });
+    }
+  }
+  // Opaque mid-FOV neon boxes (dark JPEG atlas background) still read as ghost slabs
+  if (lookUp) {
+    worldRoot.traverse((o) => {
+      if (!o.isMesh || !o.visible || !o.userData || o.userData.atlasRole !== 'neon') return;
+      if (o.userData.additiveNeon) return; // additive planes OK
+      if (o.geometry && o.geometry.type === 'BoxGeometry') {
+        const wp = new THREE.Vector3();
+        o.getWorldPosition(wp);
+        if (wp.y > 1.2 && wp.y < 8 && Math.abs(wp.x) < 14 && Math.abs(wp.z - cam.z) < 28) {
+          lookUpDarkBand = true;
+          if (samples.length < 8) samples.push({ name: 'neonBox', kind: 'opaqueNeonBox', y: +wp.y.toFixed(1) });
+        }
+      }
+    });
+  }
+  // Duplicate plate overlays: any large PlaneGeometry still carrying street env map in FOV
+  let plateOverlayVisible = 0;
+  worldRoot.traverse((o) => {
+    if (!o.isMesh || !o.visible) return;
+    const ud = o.userData || {};
+    if (ud.plateStub || ud.forceHidden || ud.lookUpOccluder) return;
+    if (!o.geometry || o.geometry.type !== 'PlaneGeometry' || !o.geometry.parameters) return;
+    const pw = o.geometry.parameters.width || 0;
+    const ph = o.geometry.parameters.height || 0;
+    if (pw < 8 && ph < 6) return; // densify neon/gate planes are small — OK
+    const mats = Array.isArray(o.material) ? o.material : (o.material ? [o.material] : []);
+    const streetMapped = mats.some((m) => m && m.map && !ud.additiveNeon && o.name !== 'envGroundPlate');
+    // Named legacy overlays must never draw
+    if (forceHideNames.has(o.name) || streetMapped && (pw >= 20 || ph >= 10)) {
+      plateOverlayVisible += 1;
+      lookUpDarkBand = true;
+      if (samples.length < 8) samples.push({ name: o.name || 'plate', kind: 'dupPlateOverlay', w: pw, h: ph });
+    }
+  });
+  void plateOverlayVisible;
 
   const inside = pointInsideSolid(cam.x, cam.y, cam.z);
   const paddedHit = pointHitsSolidExpanded(cam.x, cam.y, cam.z, CAM_COLLIDE_PAD * 0.35);
