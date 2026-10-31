@@ -4,48 +4,77 @@
 <meta charset="utf-8"/>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
-<title>凍肉倉 · Cold Hold — Vincent Games Studio</title>
+<title>夜班冷藏 · Night Cold Hold — Vincent Games Studio</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;background:#0d1c28;color:#e8f4ff;font-family:system-ui,"PingFang HK","Noto Sans TC",sans-serif;overflow:hidden;touch-action:none;user-select:none}
-#wrap{position:fixed;inset:0}
-canvas#view{display:block;width:100%;height:100%;background:#1a3548;image-rendering:pixelated}
-#hud{position:fixed;left:0;right:0;top:0;z-index:3;padding:calc(10px + env(safe-area-inset-top)) 16px 0;padding-right:160px;display:flex;justify-content:space-between;pointer-events:none;font-weight:800;text-shadow:0 2px 8px #000}
-#hud .l{color:#9ad8ff}#hud .r{color:#ff6a7a;text-align:right}
-#hud small{display:block;font:700 11px system-ui,sans-serif;opacity:.75;letter-spacing:.06em}
-#hint{position:fixed;left:50%;bottom:calc(22% + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:4;max-width:92vw;padding:10px 14px;border-radius:12px;background:rgba(0,0,0,.75);border:1px solid #7ec8ff66;font-size:13px;font-weight:700;text-align:center;display:none}
+html,body{height:100%;background:#0a1820;color:#e8f4ff;font-family:system-ui,"PingFang HK","Noto Sans TC",sans-serif;overflow:hidden;touch-action:none;user-select:none}
+canvas#view{position:relative;z-index:0;display:block;width:100%;height:100%;background:#1a3548;outline:none}
+#hud{position:fixed;left:0;right:0;top:0;z-index:3;padding:calc(10px + env(safe-area-inset-top)) 14px 0;padding-right:150px;display:flex;justify-content:space-between;pointer-events:none;font-weight:800;text-shadow:0 2px 8px #000}
+#hud .l{color:#9ad8ff}#hud .r{color:#ff8a6a;text-align:right}
+#hud small{display:block;font-size:11px;opacity:.75;letter-spacing:.05em}
+#check{position:fixed;left:12px;top:calc(58px + env(safe-area-inset-top));z-index:3;padding:8px 12px;border-radius:12px;background:rgba(0,0,0,.72);border:1px solid #7ec8ff55;font-size:12px;font-weight:800;line-height:1.55;pointer-events:none}
+#check .ok{color:#5dff9a}#check .todo{color:#9ad0ff}#check .warn{color:#ffcc66}
+#goal{position:fixed;left:50%;top:calc(58px + env(safe-area-inset-top));transform:translateX(-50%);z-index:3;padding:8px 14px;border-radius:999px;background:rgba(0,0,0,.75);border:1px solid #7ec8ff66;font-size:13px;font-weight:800;pointer-events:none;max-width:70vw;text-align:center}
+#hint{position:fixed;left:50%;bottom:calc(26% + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:4;max-width:92vw;padding:10px 14px;border-radius:12px;background:rgba(0,0,0,.78);border:1px solid #7ec8ff55;font-size:13px;font-weight:700;text-align:center;display:none}
 #hint.on{display:block}
-#overlay{position:fixed;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;background:rgba(8,20,32,.94);padding:22px;overflow-y:auto}
+#bat{position:fixed;right:12px;top:calc(58px + env(safe-area-inset-top));z-index:3;width:110px;pointer-events:none}
+#bat .lab{font-size:11px;font-weight:800;color:#9ad0ff;margin-bottom:4px;text-align:right;text-shadow:0 2px 6px #000}
+#bat .bar{height:10px;border-radius:6px;background:#123;border:1px solid #7ec8ff66;overflow:hidden}
+#bat .fill{height:100%;background:linear-gradient(90deg,#2a9,#ffcc44,#ff4d5e);width:100%;transition:width .15s}
+#stam{position:fixed;right:12px;top:calc(96px + env(safe-area-inset-top));z-index:3;width:110px;pointer-events:none}
+#stam .lab{font-size:11px;font-weight:800;color:#ffcc66;margin-bottom:4px;text-align:right;text-shadow:0 2px 6px #000}
+#stam .bar{height:8px;border-radius:6px;background:#123;border:1px solid #ffcc6655;overflow:hidden}
+#stam .fill{height:100%;background:#ffcc66;width:100%}
+#timer{position:fixed;left:50%;bottom:calc(18% + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:3;font:900 15px system-ui;color:#ff6a7a;text-shadow:0 2px 8px #000;pointer-events:none}
+#overlay{position:fixed;inset:0;z-index:8;display:flex;align-items:center;justify-content:center;background:rgba(6,16,24,.94);padding:20px;overflow-y:auto}
 #overlay.hidden{display:none}
-.card{max-width:440px;width:100%;background:linear-gradient(165deg,#153448,#0c2030);border:1px solid #7ec8ff88;border-radius:20px;padding:24px 20px;text-align:center}
-.card h1{font-family:system-ui,sans-serif;font-size:1.8rem;font-weight:800;background:linear-gradient(90deg,#b8e4ff,#ff4d5e);-webkit-background-clip:text;background-clip:text;color:transparent}
+.card{max-width:460px;width:100%;background:linear-gradient(165deg,#153448,#0c2030);border:1px solid #7ec8ff88;border-radius:20px;padding:22px 18px;text-align:center}
+.card h1{font-size:1.7rem;font-weight:900;background:linear-gradient(90deg,#b8e4ff,#ff4d5e);-webkit-background-clip:text;background-clip:text;color:transparent}
 .card .sub{margin-top:6px;color:#9ad0ff;font-size:13px}
-.card ol{margin:14px 0 0;padding-left:1.2em;color:#d0e4f0;font-size:14px;line-height:1.65;text-align:left}
-button.play{margin-top:18px;min-height:52px;padding:0 28px;border:0;border-radius:999px;background:linear-gradient(90deg,#2a7a9c,#ff4d5e);color:#fff;font-weight:900;font-size:17px;cursor:pointer;font-family:inherit}
-#pad{position:fixed;left:10px;bottom:calc(10px + env(safe-area-inset-bottom));z-index:5;display:none;grid-template-columns:52px 52px 52px;grid-template-rows:52px 52px;gap:6px}
-#pad.on{display:grid}
-#pad button{border:0;border-radius:14px;background:rgba(126,200,255,.4);color:#fff;font-weight:900;font-size:20px}
+.card ol{margin:12px 0 0;padding-left:1.15em;color:#d0e4f0;font-size:13.5px;line-height:1.6;text-align:left}
+button.play{margin-top:16px;min-height:52px;padding:0 26px;border:0;border-radius:999px;background:linear-gradient(90deg,#2a7a9c,#ff4d5e);color:#fff;font-weight:900;font-size:17px;cursor:pointer;font-family:inherit}
+#pad{position:fixed;left:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:40;pointer-events:auto;display:grid;grid-template-columns:58px 58px 58px;grid-template-rows:58px 58px;gap:7px}
+#pad button{border:0;border-radius:16px;background:rgba(126,200,255,.45);color:#fff;font-weight:900;font-size:22px;box-shadow:0 4px 14px #0008}
+#pad button:active,#pad button.held{background:#7ec8ff;outline:3px solid #ff4d5e;transform:scale(.96)}
 #pad .x{visibility:hidden}
-#looktip{position:fixed;right:12px;bottom:calc(18px + env(safe-area-inset-bottom));z-index:5;display:none;padding:8px 10px;border-radius:10px;background:rgba(0,0,0,.6);color:#9ad0ff;font-size:11px;font-weight:700}
+#actBtn,#hideBtn,#flashBtn{position:fixed;z-index:40;display:none;min-height:52px;padding:0 14px;border:0;border-radius:14px;color:#fff;font-weight:900;font-size:14px}
+#actBtn{right:12px;bottom:calc(130px + env(safe-area-inset-bottom));min-width:100px;background:linear-gradient(180deg,#40c0ff,#2060aa)}
+#hideBtn{right:12px;bottom:calc(70px + env(safe-area-inset-bottom));min-width:100px;background:linear-gradient(180deg,#8a6040,#4a3020)}
+#flashBtn{right:12px;bottom:calc(12px + env(safe-area-inset-bottom));min-width:100px;background:linear-gradient(180deg,#ffcc66,#aa8020)}
+#actBtn.on,#hideBtn.on,#flashBtn.on{display:block}
+#hideBtn.active{outline:3px solid #7ec8ff}
+#flashBtn.off{opacity:.55}
+#looktip{position:fixed;right:12px;bottom:calc(190px + env(safe-area-inset-bottom));z-index:5;padding:7px 10px;border-radius:10px;background:rgba(0,0,0,.55);color:#9ad0ff;font-size:11px;font-weight:700;display:none}
 #looktip.on{display:block}
 #vg-back-root{position:fixed;inset:0;z-index:2147483647;pointer-events:none}
-#vg-back-root a{pointer-events:auto;position:fixed;right:max(12px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));min-height:44px;padding:10px 14px;border-radius:14px;font:800 15px/1.2 "Noto Sans TC",system-ui,sans-serif;text-decoration:none;border:2px solid #7ec8ff;background:#0d1c28;color:#7ec8ff}
+#vg-back-root a.vg-back-btn{pointer-events:auto;position:fixed;display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 14px;border-radius:14px;font:800 15px/1.2 "Noto Sans TC",system-ui,sans-serif;text-decoration:none;border:2px solid #7ec8ff;background:#0d1c28;color:#7ec8ff;box-shadow:0 6px 28px #000a}
+#vg-back-tr{right:max(12px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));left:auto;bottom:auto}
 </style>
 </head>
 <body>
-<div id="wrap"><canvas id="view"></canvas></div>
-<div id="hud"><div class="l"><small>COLD HOLD</small><span id="msg">目標：黃鎖匙 → 綠門</span></div><div class="r"><small>STRESS</small><span id="stress">0%</span></div></div>
-<div id="hint">左下方向鍵行路 · 拖畫面轉頭 · 靠近黃鎖匙自動拾取</div>
-<div id="looktip">拖畫面轉頭</div>
+<canvas id="view" tabindex="0"></canvas>
+<div id="hud">
+  <div class="l"><small>NIGHT COLD HOLD</small><span id="msg">夜班冷藏</span></div>
+  <div class="r"><small>狀態</small><span id="stat">準備</span></div>
+</div>
+<div id="check">
+  <div id="c1" class="todo">□ 掃描條碼 0／3</div>
+  <div id="c2" class="todo">□ 恆溫安全區</div>
+  <div id="c3" class="todo">□ 出口解鎖</div>
+</div>
+<div id="goal">完成封倉清單再逃</div>
+<div id="bat"><div class="lab">電筒電量</div><div class="bar"><div class="fill" id="batFill"></div></div></div>
+<div id="stam"><div class="lab">體力</div><div class="bar"><div class="fill" id="stamFill"></div></div></div>
+<div id="timer"></div>
+<div id="hint"></div>
 <div id="overlay"><div class="card">
-  <h1>凍肉倉</h1>
-  <div class="sub">COLD HOLD · 即開輕量版</div>
+  <h1>夜班冷藏</h1>
+  <div class="sub">COLD HOLD · 唔好開第三道閘</div>
   <ol>
-    <li><strong>撳「進入遊戲」開始</strong></li>
-    <li>電腦：<strong>WASD</strong> 行、<strong>滑鼠</strong>轉頭</li>
-    <li>手機：<strong>左下方向掣</strong>行、<strong>拖畫面</strong>轉頭</li>
-    <li>跟<strong style="color:#ffcc66">黃光</strong>執鎖匙，再去<strong style="color:#5dff9a">綠門</strong>逃出</li>
-    <li>避開紅色<strong>屠夫</strong></li>
+    <li>夜更清潔。凍庫停電。同事最後一個 WhatsApp：「<strong>唔好開第三道閘。</strong>」</li>
+    <li>目標：① 開應急電（掃貨架條碼）　② 執同事證（調恆溫終端）　③ 開卸貨門逃出</li>
+    <li>手電筒耗電；開燈面向敵人會加速追你。粉紅肉簾可匿（空白鍵）。Shift 衝刺有體力。</li>
+    <li>WASD／↑↓ 行 · ←→ 或 Q／E 轉身 · F 電筒</li>
   </ol>
   <button class="play" id="btn">進入遊戲</button>
 </div></div>
@@ -53,276 +82,466 @@ button.play{margin-top:18px;min-height:52px;padding:0 28px;border:0;border-radiu
   <button class="x" tabindex="-1"></button><button id="tF" type="button">↑</button><button class="x" tabindex="-1"></button>
   <button id="tL" type="button">←</button><button id="tB" type="button">↓</button><button id="tR" type="button">→</button>
 </div>
-<div id="vg-back-root"><a href="/vincent-games-studio/games" title="← 返回遊戲目錄">← 返回遊戲目錄</a></div>
+<button id="actBtn" type="button">互動</button>
+<button id="hideBtn" type="button">匿藏</button>
+<button id="flashBtn" type="button">電筒</button>
+<div id="looktip">拖畫面轉頭</div>
+<div id="vg-back-root" aria-label="catalog"><a id="vg-back-tr" class="vg-back-btn" href="/vincent-games-studio/games" title="← 返回遊戲目錄">← 返回遊戲目錄</a></div>
 <script>
 (function(){
-  // Lightweight raycaster — no Three.js (instant load)
-  const W=24,H=24;
-  // 0 empty, 1 wall, 2 exit, 3 key cell marker (empty walkable)
-  const map=[];
-  for(let y=0;y<H;y++){
-    map[y]=[];
-    for(let x=0;x<W;x++){
-      map[y][x]=(x===0||y===0||x===W-1||y===H-1)?1:0;
-    }
-  }
-  // inner walls — corridors
-  const wallRects=[[3,3,3,10],[3,3,12,3],[8,6,8,14],[12,2,12,9],[15,10,20,10],[6,16,14,16],[18,14,18,20],[10,18,10,22]];
-  wallRects.forEach(([x0,y0,x1,y1])=>{
-    for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++) if(x>0&&y>0&&x<W-1&&y<H-1) map[y][x]=1;
+  const W=28,H=28,map=[];
+  for(let y=0;y<H;y++){map[y]=[];for(let x=0;x<W;x++)map[y][x]=(x===0||y===0||x===W-1||y===H-1)?1:0;}
+  // aisle racks (meat shelves as walls with gaps)
+  [[3,3,3,24],[6,2,6,12],[6,16,6,25],[10,4,10,22],[14,2,14,10],[14,14,14,25],[18,4,18,20],[22,2,22,12],[22,16,22,25],[8,8,20,8],[4,14,12,14],[16,14,24,14],[8,20,20,20]].forEach(([x0,y0,x1,y1])=>{
+    for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)if(x>0&&y>0&&x<W-1&&y<H-1)map[y][x]=1;
   });
-  // carve door gaps
-  [[8,9],[12,5],[15,10],[10,16],[18,17]].forEach(([x,y])=>{ if(map[y]) map[y][x]=0; });
+  [[3,8],[3,16],[6,6],[6,18],[10,10],[10,16],[14,6],[14,18],[18,8],[18,14],[22,8],[22,18],[12,8],[16,14],[10,20],[14,20]].forEach(([x,y])=>{if(map[y])map[y][x]=0;});
+  map[24][24]=2; map[24][25]=2; map[25][24]=2; map[25][25]=2;
 
-  const KEY={x:4.5,y:4.5};
-  const EXIT={x:20.5,y:20.5};
-  map[20][20]=2; map[20][21]=2; map[21][20]=2;
+  const tags=[{x:4.5,y:5.5,got:false},{x:12.5,y:11.5,got:false},{x:20.5,y:22.5,got:false}];
+  const terminal={x:8.5,y:22.5};
+  const thermo={x:20.5,y:6.5,val:0.15};
+  const curtains=[{x:5.5,y:10.5},{x:12.5,y:16.5},{x:19.5,y:12.5},{x:9.5,y:18.5}];
+  const EXIT={x:24.5,y:24.5};
+  const stalker={x:22.5,y:18.5,px:16,py:10,mode:'patrol'};
 
-  let px=12.5, py=12.5, dir=0; // radians, 0 = +x
-  let hasKey=false, playing=false, dead=false, won=false, stress=0;
-  let butcher={x:18.5,y:6.5, alive:true};
+  let px=4.5,py=7.5,dir=-Math.PI/2; // face open aisle + glowing tag
+  let playing=false,dead=false,won=false,hiding=false;
+  let flashOn=true,battery=100,stamina=100;
+  let scanned=0, thermoOk=false, exitOpen=false;
+  let timeLeft=180, bob=0, interactCD=0;
+  let holdThermo=0;
 
   const canvas=document.getElementById('view');
   const ctx=canvas.getContext('2d',{alpha:false});
   const msg=document.getElementById('msg');
-  const stressEl=document.getElementById('stress');
-  const overlay=document.getElementById('overlay');
+  const stat=document.getElementById('stat');
+  const goal=document.getElementById('goal');
   const hint=document.getElementById('hint');
+  const overlay=document.getElementById('overlay');
   const pad=document.getElementById('pad');
+  const actBtn=document.getElementById('actBtn');
+  const hideBtn=document.getElementById('hideBtn');
+  const flashBtn=document.getElementById('flashBtn');
   const looktip=document.getElementById('looktip');
-  const isTouch=('ontouchstart'in window)||navigator.maxTouchPoints>0;
-  const keys={}; const move={f:0,b:0,l:0,r:0};
+  const batFill=document.getElementById('batFill');
+  const stamFill=document.getElementById('stamFill');
+  const timerEl=document.getElementById('timer');
+  const c1=document.getElementById('c1'),c2=document.getElementById('c2'),c3=document.getElementById('c3');
+  const keys={}; const move={f:0,b:0,turnL:0,turnR:0};
 
-  function resize(){
-    const dpr=Math.min(devicePixelRatio||1, 2);
-    canvas.width=Math.floor(innerWidth*dpr);
-    canvas.height=Math.floor(innerHeight*dpr);
-  }
+  function resize(){const d=Math.min(devicePixelRatio||1,2);canvas.width=(innerWidth*d)|0;canvas.height=(innerHeight*d)|0;}
   resize(); addEventListener('resize',resize);
 
-  function cell(x,y){
-    const cx=x|0, cy=y|0;
-    if(cx<0||cy<0||cx>=W||cy>=H) return 1;
-    return map[cy][cx];
-  }
-  function solid(x,y){
-    const t=cell(x,y);
-    if(t===1) return true;
-    if(t===2 && !hasKey) return true;
-    return false;
+  function cell(x,y){const cx=x|0,cy=y|0;if(cx<0||cy<0||cx>=W||cy>=H)return 1;return map[cy][cx];}
+  function solid(x,y){const t=cell(x,y);if(t===1)return true;if(t===2&&!exitOpen)return true;return false;}
+  function nearCurtain(){return curtains.some(c=>Math.hypot(px-c.x,py-c.y)<1.2);}
+  function nearTerm(){return Math.hypot(px-terminal.x,py-terminal.y)<1.35;}
+  function nearThermo(){return Math.hypot(px-thermo.x,py-thermo.y)<1.35;}
+  function facing(sx,sy){let a=Math.atan2(sy-py,sx-px)-dir;while(a>Math.PI)a-=Math.PI*2;while(a<-Math.PI)a+=Math.PI*2;return Math.abs(a)<0.55;}
+
+  function updateCheck(){
+    const got=tags.filter(t=>t.got).length;
+    c1.textContent=(scanned>=3?'☑':'□')+' 掃描條碼 '+scanned+'／3'+(got>scanned?'（手持 '+(got-scanned)+'）':'');
+    c1.className=scanned>=3?'ok':'todo';
+    c2.textContent=(thermoOk?'☑':'□')+' 恆溫安全區'+(thermoOk?'':'（調較中）');
+    c2.className=thermoOk?'ok':'todo';
+    exitOpen=scanned>=3&&thermoOk;
+    c3.textContent=(exitOpen?'☑':'□')+' 出口解鎖';
+    c3.className=exitOpen?'ok':'todo';
+    if(!exitOpen){
+      if(scanned<3) goal.textContent='執條碼 → 去終端掃描（'+scanned+'/3）';
+      else if(!thermoOk) goal.textContent='調恆溫掣至安全區（按住互動）';
+    } else goal.textContent='出口已開！冲綠門逃出';
   }
 
   function cast(rayAng){
-    const sin=Math.sin(rayAng), cos=Math.cos(rayAng);
-    let dist=0, hit=0, side=0;
-    const step=0.02;
-    let x=px, y=py;
-    for(let i=0;i<500;i++){
-      x+=cos*step; y+=sin*step; dist+=step;
+    const sin=Math.sin(rayAng),cos=Math.cos(rayAng);
+    let dist=0,hit=0,side=0,x=px,y=py;
+    for(let i=0;i<520;i++){
+      x+=cos*0.022;y+=sin*0.022;dist+=0.022;
       const t=cell(x,y);
-      if(t===1||(t===2&&!hasKey)||t===2){
-        hit=t===2?2:1;
-        // side approx
-        const fx=x-(x|0), fy=y-(y|0);
-        side=(fx<0.02||fx>0.98)?0:1;
-        break;
-      }
+      if(t===1||t===2){hit=t;const fx=x-(x|0);side=(fx<0.03||fx>0.97)?0:1;break;}
     }
-    return {dist:Math.max(dist,0.0001), hit, side};
+    return {dist:Math.max(dist,0.0001),hit,side};
   }
 
   function draw(){
-    const w=canvas.width, h=canvas.height;
-    // ceiling / floor
+    const w=canvas.width,h=canvas.height;
+    const light=flashOn&&battery>0?1:0.38;
+    const bobY=Math.sin(bob)* (h*0.008);
+    // ceiling / floor — readable cold palette
     const g=ctx.createLinearGradient(0,0,0,h);
-    g.addColorStop(0,'#3a5a70'); g.addColorStop(0.5,'#1a3040'); g.addColorStop(1,'#0a1820');
+    g.addColorStop(0,`rgb(${(50*light+20)|0},${(80*light+30)|0},${(100*light+40)|0})`);
+    g.addColorStop(0.5,`rgb(${(25*light+10)|0},${(45*light+18)|0},${(60*light+25)|0})`);
+    g.addColorStop(1,`rgb(${(12*light+6)|0},${(28*light+10)|0},${(36*light+14)|0})`);
     ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
-    // floor brighter band
-    ctx.fillStyle='#243848';
-    ctx.fillRect(0,h*0.5,w,h*0.5);
+    ctx.fillStyle=`rgb(${(30*light+12)|0},${(48*light+18)|0},${(58*light+22)|0})`;
+    ctx.fillRect(0,h*0.52+bobY,w,h*0.48);
 
-    const fov=Math.PI/3;
-    const cols=Math.min(240, Math.floor(w/3));
-    const colW=w/cols;
+    const fov=Math.PI/3, cols=Math.min(220,(w/3)|0), colW=w/cols;
     for(let i=0;i<cols;i++){
-      const ang=dir - fov/2 + (i/cols)*fov;
-      const {dist, hit, side}=cast(ang);
+      const ang=dir-fov/2+(i/cols)*fov;
+      const {dist,hit,side}=cast(ang);
       const corr=dist*Math.cos(ang-dir);
-      let wallH=Math.min(h*1.4, (h*0.9)/corr);
-      const x0=i*colW;
-      let shade=1-Math.min(0.85, corr/14);
-      if(side) shade*=0.82;
-      let r,g2,b;
+      const wallH=Math.min(h*1.4,(h*0.95)/corr);
+      let shade=(1-Math.min(0.85,corr/14))*light; if(side) shade*=0.82;
+      let r,gg,b;
       if(hit===2){
-        // green exit
-        r=40*shade+20; g2=200*shade+30; b=90*shade;
+        if(exitOpen){r=40*shade+30;gg=210*shade+40;b=90*shade;}
+        else{r=40*shade;gg=60*shade;b=70*shade;}
       } else {
-        // cold wall blue-grey
-        r=70*shade+30; g2=100*shade+40; b=120*shade+50;
+        r=75*shade+25; gg=105*shade+35; b=125*shade+45;
+        if(((i*13)|0)%17===0){r+=40;gg-=10;} // blood
       }
-      ctx.fillStyle=`rgb(${r|0},${g2|0},${b|0})`;
-      ctx.fillRect(x0|0, ((h-wallH)/2)|0, (colW+1)|0, wallH|0);
-      // blood stain stripe occasionally
-      if(hit===1 && ((i*13)|0)%17===0){
-        ctx.fillStyle=`rgba(140,30,40,${0.35*shade})`;
-        ctx.fillRect(x0|0, (h*0.55)|0, (colW+1)|0, (wallH*0.2)|0);
+      ctx.fillStyle=`rgb(${r|0},${gg|0},${b|0})`;
+      ctx.fillRect((i*colW)|0,((h-wallH)/2+bobY)|0,(colW+1)|0,wallH|0);
+      if(hit===1&&((i*7)|0)%11===0){
+        ctx.fillStyle=`rgba(140,25,40,${0.4*shade})`;
+        ctx.fillRect((i*colW)|0,(h*0.55+bobY)|0,(colW+1)|0,(wallH*0.2)|0);
       }
     }
 
-    // sprites: key, butcher (billboard by angle/dist)
-    drawSprite(KEY.x, KEY.y, hasKey?null:'key');
-    if(butcher.alive) drawSprite(butcher.x, butcher.y, 'butcher');
+    curtains.forEach(c=>bill(c.x,c.y,'curtain',bobY));
+    tags.forEach(t=>{if(!t.got)bill(t.x,t.y,'tag',bobY);});
+    bill(terminal.x,terminal.y,'term',bobY);
+    bill(thermo.x,thermo.y,'thermo',bobY);
+    bill(stalker.x,stalker.y,'stalk',bobY);
 
-    // crosshair
-    ctx.strokeStyle='rgba(180,220,255,0.7)';
-    ctx.lineWidth=2;
-    const cx=w/2, cy=h/2;
-    ctx.beginPath(); ctx.arc(cx,cy,8,0,Math.PI*2); ctx.stroke();
-  }
-
-  function drawSprite(sx,sy,kind){
-    if(!kind) return;
-    const dx=sx-px, dy=sy-py;
-    const dist=Math.hypot(dx,dy);
-    if(dist<0.2||dist>16) return;
-    let ang=Math.atan2(dy,dx)-dir;
-    while(ang>Math.PI) ang-=Math.PI*2;
-    while(ang<-Math.PI) ang+=Math.PI*2;
-    if(Math.abs(ang)>Math.PI/3+0.15) return;
-    // occlusion rough
-    const hit=cast(dir+ang);
-    if(hit.dist+0.15<dist && hit.hit) return;
-    const w=canvas.width, h=canvas.height;
-    const fov=Math.PI/3;
-    const screenX=w/2 + (ang/(fov/2))*(w/2);
-    const size=Math.min(h*0.9, (h*0.55)/dist);
-    const x=screenX-size/2, y=(h-size)/2;
-    if(kind==='key'){
-      ctx.fillStyle='#ffcc44';
-      ctx.beginPath(); ctx.arc(screenX, y+size*0.45, size*0.18, 0, Math.PI*2); ctx.fill();
-      ctx.fillRect(screenX-size*0.04, y+size*0.45, size*0.08, size*0.35);
-      // glow
-      ctx.fillStyle='rgba(255,200,60,0.25)';
-      ctx.beginPath(); ctx.arc(screenX, y+size*0.45, size*0.45, 0, Math.PI*2); ctx.fill();
+    // flashlight vignette cone
+    if(flashOn&&battery>0){
+      const vg=ctx.createRadialGradient(w/2,h/2,h*0.08,w/2,h/2,h*0.72);
+      vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,8,16,0.55)');
+      ctx.fillStyle=vg; ctx.fillRect(0,0,w,h);
     } else {
-      // butcher
-      ctx.fillStyle='#5a1018';
-      ctx.fillRect(x+size*0.25, y+size*0.2, size*0.5, size*0.7);
-      ctx.fillStyle='#e02030';
-      ctx.fillRect(x+size*0.28, y+size*0.35, size*0.44, size*0.35);
-      ctx.fillStyle='#3a1010';
-      ctx.beginPath(); ctx.arc(screenX, y+size*0.22, size*0.16, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle='rgba(0,10,20,0.45)'; ctx.fillRect(0,0,w,h);
     }
+
+    ctx.strokeStyle='rgba(180,220,255,0.65)'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(w/2,h/2,7,0,Math.PI*2); ctx.stroke();
+
+    if(hiding){
+      ctx.fillStyle='rgba(80,50,30,0.35)'; ctx.fillRect(0,0,w,h);
+      ctx.fillStyle='#ffcc99'; ctx.font='800 18px system-ui'; ctx.textAlign='center';
+      ctx.fillText('匿喺掛肉簾後面…',w/2,h*0.16);
+    }
+
+    // minimap
+    const ms=Math.min(118,w*0.13),mx=14,my=h-ms-14;
+    ctx.fillStyle='rgba(0,0,0,0.7)'; ctx.fillRect(mx-4,my-4,ms+8,ms+8);
+    for(let yy=0;yy<H;yy++)for(let xx=0;xx<W;xx++){
+      if(map[yy][xx]===1){ctx.fillStyle='#3a5060';ctx.fillRect(mx+xx*(ms/W),my+yy*(ms/H),ms/W+.4,ms/H+.4);}
+      if(map[yy][xx]===2){ctx.fillStyle=exitOpen?'#5dff9a':'#445';ctx.fillRect(mx+xx*(ms/W),my+yy*(ms/H),ms/W+.4,ms/H+.4);}
+    }
+    tags.forEach(t=>{if(!t.got){ctx.fillStyle='#ffcc44';ctx.fillRect(mx+t.x*(ms/W)-2,my+t.y*(ms/H)-2,4,4);}});
+    ctx.fillStyle='#40c0ff'; ctx.fillRect(mx+terminal.x*(ms/W)-2,my+terminal.y*(ms/H)-2,4,4);
+    ctx.fillStyle='#ff8866'; ctx.fillRect(mx+thermo.x*(ms/W)-2,my+thermo.y*(ms/H)-2,4,4);
+    ctx.fillStyle='#e03040'; ctx.beginPath(); ctx.arc(mx+stalker.x*(ms/W),my+stalker.y*(ms/H),3,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(mx+px*(ms/W),my+py*(ms/H),3,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle='#7ec8ff'; ctx.beginPath(); ctx.moveTo(mx+px*(ms/W),my+py*(ms/H));
+    ctx.lineTo(mx+px*(ms/W)+Math.cos(dir)*8,my+py*(ms/H)+Math.sin(dir)*8); ctx.stroke();
   }
 
-  function tryPickup(){
-    if(!hasKey && Math.hypot(px-KEY.x, py-KEY.y)<1.1){
-      hasKey=true;
-      msg.textContent='鎖匙到手 · 去綠門';
-      hint.textContent='跟綠牆／綠門方向逃走';
-    }
-    if(hasKey && Math.hypot(px-EXIT.x, py-EXIT.y)<1.4){
-      won=true; playing=false; end(true);
+  function bill(sx,sy,kind,bobY){
+    const dx=sx-px,dy=sy-py,dist=Math.hypot(dx,dy);
+    if(dist<0.12||dist>15) return;
+    let ang=Math.atan2(dy,dx)-dir;
+    while(ang>Math.PI)ang-=Math.PI*2; while(ang<-Math.PI)ang+=Math.PI*2;
+    if(Math.abs(ang)>Math.PI/3+0.22) return;
+    const hit=cast(dir+ang); if(hit.dist+0.2<dist&&hit.hit) return;
+    const w=canvas.width,h=canvas.height,fov=Math.PI/3;
+    const screenX=w/2+(ang/(fov/2))*(w/2);
+    const size=Math.min(h*0.88,(h*0.58)/dist);
+    const x=screenX-size/2,y=(h-size)/2+(bobY||0);
+    if(kind==='tag'){
+      ctx.fillStyle='rgba(255,200,60,0.35)'; ctx.beginPath(); ctx.arc(screenX,y+size*0.4,size*0.4,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#ffcc44'; ctx.fillRect(screenX-size*0.12,y+size*0.3,size*0.24,size*0.28);
+      ctx.fillStyle='#222'; ctx.font='800 '+(size*0.1|0)+'px system-ui'; ctx.textAlign='center';
+      ctx.fillText('|||',screenX,y+size*0.48);
+    } else if(kind==='term'){
+      ctx.fillStyle='#1a4060'; ctx.fillRect(x+size*0.2,y+size*0.2,size*0.6,size*0.55);
+      ctx.fillStyle='#40c0ff'; ctx.fillRect(x+size*0.28,y+size*0.28,size*0.44,size*0.28);
+      ctx.fillStyle='#fff'; ctx.font='800 '+(size*0.1|0)+'px system-ui'; ctx.textAlign='center';
+      ctx.fillText('掃描',screenX,y+size*0.48);
+    } else if(kind==='thermo'){
+      ctx.fillStyle='#402820'; ctx.fillRect(x+size*0.25,y+size*0.2,size*0.5,size*0.55);
+      const ok=thermo.val>0.4&&thermo.val<0.65;
+      ctx.fillStyle=ok?'#5dff9a':'#ff6644';
+      ctx.fillRect(x+size*0.32,y+size*0.55-size*0.35*thermo.val,size*0.36,size*0.08);
+      ctx.fillStyle='#fff'; ctx.font='800 '+(size*0.09|0)+'px system-ui'; ctx.textAlign='center';
+      ctx.fillText('恆溫',screenX,y+size*0.35);
+    } else if(kind==='curtain'){
+      ctx.fillStyle='rgba(120,70,50,0.65)'; ctx.fillRect(x+size*0.18,y+size*0.08,size*0.64,size*0.88);
+      ctx.fillStyle='rgba(80,30,30,0.5)'; for(let i=0;i<4;i++) ctx.fillRect(x+size*(0.22+i*0.15),y+size*0.15,size*0.08,size*0.7);
+    } else {
+      ctx.fillStyle='#3a1018'; ctx.fillRect(x+size*0.28,y+size*0.2,size*0.44,size*0.65);
+      ctx.fillStyle='#c01828'; ctx.fillRect(x+size*0.3,y+size*0.38,size*0.4,size*0.3);
+      ctx.fillStyle='#2a0808'; ctx.beginPath(); ctx.arc(screenX,y+size*0.22,size*0.14,0,Math.PI*2); ctx.fill();
     }
   }
 
   function end(ok){
+    playing=false;hiding=false;
     overlay.classList.remove('hidden');
-    pad.classList.remove('on'); hint.classList.remove('on'); looktip.classList.remove('on');
-    overlay.querySelector('.card').innerHTML = ok
-      ? '<h1>逃出凍肉倉！</h1><div class="sub">YOU ESCAPED</div><ol><li>鎖匙到手，衝出綠門。</li></ol><button class="play" id="again">再玩一次</button>'
-      : '<h1>俾人捉到……</h1><div class="sub">CAUGHT</div><ol><li>離紅影遠啲再試。</li></ol><button class="play" id="again">再試一次</button>';
+    actBtn.classList.remove('on'); hideBtn.classList.remove('on'); flashBtn.classList.remove('on');
+    hint.classList.remove('on'); looktip.classList.remove('on');
+    overlay.querySelector('.card').innerHTML=ok
+      ?'<h1>封倉完成·逃出！</h1><div class="sub">CHECKLIST CLEAR</div><ol><li>條碼掃描、恆溫調妥，你喺鎖門前衝出凍房。</li></ol><button class="play" id="again">再玩一次</button>'
+      :'<h1>'+(timeLeft<=0?'封倉上鎖……':'俾影追上……')+'</h1><div class="sub">LOCKED IN</div><ol><li>用掛肉簾匿藏，關電筒慢行，完成清單再逃。</li></ol><button class="play" id="again">再試一次</button>';
     document.getElementById('again').onclick=()=>location.reload();
   }
 
+  function tryInteract(){
+    if(interactCD>0) return;
+    // pickup tags
+    for(const t of tags){
+      if(!t.got&&Math.hypot(px-t.x,py-t.y)<1.15){
+        t.got=true; interactCD=0.3;
+        hint.textContent='執到條碼！去青色終端掃描'; hint.classList.add('on');
+        updateCheck(); return;
+      }
+    }
+    if(nearTerm()){
+      const hold=tags.filter(t=>t.got).length;
+      if(hold>scanned){
+        scanned=hold; interactCD=0.4;
+        hint.textContent='掃描完成 '+scanned+'/3'; hint.classList.add('on');
+        updateCheck();
+      } else if(scanned<3){
+        hint.textContent='仲差條碼——跟小地圖黃點'; hint.classList.add('on');
+      } else {
+        hint.textContent='條碼齊——去調恆溫'; hint.classList.add('on');
+      }
+      return;
+    }
+    if(nearThermo()&&!thermoOk){
+      // start hold adjust — handled in tick while holding
+      holdThermo=1;
+      hint.textContent='按住互動調恆溫至綠區…'; hint.classList.add('on');
+    }
+  }
+
+  function toggleFlash(){
+    if(battery<=0){flashOn=false;hint.textContent='電筒冇電！';hint.classList.add('on');}
+    else flashOn=!flashOn;
+    flashBtn.classList.toggle('off',!flashOn);
+    flashBtn.textContent=flashOn?'電筒 ON':'電筒 OFF';
+  }
+
+  function setHide(v){
+    hiding=!!(v&&nearCurtain());
+    hideBtn.classList.toggle('active',hiding);
+    if(v&&!nearCurtain()){hint.textContent='要企喺掛肉簾前先可以匿！';hint.classList.add('on');}
+  }
+
+  function updateActVis(){
+    const can=tags.some(t=>!t.got&&Math.hypot(px-t.x,py-t.y)<1.2)||nearTerm()||(nearThermo()&&!thermoOk);
+    actBtn.classList.toggle('on',!!can&&playing);
+    hideBtn.classList.toggle('on',playing);
+    flashBtn.classList.toggle('on',playing);
+  }
+
+  function pressKey(e,down){
+    const c=e.code||'';
+    const k=(e.key||'').toLowerCase();
+    if(c) keys[c]=down;
+    if(k==='w'||c==='KeyW') keys.KeyW=down;
+    if(k==='a'||c==='KeyA') keys.KeyA=down;
+    if(k==='s'||c==='KeyS') keys.KeyS=down;
+    if(k==='d'||c==='KeyD') keys.KeyD=down;
+    if(k==='q'||c==='KeyQ') keys.KeyQ=down;
+    if(k==='e'||c==='KeyE') keys.KeyE=down;
+    if(k==='f'||c==='KeyF') keys.KeyF=down;
+    if(k==='arrowup') keys.ArrowUp=down;
+    if(k==='arrowdown') keys.ArrowDown=down;
+    if(k==='arrowleft') keys.ArrowLeft=down;
+    if(k==='arrowright') keys.ArrowRight=down;
+    if(k===' '||c==='Space') keys.Space=down;
+    if(k==='shift'||c==='ShiftLeft'||c==='ShiftRight') keys.Shift=down;
+  }
+
   function start(){
-    overlay.classList.add('hidden');
-    playing=true;
-    hint.classList.add('on');
-    if(isTouch){ pad.classList.add('on'); looktip.classList.add('on'); }
-    msg.textContent='跟黃光執鎖匙 → 綠門逃出';
-    hint.textContent=isTouch?'左下方向鍵行 · 拖畫面轉頭 · 靠近黃鎖匙自動拾':'WASD 行 · 滑鼠轉頭 · 靠近黃鎖匙自動拾';
+    overlay.classList.add('hidden'); playing=true; dead=false; won=false; hiding=false;
+    flashOn=true; battery=100; stamina=100; scanned=0; thermoOk=false; exitOpen=false;
+    timeLeft=180; holdThermo=0; thermo.val=0.15;
+    tags.forEach(t=>t.got=false);
+    px=4.5; py=7.5; dir=-Math.PI/2;
+    stalker.x=22.5; stalker.y=18.5; stalker.px=16; stalker.py=10; stalker.mode='patrol';
+    updateCheck();
+    hint.classList.add('on'); looktip.classList.add('on');
+    pad.style.display='grid';
+    actBtn.classList.add('on'); hideBtn.classList.add('on'); flashBtn.classList.add('on');
+    flashBtn.textContent='電筒 ON'; flashBtn.classList.remove('off');
+    hint.textContent='跟黃光條碼 · WASD 行 · ←→／Q E 轉身 · F 電筒';
+    msg.textContent='夜班冷藏';
+    try{canvas.focus({preventScroll:true});}catch(_){try{canvas.focus();}catch(e){}}
+    try{canvas.requestPointerLock&&canvas.requestPointerLock();}catch(_){}
   }
   document.getElementById('btn').onclick=start;
 
-  addEventListener('keydown',e=>{keys[e.code]=true;});
-  addEventListener('keyup',e=>{keys[e.code]=false;});
-  addEventListener('mousemove',e=>{
-    if(!playing||isTouch) return;
-    if(document.pointerLockElement===canvas || e.buttons===1){
-      dir+=e.movementX*0.003;
-    }
-  });
-  canvas.addEventListener('click',()=>{ if(playing&&!isTouch) canvas.requestPointerLock?.(); });
-
-  let tx=-1;
-  canvas.addEventListener('touchstart',e=>{
+  addEventListener('keydown',e=>{
     if(!playing) return;
-    const t=e.changedTouches[0];
-    if(t.clientX>innerWidth*0.36) tx=t.clientX;
-  },{passive:true});
-  canvas.addEventListener('touchmove',e=>{
-    if(tx<0) return;
-    const t=e.changedTouches[0];
-    dir+=(t.clientX-tx)*0.006;
-    tx=t.clientX;
-  },{passive:true});
+    pressKey(e,true);
+    const block=['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyW','KeyA','KeyS','KeyD','KeyQ','KeyE','KeyF'];
+    if(block.includes(e.code)||['w','a','s','d','q','e','f',' '].includes((e.key||'').toLowerCase())) e.preventDefault();
+    if(e.code==='Space'||e.key===' ') setHide(true);
+    if(e.code==='KeyF'||(e.key||'').toLowerCase()==='f'){ if(!nearTerm()&&!nearThermo()&&!tags.some(t=>!t.got&&Math.hypot(px-t.x,py-t.y)<1.2)) toggleFlash(); else tryInteract(); }
+  });
+  addEventListener('keyup',e=>{
+    pressKey(e,false);
+    if(e.code==='Space'||e.key===' ') setHide(false);
+    if(e.code==='KeyF'||(e.key||'').toLowerCase()==='f') holdThermo=0;
+  });
+
+  actBtn.addEventListener('mousedown',()=>{tryInteract();});
+  actBtn.addEventListener('mouseup',()=>{holdThermo=0;});
+  actBtn.addEventListener('mouseleave',()=>{holdThermo=0;});
+  actBtn.addEventListener('touchstart',e=>{e.preventDefault();tryInteract();},{passive:false});
+  actBtn.addEventListener('touchend',()=>{holdThermo=0;});
+  hideBtn.addEventListener('mousedown',()=>setHide(true));
+  hideBtn.addEventListener('mouseup',()=>setHide(false));
+  hideBtn.addEventListener('mouseleave',()=>setHide(false));
+  hideBtn.addEventListener('touchstart',e=>{e.preventDefault();setHide(true);},{passive:false});
+  hideBtn.addEventListener('touchend',()=>setHide(false));
+  flashBtn.addEventListener('click',toggleFlash);
+  flashBtn.addEventListener('touchstart',e=>{e.preventDefault();toggleFlash();},{passive:false});
+
+  let dragging=false,lastMX=0;
+  canvas.addEventListener('mousedown',e=>{
+    if(!playing||e.button!==0) return;
+    dragging=true; lastMX=e.clientX;
+    try{canvas.focus({preventScroll:true});}catch(_){canvas.focus();}
+  });
+  addEventListener('mouseup',()=>{dragging=false;});
+  addEventListener('mousemove',e=>{
+    if(!playing) return;
+    if(document.pointerLockElement===canvas){dir+=e.movementX*0.004;return;}
+    if(dragging||e.buttons===1){dir+=(e.clientX-lastMX)*0.005;lastMX=e.clientX;}
+  });
+  canvas.addEventListener('click',()=>{
+    if(!playing) return;
+    try{canvas.focus({preventScroll:true});}catch(_){canvas.focus();}
+  });
+  let tx=-1;
+  canvas.addEventListener('touchstart',e=>{if(!playing)return;const t=e.changedTouches[0];if(t.clientX>innerWidth*0.36)tx=t.clientX;},{passive:true});
+  canvas.addEventListener('touchmove',e=>{if(tx<0)return;const t=e.changedTouches[0];dir+=(t.clientX-tx)*0.006;tx=t.clientX;},{passive:true});
   canvas.addEventListener('touchend',()=>{tx=-1;},{passive:true});
 
-  [['tF','f'],['tB','b'],['tL','l'],['tR','r']].forEach(([id,k])=>{
+  function bindPad(id,onFn,offFn){
     const el=document.getElementById(id);
-    const on=e=>{e.preventDefault(); move[k]=1;};
-    const off=()=>move[k]=0;
+    const on=e=>{e.preventDefault();el.classList.add('held');onFn();};
+    const off=()=>{el.classList.remove('held');offFn();};
     el.addEventListener('touchstart',on,{passive:false});
     el.addEventListener('touchend',off); el.addEventListener('touchcancel',off);
-  });
+    el.addEventListener('mousedown',on); el.addEventListener('mouseup',off); el.addEventListener('mouseleave',off);
+  }
+  bindPad('tF',()=>move.f=1,()=>move.f=0);
+  bindPad('tB',()=>move.b=1,()=>move.b=0);
+  bindPad('tL',()=>move.turnL=1,()=>move.turnL=0);
+  bindPad('tR',()=>move.turnR=1,()=>move.turnR=0);
 
   let last=performance.now();
   function tick(now){
-    requestAnimationFrame(tick);
+    window.__cold=()=>({px,py,dir,playing});
+  requestAnimationFrame(tick);
     const dt=Math.min(0.05,(now-last)/1000); last=now;
-    if(playing && !dead && !won){
-      let f=0,s=0;
-      if(keys.KeyW||keys.ArrowUp||move.f) f+=1;
-      if(keys.KeyS||keys.ArrowDown||move.b) f-=1;
-      if(keys.KeyA||keys.ArrowLeft||move.l) s-=1;
-      if(keys.KeyD||keys.ArrowRight||move.r) s+=1;
-      if(keys.KeyQ) dir-=1.8*dt;
-      if(keys.KeyE) dir+=1.8*dt;
-      const sp=2.8*dt;
-      const nx=px+Math.cos(dir)*f*sp + Math.cos(dir+Math.PI/2)*s*sp;
-      const ny=py+Math.sin(dir)*f*sp + Math.sin(dir+Math.PI/2)*s*sp;
-      if(!solid(nx,py)) px=nx;
-      if(!solid(px,ny)) py=ny;
-      tryPickup();
+    if(interactCD>0) interactCD-=dt;
+    if(playing&&!dead&&!won){
+      timeLeft-=dt;
+      const m=Math.floor(timeLeft/60),s=Math.floor(timeLeft%60);
+      timerEl.textContent='封倉倒數 '+m+':'+(s<10?'0':'')+s;
+      if(timeLeft<=0){dead=true;end(false);return;}
 
-      // butcher AI
-      const bd=Math.hypot(butcher.x-px, butcher.y-py);
-      if(bd<10){
-        const ang=Math.atan2(py-butcher.y, px-butcher.x);
-        const bsp=(bd<5?2.4:1.6)*dt;
-        const bx=butcher.x+Math.cos(ang)*bsp;
-        const by=butcher.y+Math.sin(ang)*bsp;
-        if(!solid(bx,butcher.y)) butcher.x=bx;
-        if(!solid(butcher.x,by)) butcher.y=by;
-        stress=Math.min(100,stress+dt*12);
-        if(bd<0.7){ dead=true; playing=false; end(false); }
-        if(bd<4) msg.textContent='小心！屠夫喺附近';
-      } else {
-        stress=Math.max(0,stress-dt*5);
-        if(!hasKey) msg.textContent='跟黃光執鎖匙';
-        else msg.textContent='鎖匙到手 · 去綠門';
+      if(keys.KeyQ||keys.ArrowLeft||move.turnL) dir-=2.6*dt;
+      if(keys.KeyE||keys.ArrowRight||move.turnR) dir+=2.6*dt;
+
+      if(!hiding){
+        let f=0;
+        if(keys.KeyW||keys.ArrowUp||move.f) f+=1;
+        if(keys.KeyS||keys.ArrowDown||move.b) f-=1;
+        // A/D strafe optional
+        let s=0;
+        if(keys.KeyA) s-=1;
+        if(keys.KeyD) s+=1;
+        const sprint=!!(keys.Shift&&f>0&&stamina>5);
+        const sp=(sprint?5.2:3.2)*dt;
+        if(sprint){stamina=Math.max(0,stamina-28*dt);bob+=dt*14;}
+        else {stamina=Math.min(100,stamina+18*dt); if(f||s) bob+=dt*9; else bob*=0.9;}
+        const nx=px+Math.cos(dir)*f*sp+Math.cos(dir+Math.PI/2)*s*sp;
+        const ny=py+Math.sin(dir)*f*sp+Math.sin(dir+Math.PI/2)*s*sp;
+        if(!solid(nx,py)) px=nx;
+        if(!solid(px,ny)) py=ny;
       }
-      stressEl.textContent=(stress|0)+'%';
+
+      if(flashOn&&battery>0) battery=Math.max(0,battery-3.2*dt);
+      if(battery<=0) flashOn=false;
+      batFill.style.width=battery+'%';
+      stamFill.style.width=stamina+'%';
+      flashBtn.classList.toggle('off',!flashOn);
+      flashBtn.textContent=flashOn&&battery>0?'電筒 ON':'電筒 OFF';
+
+      // thermo hold adjust
+      if(holdThermo&&nearThermo()&&!thermoOk){
+        thermo.val=Math.min(1,thermo.val+0.22*dt);
+        if(thermo.val>0.42&&thermo.val<0.62){
+          thermoOk=true; holdThermo=0;
+          hint.textContent='恆溫安全！'; hint.classList.add('on');
+          updateCheck();
+        }
+      } else if(!thermoOk&&nearThermo()){
+        // slowly drift
+        thermo.val=Math.max(0,thermo.val-0.02*dt);
+      }
+
+      // auto pickup nearby tags prompt
+      updateActVis();
+      updateCheck();
+
+      if(exitOpen&&Math.hypot(px-EXIT.x,py-EXIT.y)<1.4){won=true;end(true);return;}
+
+      // stalker AI
+      const sd=Math.hypot(stalker.x-px,stalker.y-py);
+      const lit=flashOn&&battery>0&&facing(stalker.x,stalker.y)&&sd<11;
+      if(hiding&&nearCurtain()){
+        stalker.mode='patrol';
+        const ang=Math.atan2(stalker.py-stalker.y,stalker.px-stalker.x);
+        stalker.x+=Math.cos(ang)*1.3*dt; stalker.y+=Math.sin(ang)*1.3*dt;
+        if(Math.hypot(stalker.x-stalker.px,stalker.y-stalker.py)<0.7){
+          stalker.px=4+Math.random()*20; stalker.py=4+Math.random()*20;
+        }
+        hint.textContent='匿緊——等佢走過先出嚟';
+        stat.textContent='匿藏中';
+      } else if(sd<12){
+        stalker.mode='chase';
+        const ang=Math.atan2(py-stalker.y,px-stalker.x);
+        const bsp=(lit?3.4:(sd<5?2.4:1.7))*dt;
+        const bx=stalker.x+Math.cos(ang)*bsp, by=stalker.y+Math.sin(ang)*bsp;
+        if(!solid(bx,stalker.y)) stalker.x=bx;
+        if(!solid(stalker.x,by)) stalker.y=by;
+        if(sd<3.2){stat.textContent='就喺隔籬！！'; msg.textContent='小心！影嚟緊';}
+        else {stat.textContent=lit?'被照到·加速':'巡邏／追蹤';}
+        if(sd<0.68){dead=true;end(false);return;}
+      } else {
+        stalker.mode='patrol';
+        const ang=Math.atan2(stalker.py-stalker.y,stalker.px-stalker.x);
+        stalker.x+=Math.cos(ang)*1.5*dt; stalker.y+=Math.sin(ang)*1.5*dt;
+        if(Math.hypot(stalker.x-stalker.px,stalker.y-stalker.py)<0.7){
+          stalker.px=4+Math.random()*20; stalker.py=4+Math.random()*20;
+        }
+        stat.textContent='冷靜';
+      }
+      if(nearCurtain()&&!hiding) hint.textContent='掛肉簾—按住「匿藏」／空白鍵';
     }
     draw();
   }
   requestAnimationFrame(tick);
 
-  // back btn keep
   setInterval(function(){
-    var a=document.querySelector('#vg-back-root a');
-    if(a){ a.href='/vincent-games-studio/games'; a.textContent='← 返回遊戲目錄'; }
+    var root=document.getElementById('vg-back-root');
+    if(!root){root=document.createElement('div');root.id='vg-back-root';document.body.appendChild(root);}
+    var tr=document.getElementById('vg-back-tr');
+    if(!tr){tr=document.createElement('a');tr.id='vg-back-tr';root.appendChild(tr);}
+    tr.className='vg-back-btn'; tr.href='/vincent-games-studio/games'; tr.textContent='← 返回遊戲目錄';
   },3000);
 })();
 </script>
