@@ -656,12 +656,14 @@ const VEHICLE_TEX = {
   sedan: './refs/vehicles/veh-sedan-side.jpg',
   motorcycle: './refs/vehicles/veh-motorcycle-side.jpg',
 };
-function paintVehicleMat(mat, urlFallbackAtlas) {
+function paintVehicleMat(mat, urlFallbackAtlas, onOk, onFail) {
   const tryUrls = [];
   if (mat.userData && mat.userData.vehicleUrl) tryUrls.push(mat.userData.vehicleUrl);
   if (urlFallbackAtlas) tryUrls.push(urlFallbackAtlas);
+  const doneOk = () => { try { onOk && onOk(); } catch (_) {} };
+  const doneFail = () => { try { onFail && onFail(); } catch (_) {} };
   const attempt = (i) => {
-    if (i >= tryUrls.length) return;
+    if (i >= tryUrls.length) { doneFail(); return; }
     const url = tryUrls[i];
     const isVeh = /\/refs\/vehicles\//.test(url);
     if (isVeh) {
@@ -673,6 +675,7 @@ function paintVehicleMat(mat, urlFallbackAtlas) {
         mat.alphaTest = 0.35;
         mat.color.setHex(0xffffff);
         mat.needsUpdate = true;
+        doneOk();
       });
       return;
     }
@@ -685,6 +688,7 @@ function paintVehicleMat(mat, urlFallbackAtlas) {
       mat.map = m;
       mat.color.setHex(0xffffff);
       mat.needsUpdate = true;
+      doneOk();
     });
   };
   attempt(0);
@@ -692,21 +696,37 @@ function paintVehicleMat(mat, urlFallbackAtlas) {
 }
 
 function addVehSideCard(group, url, w, h, y, zOff = 0) {
+  // Start HIDDEN — MeshBasicMaterial default white reads as giant white slabs until map binds.
+  // Share one material across both sides so async paintVehicleMat updates both faces.
   const mat = new THREE.MeshBasicMaterial({
     color: 0xffffff, transparent: true, alphaTest: 0.35, side: THREE.DoubleSide, depthWrite: false, fog: true,
   });
   mat.userData.vehicleUrl = url;
-  paintVehicleMat(mat, null);
   const card = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
   card.position.set(0, y, zOff);
   card.name = 'vehSideCard';
   card.userData.envTextured = true;
+  card.userData.awaitingTex = true;
+  card.visible = false;
   group.add(card);
-  // opposite side
-  const card2 = card.clone();
-  card2.material = mat.clone();
+  const card2 = new THREE.Mesh(card.geometry, mat);
+  card2.position.copy(card.position);
   card2.rotation.y = Math.PI;
+  card2.name = 'vehSideCard';
+  card2.userData.envTextured = true;
+  card2.userData.awaitingTex = true;
+  card2.visible = false;
   group.add(card2);
+  paintVehicleMat(mat, null, () => {
+    card.visible = true;
+    card2.visible = true;
+    card.userData.awaitingTex = false;
+    card2.userData.awaitingTex = false;
+  }, () => {
+    // Texture failed — never leave white planes in FOV
+    try { if (card.parent) card.parent.remove(card); } catch (_) {}
+    try { if (card2.parent) card2.parent.remove(card2); } catch (_) {}
+  });
   return card;
 }
 
@@ -2135,13 +2155,15 @@ function makeBotMesh(color, classId = 'spark') {
   g.userData.teamColor = color;
   g.userData.classId = classId;
 
-  // tiny team pip (kept after billboard — readable ally/foe cue, not a slab)
+  // Team pip OFF by default — colored spheres read as leftover debug orbs in TPP FOV.
+  // Keep node for probes but never render.
   const pip = new THREE.Mesh(
     new THREE.SphereGeometry(0.06, 8, 6),
     new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.7, roughness: 0.35 })
   );
   pip.position.set(0, 1.78, 0.12);
   pip.name = 'botTeamPip';
+  pip.visible = false;
   g.add(pip);
 
   const prefer = BOT_TEX[classId] || BOT_TEX.spark;
@@ -2497,8 +2519,9 @@ function applyCinematicEnv(root, mapId, tex, atlas = {}) {
     const awnMat = new THREE.MeshBasicMaterial({
       map: atlas.near, transparent: true, depthWrite: false, fog: true, side: THREE.DoubleSide, opacity: 0.88,
     });
-    const awn = new THREE.Mesh(new THREE.PlaneGeometry(28, 7), awnMat);
-    awn.position.set(0, 6.2, -9.5);
+    const awn = new THREE.Mesh(new THREE.PlaneGeometry(32, 6), awnMat);
+    // High + far — TPP chase cam (~y 2) must not clip through roof strip
+    awn.position.set(0, 8.6, -14.5);
     awn.name = 'envParallaxNear';
     awn.userData.envTextured = true;
     awn.userData.parallaxNear = true;
@@ -2522,9 +2545,64 @@ function applyCinematicEnv(root, mapId, tex, atlas = {}) {
   scene.fog = new THREE.FogExp2(0x080e1a, 0.0048);
   root.add(envGroup);
 
+  // Drop temporary boot ground once atlas pavement plate is live
+  const boot = root.getObjectByName('bootGroundPlate');
+  if (boot && boot.parent) boot.parent.remove(boot);
+
   stripBlockyArena(root);
+  hideUntexturedWhiteMeshes(root);
   unstickActorsAfterDensify();
   return true;
+}
+
+/** Hide/remove untextured near-white meshes (default Three materials / failed binds). Collision AABBs stay. */
+function hideUntexturedWhiteMeshes(root) {
+  if (!root) return { hidden: 0, removed: 0 };
+  let hidden = 0, removed = 0;
+  const doomed = [];
+  root.traverse((obj) => {
+    if (!obj.isMesh || !obj.geometry) return;
+    if (obj.name === 'botTeamPip' || obj.name === 'muzzleFlash') return;
+    if (obj.userData && obj.userData.awaitingTex) {
+      obj.visible = false;
+      hidden += 1;
+      return;
+    }
+    const mats = Array.isArray(obj.material) ? obj.material : (obj.material ? [obj.material] : []);
+    if (!mats.length) { doomed.push(obj); return; }
+    const hasMap = mats.some((m) => m && m.map);
+    if (hasMap) return;
+    // Sprites without map (pickup awaiting sheet) already handled via visible=false
+    if (obj.isSprite) {
+      obj.visible = false;
+      hidden += 1;
+      return;
+    }
+    const nearWhite = mats.some((m) => {
+      if (!m || !m.color) return true; // missing color ≈ default white
+      const c = m.color;
+      const r = c.r, g = c.g, b = c.b;
+      // bright / chalky untextured slabs
+      return r > 0.72 && g > 0.72 && b > 0.72;
+    });
+    const t = obj.geometry.type;
+    const isBlock = t === 'BoxGeometry' || t === 'PlaneGeometry';
+    if (nearWhite && isBlock) {
+      doomed.push(obj);
+      return;
+    }
+    if (nearWhite) {
+      obj.visible = false;
+      hidden += 1;
+    }
+  });
+  for (const obj of doomed) {
+    try {
+      if (obj.parent) obj.parent.remove(obj);
+      removed += 1;
+    } catch (_) {}
+  }
+  return { hidden, removed };
 }
 
 /** DELETE solid-color / canvas ZH junk. Keep atlas/env-textured props, asphalt, parallax, hero/bots. */
@@ -2533,7 +2611,7 @@ function stripBlockyArena(root) {
   const keepRoot = new Set(['playerHero', 'botActor', 'heroGun', 'curbProp', 'vehicleProp', 'npcActor']);
   const keepEnvMesh = new Set([
     'envSky', 'envBackdropN', 'envBackdropS',
-    'envGroundPlate', 'envAsphaltLane',
+    'envGroundPlate', 'bootGroundPlate', 'envAsphaltLane',
     'envWallL', 'envWallR', 'envWallN', 'envWallS',
     'envParallaxFar', 'envParallaxFarS', 'envParallaxNear',
   ]);
@@ -2608,7 +2686,7 @@ function arenaVisualAudit(root) {
   const skipNames = new Set(['playerHero', 'botActor', 'heroGun', 'npcActor', 'vehicleProp', 'curbProp']);
   const keepEnvMesh = new Set([
     'envSky', 'envBackdropN', 'envBackdropS',
-    'envGroundPlate', 'envAsphaltLane',
+    'envGroundPlate', 'bootGroundPlate', 'envAsphaltLane',
     'envWallL', 'envWallR', 'envWallN', 'envWallS',
     'envParallaxFar', 'envParallaxFarS', 'envParallaxNear',
   ]);
@@ -2687,7 +2765,7 @@ function densifyCinematicCitySlice(envGroup, root, mapId, tex, atlas = {}) {
     repeatX: 1.1 + i * 0.15, repeatY: 1.6 + (i % 2) * 0.4,
   }));
   const gateMat = makeAtlasMat(gateSrc, { repeatX: 1.2, repeatY: 1.0 });
-  const coverMat = makeAtlasMat(coverSrc, { repeatX: 0.8, repeatY: 0.8, color: 0xd0d4d8 });
+  const coverMat = makeAtlasMat(coverSrc, { repeatX: 0.8, repeatY: 0.8, color: 0x9aa0a8 });
 
   // Buildings far enough that inner face stays |x| >= 6.2 — corridor walkable
   const rowX = [-9.6, 9.6];
@@ -2844,8 +2922,24 @@ function buildWorld(mapId) {
   const builder = builders[mapId] || buildCargoPier;
   builder(root);
 
+  // Immediate dark ground — PLATE_ONLY builders skip mesh ground; avoid void until atlas pavement binds
+  {
+    const bootGround = new THREE.Mesh(
+      new THREE.PlaneGeometry(90, 90),
+      new THREE.MeshStandardMaterial({ color: 0x161a22, roughness: 0.92, metalness: 0.06, fog: true })
+    );
+    bootGround.rotation.x = -Math.PI / 2;
+    bootGround.position.y = 0.005;
+    bootGround.name = 'bootGroundPlate';
+    bootGround.userData.asphalt = true;
+    bootGround.userData.roadCrop = true;
+    bootGround.renderOrder = -2;
+    root.add(bootGround);
+  }
+
   // Immediate strip so splash/boot FOV never shows teal/magenta/grey façade slabs
   stripBlockyArena(root);
+  hideUntexturedWhiteMeshes(root);
 
   // Cinematic env plate (4K) — soft-fallback if Multimedia plate not on disk yet
   beginEnvPlateLoad(root, mapId);
@@ -2854,6 +2948,7 @@ function buildWorld(mapId) {
   spawnPickups(root);
   setupHoldZone(root, mapId);
   stripBlockyArena(root);
+  hideUntexturedWhiteMeshes(root);
 
   // Third-person hero (visible body) + world gun on right hand
   if (playerMesh && playerMesh.parent) playerMesh.parent.remove(playerMesh);
@@ -3047,13 +3142,49 @@ function applyPlayerPhysics(dt) {
   state.z = c.z;
 }
 
+/** Step ideal camera back→player; if solid AABB hit, pull in (TPP roof/wall clip fix). */
+function cameraPullBack(idealX, idealY, idealZ, targetX, targetY, targetZ) {
+  const dx = idealX - targetX;
+  const dy = idealY - targetY;
+  const dz = idealZ - targetZ;
+  const dist = Math.hypot(dx, dy, dz) || 0.001;
+  const steps = Math.max(8, Math.ceil(dist / 0.18));
+  let best = 1;
+  for (let i = 1; i <= steps; i++) {
+    const t = i / steps;
+    const px = targetX + dx * t;
+    const py = targetY + dy * t;
+    const pz = targetZ + dz * t;
+    let hit = false;
+    for (const b of solidBoxes) {
+      // Skip ground slab (minY < 0) — only walls/roofs/props clip the chase cam
+      if (b.maxY < 0.4) continue;
+      if (px >= b.minX && px <= b.maxX && py >= b.minY && py <= b.maxY && pz >= b.minZ && pz <= b.maxZ) {
+        hit = true;
+        break;
+      }
+    }
+    if (hit) {
+      best = Math.max(0.12, (i - 1) / steps);
+      break;
+    }
+  }
+  return {
+    x: targetX + dx * best,
+    y: targetY + dy * best,
+    z: targetZ + dz * best,
+    t: best,
+  };
+}
+
 function updateCamera() {
-  // Mild near-awning parallax (atlas strip tracks camera slightly)
+  // Mild near-awning parallax — keep strip ABOVE chase cam so it never fills the lens
   if (worldRoot) {
     worldRoot.traverse((o) => {
       if (o.name === 'envParallaxNear' && o.userData && o.userData.parallaxNear) {
-        o.position.x = (state.x || 0) * 0.12;
-        o.position.z = -9.5 + (state.z || 0) * 0.04;
+        o.position.x = (state.x || 0) * 0.08;
+        o.position.y = 8.6;
+        o.position.z = -14.5 + (state.z || 0) * 0.03;
       }
     });
   }
@@ -3075,10 +3206,15 @@ function updateCamera() {
   const back = CAM_BACK;
   const right = CAM_RIGHT;
   const up = CAM_UP + (state.crouching || state.sliding ? -0.25 : 0);
-  const camX = state.x + sy * back + cy * right;
-  const camY = state.y + up;
-  const camZ = state.z + cy * back + (-sy) * right;
-  camera.position.set(camX, camY, camZ);
+  const idealX = state.x + sy * back + cy * right;
+  const idealY = state.y + up;
+  const idealZ = state.z + cy * back + (-sy) * right;
+  // Anchor at upper chest so pull-back doesn't sink into floor
+  const pivotX = state.x;
+  const pivotY = state.y - 0.15;
+  const pivotZ = state.z;
+  const pulled = cameraPullBack(idealX, idealY, idealZ, pivotX, pivotY, pivotZ);
+  camera.position.set(pulled.x, pulled.y, pulled.z);
   // look along aim (yaw/pitch) through a point ahead of the hero
   const { dx, dy, dz } = dirFromAngles(yaw, pitch);
   const lookDist = 22;
@@ -3188,42 +3324,68 @@ function bossById(id) {
   return BOSSES.find((b) => b.id === id) || BOSSES[0];
 }
 
+const PICKUP_SHEET_URL = './refs/ui/pickups-sheet.jpg?v=pickup1';
+let pickupSheetTex = null;
+const PICKUP_UV = {
+  // 2×3 sheet cells (ammo/armor/hp / speed/coin/weapon)
+  ammo:   { u: 0 / 3, v: 0.5, su: 1 / 3, sv: 0.5 },
+  armor:  { u: 1 / 3, v: 0.5, su: 1 / 3, sv: 0.5 },
+  hp:     { u: 2 / 3, v: 0.5, su: 1 / 3, sv: 0.5 },
+  speed:  { u: 0 / 3, v: 0.0, su: 1 / 3, sv: 0.5 },
+  coin:   { u: 1 / 3, v: 0.0, su: 1 / 3, sv: 0.5 },
+  weapon: { u: 2 / 3, v: 0.0, su: 1 / 3, sv: 0.5 },
+};
+function loadPickupSheetTex() {
+  return new Promise((resolve) => {
+    if (pickupSheetTex) { resolve(pickupSheetTex); return; }
+    getEnvLoader().load(
+      PICKUP_SHEET_URL,
+      (tex) => {
+        if (THREE.SRGBColorSpace) tex.colorSpace = THREE.SRGBColorSpace;
+        tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
+        pickupSheetTex = tex;
+        resolve(tex);
+      },
+      undefined,
+      () => resolve(null)
+    );
+  });
+}
+function makePickupSprite(kind) {
+  // Prefer Multimedia pickups-sheet cell; never spawn neon debug spheres / color orbs.
+  const uv = PICKUP_UV[kind] || PICKUP_UV.ammo;
+  const mat = new THREE.SpriteMaterial({
+    color: 0xffffff, transparent: true, depthWrite: false, opacity: 0.95, fog: true,
+  });
+  const mesh = new THREE.Sprite(mat);
+  mesh.scale.set(0.55, 0.55, 0.55);
+  mesh.name = 'pickupIcon';
+  mesh.userData.keepVisual = true;
+  mesh.visible = false; // hide until sheet cell binds
+  loadPickupSheetTex().then((base) => {
+    if (!base || !mesh.material) return;
+    const t = base.clone();
+    t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+    t.offset.set(uv.u, uv.v);
+    t.repeat.set(uv.su, uv.sv);
+    t.needsUpdate = true;
+    mesh.material.map = t;
+    mesh.material.needsUpdate = true;
+    mesh.visible = true;
+  });
+  return mesh;
+}
+
 function spawnPickups(root) {
   pickups.forEach((p) => { if (p.mesh && p.mesh.parent) p.mesh.parent.remove(p.mesh); });
   pickups = [];
   const spots = (spawnPoints || [[0,0,0]]).slice(0, 8);
   // Translation pickup kinds (ammo/armor/hp/speed/coin) + occasional weapon
   const kinds = ['ammo', 'armor', 'hp', 'speed', 'coin', 'weapon', 'ammo', 'hp'];
-  const kindColor = {
-    hp: 0x5dff9a,
-    ammo: 0xffd36a,
-    armor: 0x7ec8ff,
-    speed: 0xff9a3c,
-    coin: 0xffe566,
-    weapon: 0x40f0ff,
-  };
   spots.forEach((sp, i) => {
     const kind = kinds[i % kinds.length];
-    const col = kindColor[kind] || 0x40f0ff;
-    // Vincent FAIL: solid neon cubes around spawn read as 大色塊積木 — DELETE BoxGeometry pickups.
-    // Soft sprite glow only (not a rectangular slab).
-    const c = document.createElement('canvas');
-    c.width = 64; c.height = 64;
-    const ctx = c.getContext('2d');
-    const hex = '#' + (col >>> 0).toString(16).padStart(6, '0');
-    const grd = ctx.createRadialGradient(32, 32, 2, 32, 32, 30);
-    grd.addColorStop(0, hex);
-    grd.addColorStop(0.45, hex + '99');
-    grd.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = grd;
-    ctx.fillRect(0, 0, 64, 64);
-    const tex = new THREE.CanvasTexture(c);
-    if (THREE.SRGBColorSpace) tex.colorSpace = THREE.SRGBColorSpace;
-    const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, opacity: 0.9 });
-    const mesh = new THREE.Sprite(mat);
-    mesh.scale.set(0.5, 0.5, 0.5);
-    mesh.name = 'pickupOrb';
-    mesh.userData.keepVisual = true;
+    // Vincent FAIL: neon cubes AND floating colored orbs read as debug junk — sheet icons only.
+    const mesh = makePickupSprite(kind);
     const x = (sp[0] || 0) + (i % 2 ? 3 : -3);
     const z = (sp[2] || 0) + (i % 3 === 0 ? 2 : -2);
     mesh.position.set(x, 0.55, z);
@@ -4364,6 +4526,40 @@ window.__clearPlayerToCorridor = () => {
   state.vx = state.vz = 0;
   if (playerMesh) playerMesh.position.set(state.x, 0, state.z);
   return { x: state.x, z: state.z };
+};
+
+window.__whiteMeshProbe = () => {
+  const r = worldRoot;
+  let untexturedWhite = 0, awaitingTex = 0, visiblePickupOrbs = 0, visiblePips = 0;
+  const samples = [];
+  if (!r) return { untexturedWhite, awaitingTex, visiblePickupOrbs, visiblePips, samples, ok: false };
+  r.traverse((obj) => {
+    if (!obj.visible) return;
+    if (obj.name === 'botTeamPip') { visiblePips += 1; return; }
+    if (obj.name === 'pickupOrb') { visiblePickupOrbs += 1; return; }
+    if (obj.userData && obj.userData.awaitingTex) { awaitingTex += 1; return; }
+    if (!obj.isMesh || !obj.geometry) return;
+    const mats = Array.isArray(obj.material) ? obj.material : (obj.material ? [obj.material] : []);
+    const hasMap = mats.some((m) => m && m.map);
+    if (hasMap) return;
+    const nearWhite = !mats.length || mats.some((m) => {
+      if (!m || !m.color) return true;
+      return m.color.r > 0.72 && m.color.g > 0.72 && m.color.b > 0.72;
+    });
+    const t = obj.geometry.type;
+    if (nearWhite && (t === 'BoxGeometry' || t === 'PlaneGeometry')) {
+      untexturedWhite += 1;
+      if (samples.length < 8) {
+        const wp = new THREE.Vector3();
+        obj.getWorldPosition(wp);
+        samples.push({ name: obj.name, t, x: +wp.x.toFixed(1), z: +wp.z.toFixed(1) });
+      }
+    }
+  });
+  return {
+    untexturedWhite, awaitingTex, visiblePickupOrbs, visiblePips, samples,
+    ok: untexturedWhite === 0 && visiblePickupOrbs === 0 && visiblePips === 0,
+  };
 };
 
 window.__botVisualProbe = () => {
