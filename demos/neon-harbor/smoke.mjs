@@ -132,9 +132,10 @@ try {
   check('no leftover blocky planes', audit && audit.plane === 0, JSON.stringify(audit));
   check('no leftover canvas signs', audit && audit.canvas === 0, JSON.stringify(audit));
   check('no solid-color box slabs', audit && (audit.solidColorBoxes|0) === 0, JSON.stringify(audit));
+  check('no cyan hold rings', audit && (audit.rings|0) === 0, JSON.stringify(audit));
   check('collision solids kept', audit && audit.solids > 8, JSON.stringify(audit));
 
-  // signs map — Vincent FAIL screenshot map; near FOV must stay plate-only
+  // signs map — Vincent FAIL screenshot map; near FOV must stay plate-only (no 青環／綠霓虹板／拉伸字)
   await page.evaluate(() => window.__startForTest('signs', 'spark'));
   await page.waitForFunction(() => {
     const d = window.__dbg && window.__dbg();
@@ -145,6 +146,7 @@ try {
   check('signs no blocky boxes', signsAudit && signsAudit.box === 0, JSON.stringify(signsAudit));
   check('signs no solid-color slabs', signsAudit && (signsAudit.solidColorBoxes|0) === 0, JSON.stringify(signsAudit));
   check('signs no canvas lightboxes', signsAudit && signsAudit.canvas === 0, JSON.stringify(signsAudit));
+  check('signs no cyan rings/pads', signsAudit && (signsAudit.rings|0) === 0, JSON.stringify(signsAudit));
 
   // NPC must walk/chase — standing still is a bug (Vincent)
   const botMotion = await page.evaluate(() => {

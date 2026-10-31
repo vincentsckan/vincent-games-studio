@@ -7,5 +7,10 @@ player-ots.jpg         — 16:9 over-the-shoulder game-cam; back of head/shoulde
 player-gun-pose.jpg    — 3/4 rear aiming SMG/rifle; full-body combat pose for weapon attach.
 player-melee-pose.jpg  — 3/4 rear melee ready (neon knife / fists); full-body combat pose.
 
-Look: androgynous East Asian street op; dark bomber + cyan neon trim, dark jeans; photoreal HK night.
+Chroma key (back-full / gun-pose / melee-pose only):
+  Solid pure green #00FF00 (RGB 0,255,0) studio plate behind the hero.
+  Key ONLY #00FF00 green — do NOT key black, do NOT use luminance / luma key.
+  player-ots.jpg is a scenic alley plate (not chroma); leave untouched.
+
+Look: androgynous East Asian street op; dark bomber + cyan neon trim, dark jeans; photoreal.
 v1 default only (not class skins Spark/Falcon/Rock/Shade). Fictional character; no celebrity likeness.
