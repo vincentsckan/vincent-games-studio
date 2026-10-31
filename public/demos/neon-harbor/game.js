@@ -449,6 +449,101 @@ function addYellowTaxi(group, x, z, rotY = 0) {
   return g;
 }
 
+/** 理髮旋轉燈 — red/white/blue barber pole (soft prop). */
+function addBarberPole(group, x, z, h = 2.4) {
+  const g = new THREE.Group();
+  g.position.set(x, 0, z);
+  const pole = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.12, 0.12, h, 12),
+    new THREE.MeshStandardMaterial({ color: 0xf0f0f0, roughness: 0.45 })
+  );
+  pole.position.y = h / 2;
+  g.add(pole);
+  const stripes = [0xc41828, 0xf0f4f8, 0x1a5c9a];
+  for (let i = 0; i < 8; i++) {
+    const col = stripes[i % 3];
+    const band = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.135, 0.135, 0.22, 12),
+      new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 0.35, roughness: 0.4 })
+    );
+    band.position.y = 0.35 + i * 0.26;
+    g.add(band);
+    neonMats.push(band.material);
+  }
+  const cap = new THREE.Mesh(
+    new THREE.SphereGeometry(0.16, 10, 8),
+    new THREE.MeshStandardMaterial({ color: 0xe8e0d0, emissive: 0xffe080, emissiveIntensity: 0.6 })
+  );
+  cap.position.y = h + 0.08;
+  g.add(cap);
+  neonMats.push(cap.material);
+  group.add(g);
+  return g;
+}
+
+/** 紅色手推車 / goods tricycle — curb clutter (soft or light collision). */
+function addRedHandcart(group, x, z, rotY = 0, solid = false) {
+  const g = new THREE.Group();
+  g.position.set(x, 0, z);
+  g.rotation.y = rotY;
+  const bed = new THREE.Mesh(
+    new THREE.BoxGeometry(1.1, 0.45, 1.6),
+    new THREE.MeshStandardMaterial({ color: 0xc41828, roughness: 0.55, metalness: 0.2 })
+  );
+  bed.position.set(0, 0.55, 0.15);
+  g.add(bed);
+  const rail = new THREE.Mesh(
+    new THREE.BoxGeometry(1.05, 0.35, 0.06),
+    new THREE.MeshStandardMaterial({ color: 0x8b1515 })
+  );
+  rail.position.set(0, 0.85, -0.55);
+  g.add(rail);
+  // front wheel + rear pair (blocky)
+  const whMat = new THREE.MeshStandardMaterial({ color: 0x111118 });
+  [[0, -0.85], [-0.4, 0.7], [0.4, 0.7]].forEach(([wx, wz], i) => {
+    const wh = new THREE.Mesh(new THREE.BoxGeometry(i === 0 ? 0.18 : 0.16, 0.4, 0.4), whMat);
+    wh.position.set(wx, 0.22, wz);
+    g.add(wh);
+  });
+  // cargo crate on bed
+  const crate = new THREE.Mesh(
+    new THREE.BoxGeometry(0.7, 0.45, 0.9),
+    new THREE.MeshStandardMaterial({ color: 0x5a4030, roughness: 0.7 })
+  );
+  crate.position.set(0, 0.95, 0.2);
+  g.add(crate);
+  group.add(g);
+  if (solid) solidBoxes.push(boxSolid(x, 0, z, 1.2, 1.1, 1.8));
+  return g;
+}
+
+/** Vintage white + yellow sedan scale prop (soft cover companion to 黃的). */
+function addVintageSedan(group, x, z, rotY = 0, color = 0xf2f0ea) {
+  const g = new THREE.Group();
+  g.position.set(x, 0, z);
+  g.rotation.y = rotY;
+  const bodyMat = new THREE.MeshStandardMaterial({ color, roughness: 0.55, metalness: 0.25 });
+  const darkMat = new THREE.MeshStandardMaterial({ color: 0x1a1a22, roughness: 0.4, metalness: 0.3 });
+  const body = new THREE.Mesh(new THREE.BoxGeometry(1.75, 0.5, 3.8), bodyMat);
+  body.position.y = 0.5;
+  g.add(body);
+  const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.65, 2.0), bodyMat);
+  cabin.position.set(0, 1.05, -0.1);
+  g.add(cabin);
+  const win = new THREE.Mesh(new THREE.BoxGeometry(1.45, 0.45, 1.7), darkMat);
+  win.position.set(0, 1.1, -0.1);
+  g.add(win);
+  [[-0.7, -1.15], [0.7, -1.15], [-0.7, 1.15], [0.7, 1.15]].forEach(([wx, wz]) => {
+    const wh = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.4, 0.5), darkMat);
+    wh.position.set(wx, 0.25, wz);
+    g.add(wh);
+  });
+  group.add(g);
+  const aligned = Math.abs(rotY % Math.PI) < 0.3 || Math.abs(Math.abs(rotY % Math.PI) - Math.PI) < 0.3;
+  solidBoxes.push(boxSolid(x, 0, z, aligned ? 1.85 : 3.9, 1.4, aligned ? 3.9 : 1.85));
+  return g;
+}
+
 /** Wet stone zebra crossing bands. */
 function addZebraCrossing(group, x, z, acrossX = true) {
   for (let i = 0; i < 6; i++) {
@@ -563,22 +658,32 @@ function addBambooScaffold(group, x, zStart, zEnd, toward = 1) {
   }
 }
 
-/** Circular pawn-shop style sign (bat-coin feel) — fictional 金蝠當. */
+/** Circular pawn-shop style sign — fictional 金蝠當舖 with large 「押」. */
 function addPawnSign(group, x, y, z) {
   const c = document.createElement('canvas');
   c.width = 256; c.height = 256;
   const ctx = c.getContext('2d');
+  // red disc + gold rim
   ctx.fillStyle = '#b01028';
-  ctx.beginPath(); ctx.arc(128, 128, 120, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#ffe8a0';
-  ctx.beginPath(); ctx.arc(128, 118, 48, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#b01028';
-  ctx.beginPath(); ctx.arc(128, 118, 22, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(128, 128, 122, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#2a8f4a'; ctx.lineWidth = 14;
+  ctx.beginPath(); ctx.arc(128, 128, 112, 0, Math.PI * 2); ctx.stroke();
   ctx.strokeStyle = '#ffe8a0'; ctx.lineWidth = 6;
-  ctx.beginPath(); ctx.arc(128, 160, 55, Math.PI * 0.15, Math.PI * 0.85); ctx.stroke();
-  ctx.font = 'bold 28px "Noto Sans TC",sans-serif';
-  ctx.textAlign = 'center'; ctx.fillStyle = '#ffe8a0';
-  ctx.fillText('金蝠當', 128, 230);
+  ctx.beginPath(); ctx.arc(128, 128, 100, 0, Math.PI * 2); ctx.stroke();
+  // bat-coin hint above 押
+  ctx.fillStyle = '#ffe8a0';
+  ctx.beginPath(); ctx.ellipse(128, 58, 28, 14, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#b01028';
+  ctx.beginPath(); ctx.ellipse(128, 58, 12, 6, 0, 0, Math.PI * 2); ctx.fill();
+  // large 「押」
+  ctx.font = 'bold 110px "Noto Sans TC",sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#ffe8a0';
+  ctx.fillText('押', 128, 128);
+  // shop name under
+  ctx.font = 'bold 22px "Noto Sans TC",sans-serif';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText('金蝠當舖', 128, 228);
   const tex = new THREE.CanvasTexture(c);
   if (THREE.SRGBColorSpace) tex.colorSpace = THREE.SRGBColorSpace;
   const mat = new THREE.MeshStandardMaterial({
@@ -593,10 +698,10 @@ function addPawnSign(group, x, y, z) {
 }
 
 
-// Locked zh-Hant sign copy (Translation) — fictional / non-trademark
+// Locked zh-Hant sign copy (Translation) — fully fictional / non-trademark
 const ZH_VERT_NEON = '富龍大茶樓';
-const ZH_WALL = ['罐頭食品', '名茶', '茶莊禮品', '乾餅菓'];
-const ZH_BANNERS = ['公合記食家', '喜筵壽宴', '理髮', '涼茶', '燒味'];
+const ZH_WALL = ['罐頭食品', '名茶', '茶莊禮品', '乾餅菓', '生興白米生油'];
+const ZH_BANNERS = ['德成合記', '喜筵壽宴', '上海理髮', '安和堂涼茶', '燒味'];
 
 
 function buildCargoPier(root) {
@@ -873,13 +978,16 @@ function buildNeonSignStreet(root) {
 
   // === V4 SIGN FOREST (banner canopy / metal arms / minibuses / scaffold) ===
   const ZH_LIGHTBOX = [
-    '雅翠火鍋', '晶明鏡架', 'raymond 髮型', '豬扒包 $26', '五金漆油',
-    '牙齒保健', '通宵網吧', '按摩舒壓', '凉茶舖', '富龍大茶樓', '公合記食家',
-    '喜筵壽宴', '涼茶館', '金蝠當舖',
+    '安和堂涼茶', '港南米線', '雅翠火鍋', '晶明鏡架', '星河書局',
+    '跌打專科', '上海理髮', '足底舒壓 24H', '豬扒包 $26', '五金漆油',
+    '江記東江菜', '生興白米生油', '德成合記', '凉茶舖', '燒味',
+    '金蝠當舖', '富龍大茶樓', 'raymond 髮型', '通宵網吧', '按摩舒壓',
+    '牙齒保健', '喜筵壽宴',
   ];
   const ZH_EN = [
-    'JADE HOTPOT', 'CRYSTAL FRAMES', 'RAYMOND CUTS', 'PORK BUN $26', 'HARDWARE',
-    'DENTAL CARE', 'ALL-NITE NET', 'FOOT SPA', 'HERBAL TEA', 'FU LUNG TEA', 'GUNG HOP KEE',
+    'ON WO TONG', 'KONG NAM NOODLE', 'JADE HOTPOT', 'CRYSTAL FRAMES', 'STAR RIVER BOOKS',
+    'BONE SETTING', 'SHANGHAI BARBER', 'FOOT SPA 24H', 'PORK BUN $26', 'HARDWARE',
+    'KONG KEE EAST', 'SANG HING RICE', 'TAK SING HOP', 'HERBAL TEA', 'SIU MEI',
   ];
   const lbStyles = [
     { bg: '#b01028', fg: '#fff4d0', em: 0xff2d3a },
@@ -917,28 +1025,47 @@ function buildNeonSignStreet(root) {
       }
     }
   }
-  // hero bilingual row (v4 board order)
+  // hero lexicon row (v5 / Translation fictional set)
   const heroRow = [
-    [-3.2, 6.2, -4, '雅翠火鍋', '#b01028', '#fff4d0', 0xff2d3a],
-    [3.2, 6.2, -4, '豬扒包 $26', '#f0e8d8', '#8b1515', 0x401010],
-    [-3.2, 5.3, -2, '晶明鏡架', '#0d5c3a', '#ffe8a0', 0x40f080],
-    [3.2, 5.3, -2, '五金漆油', '#0d5c3a', '#ffffff', 0x40f080],
-    [-3.2, 4.4, 0, 'raymond 髮型', '#c47800', '#1a1a22', 0xffa040],
-    [3.2, 4.4, 0, '牙齒保健', '#ffe060', '#1a5c3a', 0xffd36a],
-    [-3.2, 3.5, 2, '通宵網吧', '#0a3a7a', '#ffffff', 0x2080ff],
-    [3.2, 3.5, 2, '按摩舒壓', '#ff4dc8', '#ffffff', 0xff2d9b],
-    [3.2, 2.7, 4, '凉茶舖', '#ffe060', '#8b1515', 0xffd36a],
+    [-3.2, 6.2, -4, '安和堂涼茶', '#0d5c3a', '#ffffff', 0x40f080],
+    [3.2, 6.2, -4, '港南米線', '#ffe060', '#0a3a7a', 0xffd36a],
+    [-3.2, 5.3, -2, '雅翠火鍋', '#b01028', '#fff4d0', 0xff2d3a],
+    [3.2, 5.3, -2, '晶明鏡架', '#0d5c3a', '#ffe8a0', 0x40f080],
+    [-3.2, 4.4, 0, '星河書局', '#0a3a7a', '#ffffff', 0x2080ff],
+    [3.2, 4.4, 0, '跌打專科', '#c47800', '#1a1a22', 0xffa040],
+    [-3.2, 3.5, 2, '上海理髮', '#f0e8d8', '#8b1515', 0x401010],
+    [3.2, 3.5, 2, '足底舒壓 24H', '#ff4dc8', '#ffffff', 0xff2d9b],
+    [-3.2, 2.7, 4, '江記東江菜', '#b01028', '#ffe8a0', 0xff2d3a],
+    [3.2, 2.7, 4, '生興白米生油', '#f0e8d8', '#1a5c3a', 0x40f080],
+    [-3.2, 2.0, 6, '豬扒包 $26', '#ffe060', '#8b1515', 0xffd36a],
+    [3.2, 2.0, 6, '五金漆油', '#0d5c3a', '#ffffff', 0x40f080],
   ];
   heroRow.forEach(([x, y, z, txt, bg, fg, em]) => {
     addHangSign(root, x, y, z, 2.4, 0.55, txt, { bg, fg, emissive: em, emitInt: 2.0 });
   });
-  addHangSign(root, -4.0, 4.8, 8, 2.2, 0.65, '涼茶館', {
-    bg: '#111110', fg: '#ffd36a', emissive: 0xffd36a, emitInt: 2.1,
+  addHangSign(root, -4.0, 4.8, 8, 2.2, 0.65, '安和堂涼茶', {
+    bg: '#0d5c3a', fg: '#ffffff', emissive: 0x40f080, emitInt: 2.1,
+  });
+  addHangSign(root, 4.0, 4.6, 8, 2.0, 0.55, '港南米線', {
+    bg: '#ffe060', fg: '#0a3a7a', emissive: 0xffd36a, emitInt: 2.0,
   });
   addPawnSign(root, -4.5, 5.6, 12);
   addHangSign(root, -4.5, 4.3, 12, 1.5, 0.38, '金蝠當舖', {
     bg: '#b01028', fg: '#ffe8a0', emissive: 0xff2d3a, emitInt: 1.5,
   });
+  addHangSign(root, 4.2, 5.0, 12, 1.8, 0.45, '德成合記', {
+    bg: '#0a3a7a', fg: '#ffffff', emissive: 0x2080ff, emitInt: 1.8,
+  });
+  // barber pole + 上海理髮 near arcade
+  addBarberPole(root, -4.6, -6.5, 2.5);
+  addZhPanel(root, -4.6, 0.35, -5.6, 0.12, 1.6, 0.35, '上海理髮', {
+    vertical: true, bg: '#f0e8d8', fg: '#8b1515', emissive: 0x401010, emitInt: 0.4,
+  });
+  // red goods handcarts + vintage white car (v5 curb props)
+  addRedHandcart(root, 2.8, -10.5, 0.2, false);
+  addRedHandcart(root, -2.9, 9.5, Math.PI + 0.15, false);
+  addRedHandcart(root, 3.0, 5.0, -0.4, false);
+  addVintageSedan(root, -3.0, -14.5, Math.PI, 0xf2f0ea);
 
   // bamboo scaffold + blue/white tarp (left) — soft sight gaps
   addBambooScaffold(root, -7.0, -12, 6, 1);
@@ -1127,8 +1254,23 @@ function buildTeahouseBack(root) {
   [[-1.4, 3], [1.2, -2.5], [-0.8, 7], [1.5, -7]].forEach(([x, z], i) => addRedStool(root, x, z, true));
   [[-2.6, 12], [2.4, -12], [2.0, 6]].forEach(([x, z], i) => addTrashBin(root, x, z, i));
 
-  // 黃的 at alley end
+  // 黃的 + light v5 curb props at alley end
   addYellowTaxi(root, 0, 17.5, Math.PI / 2);
+  addRedHandcart(root, 3.2, 12.0, -0.3, false);
+  addBarberPole(root, -5.2, -4.0, 2.2);
+  addZhPanel(root, -5.2, 0.3, -3.2, 0.1, 1.4, 0.32, '上海理髮', {
+    vertical: true, bg: '#f0e8d8', fg: '#8b1515', emissive: 0x301010, emitInt: 0.3,
+  });
+  addPawnSign(root, 5.0, 4.2, -8.0);
+  addHangSign(root, 5.0, 3.2, -8.0, 1.4, 0.35, '金蝠當舖', {
+    bg: '#b01028', fg: '#ffe8a0', emissive: 0xff2d3a, emitInt: 1.3,
+  });
+  addHangSign(root, -3.5, 3.5, 6, 1.8, 0.45, '安和堂涼茶', {
+    bg: '#0d5c3a', fg: '#ffffff', emissive: 0x40f080, emitInt: 1.6,
+  });
+  addHangSign(root, 3.5, 3.3, -5, 1.8, 0.45, '港南米線', {
+    bg: '#ffe060', fg: '#0a3a7a', emissive: 0xffd36a, emitInt: 1.5,
+  });
 
   // back kitchen doorway
   addBox(root, 0, 0, 0, 2.2, 2.6, 0.8, 0x221828, 0xff4dc8, 0.35, true);
