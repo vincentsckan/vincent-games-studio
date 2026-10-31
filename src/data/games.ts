@@ -74,19 +74,19 @@ export const games: Game[] = [
     year: 2026,
     genres: ['射擊', '競技'],
     hookZh:
-      'Frag Channel 開播——快一步，今晚先有糧。你加入 Channel 7；八張地圖——貨櫃、廟市、招牌街、小巴巷、唐樓轉角、霓虹屋頂、電車街同啟德天台，打贏先有收視。',
+      'Frag Channel 開播——快一步，今晚先有糧。你加入 Channel 7；十張地圖——貨櫃、廟市、招牌街、公屋天台、茶餐廳後巷、電車街、啟德天台、小巴巷、唐樓轉角同霓虹屋頂，打贏先有收視。',
     hookEn:
-      'Frag Channel is live—half a step faster and tonight you eat. You join Channel 7 across eight maps: cargo, temple, sign street, minibus alley, Tong Lau bend, neon rooftop, Tram Street and Kai Tak Roof—win the fight, win the ratings.',
+      'Frag Channel is live—half a step faster and tonight you eat. You join Channel 7 across ten maps: cargo, temple, sign street, estate roof, cha chaan back, Tram Street, Kai Tak Roof, minibus alley, Tong Lau bend and neon rooftop—win the fight, win the ratings.',
     gameplayZh:
-      '瀏覽器第一人稱射擊試玩：四種角色（閃／隼／石／影）、八張地圖（貨櫃碼頭／霓虹廟市／招牌街／夜間小巴巷／唐樓轉角／霓虹屋頂／電車街／啟德天台）、對戰 AI、跳與蹲滑。約 2.5 分鐘或先到 20 殺。',
+      '瀏覽器第一人稱射擊試玩：四種角色（閃／隼／石／影）、十張地圖（貨櫃碼頭／霓虹廟市／招牌街／公屋天台／茶餐廳後巷／電車街／啟德天台／夜間小巴巷／唐樓轉角／霓虹屋頂）、對戰 AI、跳與蹲滑。約 2.5 分鐘或先到 20 殺。',
     gameplayEn:
-      'Browser FPS demo: four classes (Spark / Falcon / Rock / Shade), eight maps (Cargo Pier / Neon Temple / Sign Street / Night Minibus Alley / Tong Lau Bend / Neon Rooftop / Tram Street / Kai Tak Roof), FFA vs AI, jump and crouch-slide. ~2.5 min or first to 20 kills.',
+      'Browser FPS demo: four classes (Spark / Falcon / Rock / Shade), ten maps (Cargo Pier / Neon Temple / Sign Street / Estate Roof / Cha Chaan Back / Tram Street / Kai Tak Roof / Night Minibus Alley / Tong Lau Bend / Neon Rooftop), FFA vs AI, jump and crouch-slide. ~2.5 min or first to 20 kills.',
     features: [
       {
         titleZh: '港式霓虹競技場',
         titleEn: 'Neon harbour arenas',
-        bodyZh: '貨櫃碼頭、廟市、招牌街、小巴巷、唐樓轉角、霓虹屋頂、電車街與啟德天台——洋紅／青／琥珀霓虹低模。',
-        bodyEn: 'Cargo, temple, sign street, minibus alley, Tong Lau bend, neon rooftop, Tram Street & Kai Tak Roof—magenta/cyan/amber low-poly.',
+        bodyZh: '貨櫃碼頭、廟市、招牌街、公屋天台、茶餐廳後巷、電車街、啟德天台、小巴巷、唐樓轉角與霓虹屋頂——洋紅／青／琥珀霓虹低模。',
+        bodyEn: 'Cargo, temple, sign street, estate roof, cha chaan back, Tram Street, Kai Tak Roof, minibus alley, Tong Lau bend & neon rooftop—magenta/cyan/amber low-poly.',
       },
       {
         titleZh: '四種港戰角色',

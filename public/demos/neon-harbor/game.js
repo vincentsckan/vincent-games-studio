@@ -36,6 +36,34 @@ const MAPS = [
     thumb: 'refs/map-sign-street-densify.jpg',
   },
   {
+    id: 'estate',
+    nameZh: '公屋天台',
+    nameEn: 'Estate Roof',
+    desc: '晾衫未收——天台已經係賽場。',
+    thumb: 'refs/map-estate-roof.jpg',
+  },
+  {
+    id: 'teahouse',
+    nameZh: '茶餐廳後巷',
+    nameEn: 'Cha Chaan Back',
+    desc: '花磚仲在，霓虹只剩半個字。',
+    thumb: 'refs/map-cha-chaan-back.jpg',
+  },
+  {
+    id: 'tram',
+    nameZh: '電車街',
+    nameEn: 'Tram Street',
+    desc: '叮叮未到，槍口先響。',
+    thumb: 'refs/map-tram-street.jpg',
+  },
+  {
+    id: 'kaitak',
+    nameZh: '啟德天台',
+    nameEn: 'Kai Tak Roof',
+    desc: '飛機唔再落，晾衫仲在。',
+    thumb: 'refs/map-kai-tak-roof.jpg',
+  },
+  {
     id: 'minibus',
     nameZh: '夜間小巴巷',
     nameEn: 'Night Minibus Alley',
@@ -55,20 +83,6 @@ const MAPS = [
     nameEn: 'Neon Rooftop',
     desc: '屋頂燈火，唔見天光。',
     thumb: 'refs/map-neon-rooftop.jpg',
-  },
-  {
-    id: 'tram',
-    nameZh: '電車街',
-    nameEn: 'Tram Street',
-    desc: '叮叮未到，槍口先響。',
-    thumb: 'refs/map-tram-street.jpg',
-  },
-  {
-    id: 'kaitak',
-    nameZh: '啟德天台',
-    nameEn: 'Kai Tak Roof',
-    desc: '飛機唔再落，晾衫仲在。',
-    thumb: 'refs/map-kai-tak-roof.jpg',
   },
 ];
 
@@ -1441,11 +1455,12 @@ function buildWorld(mapId) {
 
   const root = new THREE.Group();
   scene.add(root);
+  if (mapId === 'pier') mapId = 'cargo';
   if (mapId === 'temple') buildNeonTemple(root);
   else if (mapId === 'signs' || mapId === 'minibus') buildNeonSignStreet(root);
   else if (mapId === 'kaitak' || mapId === 'neonroof' || mapId === 'estate') buildKaiTakRoof(root);
   else if (mapId === 'tram' || mapId === 'tonglau' || mapId === 'teahouse') buildTramStreet(root);
-  else buildCargoPier(root);
+  else buildCargoPier(root); // Translation mapId pier = cargo
 
   // viewmodel gun
   gunMesh = new THREE.Group();
