@@ -237,6 +237,8 @@ let scene, camera, renderer, clock;
 let solidBoxes = [];
 let bots = [];
 let neonMats = [];
+/** Plate-first: never spawn solid-color arena meshes (collision AABBs only). */
+const PLATE_ONLY_ARENA = true;
 let muzzleFlash = null;
 let gunMesh = null;
 let playerMesh = null; // visible TPP hero (simple humanoid; Multimedia refs/player/* can skin later)
@@ -358,8 +360,14 @@ const btnNext = document.getElementById('btnNextLevel');
 if (btnNext) {
   btnNext.addEventListener('click', () => {
     const next = (state.campaignLevel | 0) + 1;
-    startMatch(null, state.classId || selectedClass, { gameMode: 'campaign', campaignLevel: next });
+    if (!showChannel7Transition(next, { classId: state.classId || selectedClass })) {
+      startMatch(null, state.classId || selectedClass, { gameMode: 'campaign', campaignLevel: next });
+    }
   });
+}
+const btnTrans = document.getElementById('btnTransContinue');
+if (btnTrans) {
+  btnTrans.addEventListener('click', () => continueChannel7Transition());
 }
 document.getElementById('btnMenu').addEventListener('click', () => {
   running = false;
@@ -384,6 +392,9 @@ function boxSolid(x, y, z, w, h, d) {
 }
 
 function addBox(group, x, y, z, w, h, d, color, emissive, emitInt = 0, solid = true) {
+  if (solid) solidBoxes.push(boxSolid(x, y, z, w, h, d));
+  // Vincent: 唔好大色塊 — collision stays, solid-color façade/lightbox mesh never enters the scene
+  if (PLATE_ONLY_ARENA) return null;
   const geo = new THREE.BoxGeometry(w, h, d);
   const mat = new THREE.MeshStandardMaterial({
     color,
@@ -398,11 +409,11 @@ function addBox(group, x, y, z, w, h, d, color, emissive, emitInt = 0, solid = t
   mesh.castShadow = false;
   mesh.receiveShadow = false;
   group.add(mesh);
-  if (solid) solidBoxes.push(boxSolid(x, y, z, w, h, d));
   return mesh;
 }
 
 function addNeonSign(group, x, y, z, w, h, color) {
+  if (PLATE_ONLY_ARENA) return null; // floating neon lightbox boards deleted
   addBox(group, x, y, z, w, h, 0.18, 0x111118, color, 2.8, false);
   addBox(group, x, y - 0.05, z + 0.02, w * 0.92, h * 0.08, 0.1, 0x080810, color, 1.2, false);
 }
@@ -459,6 +470,7 @@ function addZhPanel(group, x, y, z, w, h, d, text, opts = {}) {
     rotY = 0,
     color = 0xffffff,
   } = opts;
+  if (PLATE_ONLY_ARENA) return null; // ZH shop lightbox boards deleted from render
   if (text == null || text === 'undefined' || String(text).trim() === '') return null;
   const tex = makeZhTexture(text, { vertical, bg, fg });
   const mat = new THREE.MeshStandardMaterial({
@@ -551,6 +563,13 @@ function addTrashBin(group, x, z, kind = 0) {
 
 /** 黃的 — yellow HK taxi as cover prop WITH collision box. */
 function addYellowTaxi(group, x, z, rotY = 0) {
+  if (PLATE_ONLY_ARENA) {
+    const cw = rotY === 0 || Math.abs(Math.abs(rotY) - Math.PI) < 0.2 ? 1.95 : 4.2;
+    const cd = rotY === 0 || Math.abs(Math.abs(rotY) - Math.PI) < 0.2 ? 4.2 : 1.95;
+    solidBoxes.push(boxSolid(x, 0, z, cw, 1.55, cd));
+    return null;
+  }
+
   const g = new THREE.Group();
   g.userData.keepVisual = true;
   g.name = 'curbProp';
@@ -595,6 +614,8 @@ function addYellowTaxi(group, x, z, rotY = 0) {
 
 /** 理髮旋轉燈 — red/white/blue barber pole (soft prop). */
 function addBarberPole(group, x, z, h = 2.4) {
+  if (PLATE_ONLY_ARENA) return null;
+
   const g = new THREE.Group();
   g.userData.keepVisual = true;
   g.name = 'curbProp';
@@ -629,6 +650,11 @@ function addBarberPole(group, x, z, h = 2.4) {
 
 /** 紅色手推車 / goods tricycle — curb clutter (soft or light collision). */
 function addRedHandcart(group, x, z, rotY = 0, solid = false) {
+  if (PLATE_ONLY_ARENA) {
+    if (solid) solidBoxes.push(boxSolid(x, 0, z, 1.2, 1.1, 1.8));
+    return null;
+  }
+
   const g = new THREE.Group();
   g.userData.keepVisual = true;
   g.name = 'curbProp';
@@ -667,6 +693,12 @@ function addRedHandcart(group, x, z, rotY = 0, solid = false) {
 
 /** Vintage white + yellow sedan scale prop (soft cover companion to 黃的). */
 function addVintageSedan(group, x, z, rotY = 0, color = 0xf2f0ea) {
+  if (PLATE_ONLY_ARENA) {
+    const aligned = Math.abs(rotY % Math.PI) < 0.3 || Math.abs(Math.abs(rotY % Math.PI) - Math.PI) < 0.3;
+    solidBoxes.push(boxSolid(x, 0, z, aligned ? 1.85 : 3.9, 1.4, aligned ? 3.9 : 1.85));
+    return null;
+  }
+
   const g = new THREE.Group();
   g.userData.keepVisual = true;
   g.name = 'curbProp';
@@ -715,6 +747,7 @@ function addHangSign(group, x, y, z, w, h, text, opts = {}) {
     rotY = 0,
     depth = 0.12,
   } = opts;
+  if (PLATE_ONLY_ARENA) return null;
   if (text == null || text === 'undefined' || String(text).trim() === '') return null;
   addZhPanel(group, x, y, z, w, h, depth, text, {
     vertical: false, bg, fg, emissive, emitInt, rotY,
@@ -725,6 +758,11 @@ function addHangSign(group, x, y, z, w, h, text, opts = {}) {
 
 /** HK minibus — red-roof or green-roof cover with collision. */
 function addMinibus(group, x, z, roof = 'red', rotY = 0) {
+  if (PLATE_ONLY_ARENA) {
+    solidBoxes.push(boxSolid(x, 0, z, 2.2, 2.0, 5.4));
+    return null;
+  }
+
   const g = new THREE.Group();
   g.userData.keepVisual = true;
   g.name = 'curbProp';
@@ -767,6 +805,11 @@ function addMinibus(group, x, z, roof = 'red', rotY = 0) {
 
 /** Small delivery truck at alley far end. */
 function addSmallTruck(group, x, z, rotY = 0) {
+  if (PLATE_ONLY_ARENA) {
+    solidBoxes.push(boxSolid(x, 0, z, 2.0, 1.7, 4.6));
+    return null;
+  }
+
   const g = new THREE.Group();
   g.userData.keepVisual = true;
   g.name = 'curbProp';
@@ -815,6 +858,7 @@ function addBambooScaffold(group, x, zStart, zEnd, toward = 1) {
 
 /** Circular pawn-shop style sign — fictional 金蝠當舖 with large 「押」. */
 function addPawnSign(group, x, y, z) {
+  if (PLATE_ONLY_ARENA) return null;
   const c = document.createElement('canvas');
   c.width = 256; c.height = 256;
   const ctx = c.getContext('2d');
@@ -864,14 +908,15 @@ function buildCargoPier(root) {
     [0, 0, 0], [18, 0, 12], [-16, 0, 14], [14, 0, -16],
     [-12, 0, -14], [0, 0, 22], [22, 0, 0], [-20, 0, -4],
   ];
-  // ground
-  const ground = new THREE.Mesh(
-    new THREE.PlaneGeometry(80, 80),
-    new THREE.MeshStandardMaterial({ color: 0x152238, roughness: 0.92, metalness: 0.08 })
-  );
-  ground.rotation.x = -Math.PI / 2;
-  root.add(ground);
   solidBoxes.push(boxSolid(0, -1, 0, 80, 1, 80));
+  if (!PLATE_ONLY_ARENA) {
+    const ground = new THREE.Mesh(
+      new THREE.PlaneGeometry(80, 80),
+      new THREE.MeshStandardMaterial({ color: 0x152238, roughness: 0.92, metalness: 0.08 })
+    );
+    ground.rotation.x = -Math.PI / 2;
+    root.add(ground);
+  }
 
   // pier edge water glow strips
   for (let i = -3; i <= 3; i++) {
@@ -919,13 +964,15 @@ function buildNeonTemple(root) {
     [0, 0, 0], [10, 0, 8], [-10, 0, 8], [10, 0, -8],
     [-10, 0, -8], [0, 0, 14], [16, 0, 0], [-16, 0, 0],
   ];
-  const ground = new THREE.Mesh(
-    new THREE.PlaneGeometry(56, 56),
-    new THREE.MeshStandardMaterial({ color: 0x0a0814, roughness: 0.9, metalness: 0.08 })
-  );
-  ground.rotation.x = -Math.PI / 2;
-  root.add(ground);
   solidBoxes.push(boxSolid(0, -1, 0, 56, 1, 56));
+  if (!PLATE_ONLY_ARENA) {
+    const ground = new THREE.Mesh(
+      new THREE.PlaneGeometry(56, 56),
+      new THREE.MeshStandardMaterial({ color: 0x0a0814, roughness: 0.9, metalness: 0.08 })
+    );
+    ground.rotation.x = -Math.PI / 2;
+    root.add(ground);
+  }
 
   // alley buildings
   const rows = [-18, -10, 10, 18];
@@ -973,13 +1020,15 @@ function buildNeonSignStreet(root) {
     [0, 0, 0], [1.2, 0, 6], [-1.2, 0, 6], [1.2, 0, -6],
     [-1.2, 0, -6], [0, 0, 9], [0, 0, -9], [0.8, 0, 3],
   ];
-  const ground = new THREE.Mesh(
-    new THREE.PlaneGeometry(48, 52),
-    new THREE.MeshStandardMaterial({ color: 0x12101a, roughness: 0.28, metalness: 0.62 })
-  );
-  ground.rotation.x = -Math.PI / 2;
-  root.add(ground);
   solidBoxes.push(boxSolid(0, -1, 0, 48, 1, 52));
+  if (!PLATE_ONLY_ARENA) {
+    const ground = new THREE.Mesh(
+      new THREE.PlaneGeometry(48, 52),
+      new THREE.MeshStandardMaterial({ color: 0x12101a, roughness: 0.28, metalness: 0.62 })
+    );
+    ground.rotation.x = -Math.PI / 2;
+    root.add(ground);
+  }
 
   // subtle wet-ground sheen (low emit — was loud cyan/pink slabs)
   for (let i = -2; i <= 2; i++) {
@@ -1204,13 +1253,15 @@ function buildKaiTakRoof(root) {
     [0, 0, 0], [12, 0, 10], [-12, 0, 10], [12, 0, -10],
     [-12, 0, -10], [0, 0, 16], [18, 0, 0], [-18, 0, 0],
   ];
-  const ground = new THREE.Mesh(
-    new THREE.PlaneGeometry(56, 56),
-    new THREE.MeshStandardMaterial({ color: 0x2a2e36, roughness: 0.95, metalness: 0.05 })
-  );
-  ground.rotation.x = -Math.PI / 2;
-  root.add(ground);
   solidBoxes.push(boxSolid(0, -1, 0, 56, 1, 56));
+  if (!PLATE_ONLY_ARENA) {
+    const ground = new THREE.Mesh(
+      new THREE.PlaneGeometry(56, 56),
+      new THREE.MeshStandardMaterial({ color: 0x2a2e36, roughness: 0.95, metalness: 0.05 })
+    );
+    ground.rotation.x = -Math.PI / 2;
+    root.add(ground);
+  }
 
   // rooftop parapet walls
   addBox(root, 0, 0, 26, 52, 1.4, 0.8, 0x3a4048, 0x000000, 0, true);
@@ -1281,13 +1332,15 @@ function buildTramStreet(root) {
     [0, 0, 0], [5, 0, 8], [-5, 0, 8], [5, 0, -8],
     [-5, 0, -8], [0, 0, 14], [8, 0, 0], [-8, 0, 0],
   ];
-  const ground = new THREE.Mesh(
-    new THREE.PlaneGeometry(40, 48),
-    new THREE.MeshStandardMaterial({ color: 0x1a1420, roughness: 0.55, metalness: 0.25 })
-  );
-  ground.rotation.x = -Math.PI / 2;
-  root.add(ground);
   solidBoxes.push(boxSolid(0, -1, 0, 40, 1, 48));
+  if (!PLATE_ONLY_ARENA) {
+    const ground = new THREE.Mesh(
+      new THREE.PlaneGeometry(40, 48),
+      new THREE.MeshStandardMaterial({ color: 0x1a1420, roughness: 0.55, metalness: 0.25 })
+    );
+    ground.rotation.x = -Math.PI / 2;
+    root.add(ground);
+  }
 
   // 花磚 checker
   for (let ix = -3; ix <= 3; ix++) {
@@ -1415,13 +1468,14 @@ function addPerimeter(root, half, h = 5, neonA = 0xff2d9b, neonB = 0x00e8ff) {
 }
 
 function addGroundPlane(root, size, color = 0x12101a) {
+  solidBoxes.push(boxSolid(0, -1, 0, size, 1, size));
+  if (PLATE_ONLY_ARENA) return null; // env ground plate owns the floor
   const ground = new THREE.Mesh(
     new THREE.PlaneGeometry(size, size),
     new THREE.MeshStandardMaterial({ color, roughness: 0.85, metalness: 0.12 })
   );
   ground.rotation.x = -Math.PI / 2;
   root.add(ground);
-  solidBoxes.push(boxSolid(0, -1, 0, size, 1, size));
 }
 
 /** 夜間小巴巷 — queue of minibuses + wider road, sparse neon (≠ signs) */
@@ -1814,10 +1868,18 @@ function chromaKeyPlayerTexture(img) {
   const px = data.data;
   for (let i = 0; i < px.length; i += 4) {
     const r = px[i], g = px[i + 1], b = px[i + 2];
-    // key near-black studio backdrop → alpha
-    const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-    if (lum < 18) px[i + 3] = 0;
-    else if (lum < 36) px[i + 3] = Math.min(px[i + 3], ((lum - 18) / 18) * 255);
+    // Only key true chroma-green screen (high G, low R/B).
+    // NEVER treat dark jacket/pants (low lum) as transparent — Multimedia confirmed lum<36 punched coats.
+    const maxRB = Math.max(r, b);
+    const greenDominates = g > 88 && g > maxRB * 1.45 && (g - maxRB) > 28;
+    const greenScreen = greenDominates && (r + b) < g * 1.15;
+    if (greenScreen) {
+      // soft edge: stronger green excess → more transparent
+      const excess = Math.min(1, (g - maxRB) / 90);
+      px[i + 3] = Math.min(px[i + 3], Math.floor((1 - excess) * 40));
+      if (excess > 0.55) px[i + 3] = 0;
+    }
+    // dark pixels stay fully opaque (no lum key)
   }
   ctx.putImageData(data, 0, 0);
   const tex = new THREE.CanvasTexture(c);
@@ -2160,16 +2222,17 @@ function applyCinematicEnv(root, mapId, tex) {
   return true;
 }
 
-/** Remove ALL procedural arena façades / teal·magenta·grey slabs / neon lightbox forests / ZH shop boards from render.
- *  Keep collision AABBs. Whitelist: cinematicEnv plates, TPP hero, bots, curb vehicles/props, pickups, gun. */
+/** DELETE procedural arena façades / teal·magenta·purple·yellow·white slabs / floating neon·ZH boards.
+ *  Not hide — remove from scene + dispose. Collision AABBs kept. Whitelist: cinematicEnv, hero, bots, gun, pickups, hold. */
 function stripBlockyArena(root) {
   if (!root) return;
-  const keepName = new Set(['cinematicEnv', 'playerHero', 'botActor', 'heroGun', 'curbProp', 'pickupOrb', 'holdZone']);
+  const keepName = new Set(['cinematicEnv', 'playerHero', 'botActor', 'heroGun', 'pickupOrb', 'holdZone']);
+  const doomed = [];
   root.traverse((obj) => {
     if (!obj.isMesh || !obj.geometry) return;
     let p = obj;
     while (p) {
-      if (keepName.has(p.name) || (p.userData && p.userData.keepVisual)) return;
+      if (keepName.has(p.name)) return;
       p = p.parent;
     }
     const g = obj.geometry;
@@ -2177,17 +2240,60 @@ function stripBlockyArena(root) {
     const mat = obj.material;
     const mats = Array.isArray(mat) ? mat : (mat ? [mat] : []);
     const hasCanvas = mats.some((m) => m && m.map && m.map.isCanvasTexture);
-    const neonEmit = mats.some((m) => m && (m.emissiveIntensity || 0) >= 0.8);
-    // Nuclear plate-first: any builder Box/Plane not whitelisted is a solid-color façade/floor
-    if (t === 'PlaneGeometry' || t === 'BoxGeometry') {
-      obj.visible = false;
-      return;
-    }
-    // Chinese shop discs / hanging neon cylinders / canvas sign boards
-    if (hasCanvas || (t === 'CylinderGeometry' && neonEmit)) {
-      obj.visible = false;
+    const neonEmit = mats.some((m) => m && (m.emissiveIntensity || 0) >= 0.5);
+    if (t === 'PlaneGeometry' || t === 'BoxGeometry' || hasCanvas || (t === 'CylinderGeometry' && (hasCanvas || neonEmit))) {
+      doomed.push(obj);
     }
   });
+  for (const obj of doomed) {
+    try {
+      if (obj.parent) obj.parent.remove(obj);
+      if (obj.geometry && obj.geometry.dispose) obj.geometry.dispose();
+      const mats = Array.isArray(obj.material) ? obj.material : (obj.material ? [obj.material] : []);
+      mats.forEach((m) => {
+        if (!m) return;
+        if (m.map && m.map.dispose) m.map.dispose();
+        if (m.dispose) m.dispose();
+      });
+    } catch (_) { /* soft */ }
+  }
+  // Drop empty curbProp groups left after mesh delete
+  const emptyGroups = [];
+  root.traverse((obj) => {
+    if (obj.isGroup && (obj.name === 'curbProp' || (obj.userData && obj.userData.keepVisual))) {
+      if (!obj.children.length) emptyGroups.push(obj);
+    }
+  });
+  emptyGroups.forEach((g) => { try { if (g.parent) g.parent.remove(g); } catch (_) {} });
+}
+
+function arenaVisualAudit(root) {
+  const r = root || worldRoot;
+  let box = 0, plane = 0, canvas = 0, samples = [];
+  if (!r) return { box, plane, canvas, samples, solids: solidBoxes.length };
+  const keepName = new Set(['cinematicEnv', 'playerHero', 'botActor', 'heroGun', 'pickupOrb', 'holdZone']);
+  r.traverse((obj) => {
+    if (!obj.isMesh || !obj.geometry || obj.visible === false) return;
+    let p = obj;
+    let kept = false;
+    while (p) {
+      if (keepName.has(p.name)) { kept = true; break; }
+      p = p.parent;
+    }
+    if (kept) return;
+    const t = obj.geometry.type;
+    const mat = obj.material;
+    const mats = Array.isArray(mat) ? mat : (mat ? [mat] : []);
+    const hasCanvas = mats.some((m) => m && m.map && m.map.isCanvasTexture);
+    if (t === 'BoxGeometry') box++;
+    if (t === 'PlaneGeometry') plane++;
+    if (hasCanvas) canvas++;
+    if (samples.length < 8 && (t === 'BoxGeometry' || t === 'PlaneGeometry' || hasCanvas)) {
+      const prm = obj.geometry.parameters || {};
+      samples.push({ t, w: prm.width, h: prm.height, d: prm.depth, canvas: !!hasCanvas });
+    }
+  });
+  return { box, plane, canvas, samples, solids: solidBoxes.length };
 }
 
 /** Sparse HK curb silhouettes when env plate is live — plate stays the main visual. */
@@ -2198,37 +2304,9 @@ function densifyCinematicCitySlice(envGroup, root, mapId) {
     return x - Math.floor(x);
   };
 
-  // Fewer parked vehicles, curb-only (never center lane)
-  const vehicleSlots = [
-    [-10.5, -16, 0], [10.5, -8, Math.PI], [-10.5, 6, 0], [10.5, 16, Math.PI],
-  ];
-  vehicleSlots.forEach(([x, z, rot], i) => {
-    const pick = Math.floor(rnd(i + 1) * 4);
-    try {
-      if (pick === 0) addYellowTaxi(root, x, z, rot);
-      else if (pick === 1) addMinibus(root, x, z, rnd(i + 2) > 0.5 ? 'red' : 'green', rot);
-      else if (pick === 2) addVintageSedan(root, x, z, rot, rnd(i + 3) > 0.5 ? 0xf2f0ea : 0x2a3344);
-      else addSmallTruck(root, x, z, rot);
-    } catch (_) { /* soft */ }
-  });
-
-  // no floating neon lightbox accents — plate + curb props only (Vincent: 唔好大色塊)
-
-  // Light curb clutter
-  for (let i = 0; i < 4; i++) {
-    const side = rnd(i + 80) > 0.5 ? 1 : -1;
-    const x = side * (8.5 + rnd(i + 81) * 1.2);
-    const z = -18 + i * 10;
-    const kind = Math.floor(rnd(i + 82) * 3);
-    if (kind === 0) addTrashBin(root, x, z, i % 2);
-    else if (kind === 1) addRedStool(root, x, z, false);
-    else addBarberPole(root, x, z, 2.0 + rnd(i + 83) * 0.4);
-  }
-
-  try {
-    addZebraCrossing(root, 0, 0, true);
-  } catch (_) {}
-  // no distant untextured façade frames — those read as teal/grey slabs against the plate
+  // Plate-only densify: NO parked yellow/white vehicles, NO neon boards, NO curb color clutter.
+  // Collision cover still comes from builder solidBoxes (meshes never spawned under PLATE_ONLY_ARENA).
+  void rnd; void envGroup; void root; void mapId;
 }
 
 function beginEnvPlateLoad(root, mapId) {
@@ -2846,9 +2924,18 @@ function showBossIntro(def) {
 
 function syncGunHud() {
   const el = document.getElementById('gunHud');
-  if (!el) return;
+  const meleeEl = document.getElementById('meleeHud');
   const gstat = activeGunStats();
   const icon = document.getElementById('meleeIcon');
+  // Combat HUD always shows 身肉搏 · {拳頭|膝撞|霓虹刀}
+  let meleeName = '拳頭';
+  if (gstat && gstat.melee && gstat.nameZh) meleeName = gstat.nameZh;
+  else if (state.weaponOverride && MELEE_CYCLE.includes(state.weaponOverride)) {
+    const w = EXTRA_WEAPONS.find((x) => x.id === state.weaponOverride);
+    if (w) meleeName = w.nameZh;
+  }
+  if (meleeEl) meleeEl.textContent = `身肉搏 · ${meleeName}`;
+  if (!el) return;
   if (gstat && gstat.melee) {
     el.textContent = `身肉搏 · ${gstat.nameZh}`;
     if (icon) {
@@ -3302,6 +3389,78 @@ function formatTime(sec) {
   return m + ':' + String(r).padStart(2, '0');
 }
 
+
+function mapNameZh(mapId) {
+  const m = MAPS.find((x) => x.id === mapId);
+  return m ? m.nameZh : (mapId || '');
+}
+
+function transPlateUrl(mapId) {
+  return `./refs/transitions/trans-${mapId}.jpg`;
+}
+
+let transTimer = null;
+let pendingTransNext = null;
+
+function hideChannel7Transition() {
+  const el = document.getElementById('transition');
+  if (el) el.classList.remove('on');
+  clearTimeout(transTimer);
+  transTimer = null;
+}
+
+/** Channel 7 inter-level still: fade → plate + copy → Continue / ~2s → next level. */
+function showChannel7Transition(nextLevel, opts = {}) {
+  const lv = CHANNEL7[(nextLevel - 1) | 0];
+  if (!lv) return false;
+  const el = document.getElementById('transition');
+  const img = document.getElementById('transPlate');
+  const lvlEl = document.getElementById('transLevel');
+  const nextEl = document.getElementById('transNext');
+  const hintEl = document.getElementById('transHint');
+  const bossEl = document.getElementById('transBoss');
+  if (!el) return false;
+  pendingTransNext = { level: nextLevel, classId: opts.classId || state.classId || selectedClass };
+  if (img) {
+    img.style.opacity = '0';
+    img.src = transPlateUrl(lv.mapId);
+    img.onload = () => { img.style.opacity = '1'; };
+    img.onerror = () => { img.removeAttribute('src'); };
+  }
+  if (lvlEl) lvlEl.textContent = `過場 · 第 ${nextLevel} 關`;
+  if (nextEl) nextEl.textContent = `下一站——${mapNameZh(lv.mapId)}。`;
+  if (hintEl) hintEl.textContent = 'Channel 7 轉場中…';
+  if (bossEl) {
+    if (lv.boss && lv.bossId) {
+      const b = bossById(lv.bossId);
+      bossEl.style.display = '';
+      bossEl.textContent = b ? `${b.nameZh} — ${b.hook || ''}` : '';
+    } else {
+      bossEl.style.display = 'none';
+      bossEl.textContent = '';
+    }
+  }
+  // hide end panel while transitioning
+  overlay.classList.add('hidden');
+  el.classList.add('on');
+  clearTimeout(transTimer);
+  transTimer = setTimeout(() => continueChannel7Transition(), 2200);
+  return true;
+}
+
+function continueChannel7Transition() {
+  clearTimeout(transTimer);
+  transTimer = null;
+  const pending = pendingTransNext;
+  pendingTransNext = null;
+  hideChannel7Transition();
+  if (!pending) return;
+  startMatch(null, pending.classId, { gameMode: 'campaign', campaignLevel: pending.level });
+}
+
+window.__showTransitionTest = (level) => showChannel7Transition(level || 2, { classId: 'spark' });
+window.__transPlateUrl = (mapId) => transPlateUrl(mapId);
+
 function endMatch(wonByKills) {
   if (matchOver) return;
   matchOver = true;
@@ -3325,6 +3484,10 @@ function endMatch(wonByKills) {
         title = 'Channel 7 下一場';
         sub = `第 ${lv} 關通過 · 下一關 ${lv + 1}/20`;
         if (nextBtn) nextBtn.style.display = '';
+        // Prefer cinematic transition plate over bare end panel
+        if (showChannel7Transition(lv + 1, { classId: state.classId || selectedClass })) {
+          return;
+        }
       }
     } else {
       title = '收視失敗';
@@ -3529,6 +3692,8 @@ camera.position.set(12, 8, 18);
 camera.lookAt(0, 2, 0);
 requestAnimationFrame(loop);
 
+window.__arenaVisualAudit = () => arenaVisualAudit(worldRoot);
+
 window.__dbg = () => ({
   x: +state.x.toFixed(3),
   y: +state.y.toFixed(3),
@@ -3563,6 +3728,7 @@ window.__dbg = () => ({
   enemyBots: bots.filter((b) => b.team === 1 && !b.isBoss).length,
   builderUnique: true,
   envPlate: { ...envPlateStatus },
+  arenaAudit: arenaVisualAudit(worldRoot),
 });
 
 window.__envPlateStatus = (mapId) => {
@@ -3681,6 +3847,7 @@ window.__lexicon = () => ({
   ladder: GUN_LADDER.map((g) => g.nameZh),
   pickups: ['取得彈藥箱', '取得護甲片', '取得醫療包', '取得速度飲料', '取得金幣'],
   melee: { hud: '身肉搏', fist: '拳頭', knee: '膝撞', knife: '霓虹刀', feed: '肉搏擊倒', tip: '近身可肉搏', icons: { fist: 'refs/ui/ui-fist.jpg', knee: 'refs/ui/ui-knee.jpg', knife: 'refs/ui/ui-neon-knife.jpg', fx: 'refs/ui/fx-melee-hitspark.jpg', sheet: 'refs/ui/melee-sheet.jpg' } },
+  transition: { level: '過場 · 第 N 關', next: '下一站——{地圖名}。', hint: 'Channel 7 轉場中…', continue: '繼續' },
   bosses: BOSSES.map((b) => ({ id: b.id, nameZh: b.nameZh, hook: b.hook, art: b.art })),
   sheets: { weapons: 'refs/ui/weapons-sheet.jpg', pickups: 'refs/ui/pickups-sheet.jpg' },
   campaignBosses: CHANNEL7.filter((l) => l.boss).map((l) => ({ level: l.level, bossId: l.bossId, nameZh: (BOSSES.find((b) => b.id === l.bossId) || {}).nameZh })),

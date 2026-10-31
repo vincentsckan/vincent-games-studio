@@ -121,6 +121,28 @@ try {
   const afterBill = await page.evaluate(() => window.__dbg());
   check('player billboard textured', afterBill.playerBillboard === true, JSON.stringify({ pose: afterBill.playerPose, billboard: afterBill.playerBillboard }));
 
+  // Hard gate: no near-field solid-color Box/Plane/canvas slabs outside cinematicEnv/hero/bots/pickups
+  await page.waitForFunction(() => {
+    const s = window.__envPlateStatus && window.__envPlateStatus('cargo');
+    return s && (s.status === 'ready' || s.status === 'missing');
+  }, { timeout: 8000 });
+  const audit = await page.evaluate(() => window.__arenaVisualAudit && window.__arenaVisualAudit());
+  check('arena audit API', !!audit, JSON.stringify(audit));
+  check('no leftover blocky boxes', audit && audit.box === 0, JSON.stringify(audit));
+  check('no leftover blocky planes', audit && audit.plane === 0, JSON.stringify(audit));
+  check('no leftover canvas signs', audit && audit.canvas === 0, JSON.stringify(audit));
+  check('collision solids kept', audit && audit.solids > 8, JSON.stringify(audit));
+
+  const meleeHud = await page.$eval('#meleeHud', (el) => el.textContent.trim()).catch(() => '');
+  check('melee HUD 身肉搏 · 拳頭', /^身肉搏 · (拳頭|膝撞|霓虹刀)$/.test(meleeHud), meleeHud);
+  await page.evaluate(() => {
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyV', bubbles: true }));
+    window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyV', bubbles: true }));
+  });
+  await new Promise((r) => setTimeout(r, 80));
+  const meleeHud2 = await page.$eval('#meleeHud', (el) => el.textContent.trim()).catch(() => '');
+  check('melee HUD after V', meleeHud2 === '身肉搏 · 拳頭' || meleeHud2 === '身肉搏 · 膝撞' || meleeHud2 === '身肉搏 · 霓虹刀', meleeHud2);
+
   const hit = await page.evaluate(() => {
     if (typeof window.__forceHitTest === 'function') return window.__forceHitTest();
     return null;
@@ -187,6 +209,30 @@ try {
   check('campaign L1 level', c1.campaignLevel === 1, String(c1.campaignLevel));
   check('campaign L1 kill obj', c1.objective && c1.objective.type === 'kill' && c1.objective.target === 10, JSON.stringify(c1.objective));
 
+  // Channel 7 transition plate (Multimedia 20/20)
+  const transUrl = await page.evaluate(() => window.__transPlateUrl && window.__transPlateUrl('tonglau'));
+  check('trans url tonglau', typeof transUrl === 'string' && /trans-tonglau\.jpg$/.test(transUrl), String(transUrl));
+  const transOk = await page.evaluate(() => window.__showTransitionTest && window.__showTransitionTest(3));
+  await page.waitForSelector('#transition.on', { timeout: 5000 });
+  const transCopy = await page.evaluate(() => ({
+    on: !!document.getElementById('transition')?.classList.contains('on'),
+    level: document.getElementById('transLevel')?.textContent.trim(),
+    next: document.getElementById('transNext')?.textContent.trim(),
+    hint: document.getElementById('transHint')?.textContent.trim(),
+    boss: document.getElementById('transBoss')?.textContent.trim(),
+    src: document.getElementById('transPlate')?.getAttribute('src') || '',
+  }));
+  check('transition panel on', transCopy.on === true, JSON.stringify(transCopy));
+  check('transition level copy', transCopy.level === '過場 · 第 3 關', transCopy.level);
+  check('transition next copy', /下一站——/.test(transCopy.next || ''), transCopy.next);
+  check('transition hint', transCopy.hint === 'Channel 7 轉場中…', transCopy.hint);
+  check('transition boss hook', /鐵閘阿爺/.test(transCopy.boss || ''), transCopy.boss);
+  check('transition plate src', /trans-tonglau\.jpg/.test(transCopy.src || ''), transCopy.src);
+  // dismiss via continue so later tests aren't blocked
+  await page.click('#btnTransContinue');
+  await page.waitForFunction(() => !document.getElementById('transition')?.classList.contains('on'), { timeout: 5000 });
+  await page.waitForFunction(() => window.__dbg().campaignLevel === 3 && window.__dbg().running, { timeout: 10000 });
+
   const camp3 = await page.evaluate(() => window.__startCampaignTest(3, 'rock'));
   await page.waitForFunction(() => window.__dbg().campaignLevel === 3 && window.__dbg().running, { timeout: 8000 });
   const c3 = await page.evaluate(() => window.__dbg());
@@ -210,6 +256,8 @@ try {
   const lex = await page.evaluate(() => window.__lexicon());
   check('lexicon splash primary', lex.splash && lex.splash.primary === '鏡頭跟住你，港灣開打。', JSON.stringify(lex.splash));
   check('lexicon splash secondary', lex.splash && lex.splash.secondary === 'Channel 7 開波，今晚收視你話事。', JSON.stringify(lex.splash));
+  check('lexicon melee hud labels', !!(lex.melee && lex.melee.hud === '身肉搏' && lex.melee.fist === '拳頭' && lex.melee.knee === '膝撞' && lex.melee.knife === '霓虹刀'), JSON.stringify(lex.melee));
+  check('lexicon transition copy', !!(lex.transition && lex.transition.hint === 'Channel 7 轉場中…'), JSON.stringify(lex.transition));
   check('lexicon modes 5+campaign', lex.modes.length === 6, JSON.stringify(lex.modes));
   check('lexicon ladder 8 guns', lex.ladder.length === 8, lex.ladder.join('|'));
   check('lexicon has 港灣AR', lex.ladder.includes('港灣AR'), lex.ladder.join('|'));
