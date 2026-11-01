@@ -3,7 +3,7 @@
  * Original low-poly FPS — Vincent Games Studio.
  * expand-v1 per pulse-arena-expansion-brief.md
  * Maps: yard|containers|oasis|platforms|neon-alley|dunes|pulse-coliseum
- * Bots A–J · Boss×3 · Pickups · SFX · perf · FENCE_R sky-clear
+ * Bots A–J · Boss×3 · Pickups · SFX · hit-blood · death-tip · scene-VQ · perf · FENCE_R sky-clear
  */
 import * as THREE from 'three';
 
@@ -42,9 +42,9 @@ const SLIDE_DURATION = 0.55;
 const MOVE_SPEED = 9.2;
 const JUMP_V = 9.8;
 const MAX_TRACES = 14;
-const MAX_PARTICLES = 28;
+const MAX_PARTICLES = 36;
 const CULL_DIST = 52;
-const AUDIO_POOL_CAP = 6;
+const AUDIO_POOL_CAP = 10;
 
 const WEAPONS = [
   { id: 'ar', nameZh: '脈衝步槍', nameEn: 'Pulse Rifle', damage: 22, firerate: 9.5, spread: 0.022, mag: 30, reserve: 90, reload: 1.45, pellets: 1, adsSpread: 0.006, adsFov: 58 },
@@ -55,16 +55,24 @@ const WEAPONS = [
 ];
 
 const MAPS = [
+  // sky/fog tuned for grounded arcade (Veck-like), not Harbor photoreal
   { id: 'yard', nameZh: '訓練圍場', nameEn: 'Yard', fragLimit: 20,
-  bossAlive: false, sky: 0x6eb7ff, fog: 0x9ecfff, botCount: 5, bossId: null, mode: 'ffa' },
-  { id: 'containers', nameZh: '貨櫃峽谷', nameEn: 'Containers', fragLimit: 25, sky: 0x5aa8e8, fog: 0x8ec4f0, botCount: 6, bossId: 'Boss_ContainerTitan', mode: 'ffa' },
+  bossAlive: false, sky: 0x87b8e0, fog: 0xb0c8d8, fogNear: 28, fogFar: 82, botCount: 5, bossId: null, mode: 'ffa',
+  hemiTop: 0xfff2e8, hemiGround: 0x4a5548, sun: 0xfff0d0, sunI: 1.15, hemiI: 0.72, fillI: 0.28 },
+  { id: 'containers', nameZh: '貨櫃峽谷', nameEn: 'Containers', fragLimit: 25, sky: 0x6aa0c8, fog: 0x8eb0c4, fogNear: 26, fogFar: 78, botCount: 6, bossId: 'Boss_ContainerTitan', mode: 'ffa',
+  hemiTop: 0xe8f0ff, hemiGround: 0x3a4540, sun: 0xffe8c8, sunI: 1.2, hemiI: 0.68, fillI: 0.32 },
   { id: 'oasis', nameZh: '綠洲平台', nameEn: 'Oasis', fragLimit: 20,
-  bossAlive: false, sky: 0xffd089, fog: 0xffe0a8, botCount: 5, bossId: null, mode: 'ffa' },
-  { id: 'platforms', nameZh: '懸浮階環', nameEn: 'Platforms', fragLimit: 30, sky: 0x88aaff, fog: 0xa8c0ff, botCount: 6, bossId: 'Boss_RingArbiter', mode: 'ffa' },
+  bossAlive: false, sky: 0xf0c878, fog: 0xe8d0a0, fogNear: 30, fogFar: 88, botCount: 5, bossId: null, mode: 'ffa',
+  hemiTop: 0xffe8c0, hemiGround: 0x6a6040, sun: 0xffd890, sunI: 1.25, hemiI: 0.7, fillI: 0.22 },
+  { id: 'platforms', nameZh: '懸浮階環', nameEn: 'Platforms', fragLimit: 30, sky: 0x7a9ad0, fog: 0x9ab0d8, fogNear: 24, fogFar: 80, botCount: 6, bossId: 'Boss_RingArbiter', mode: 'ffa',
+  hemiTop: 0xe0e8ff, hemiGround: 0x384858, sun: 0xf0f4ff, sunI: 1.05, hemiI: 0.75, fillI: 0.4 },
   { id: 'neon-alley', nameZh: '霓虹巷戰', nameEn: 'Neon Alley', fragLimit: 20,
-  bossAlive: false, sky: 0x2a1048, fog: 0x4a2080, botCount: 6, bossId: null, mode: 'ffa' },
-  { id: 'dunes', nameZh: '沙丘前哨', nameEn: 'Dunes', fragLimit: 25, sky: 0xe8c878, fog: 0xd8b868, botCount: 6, bossId: 'Boss_DuneBeacon', mode: 'ffa' },
-  { id: 'pulse-coliseum', nameZh: '脈衝競技場', nameEn: 'Pulse Coliseum', fragLimit: 15, sky: 0x1a1030, fog: 0x2a1848, botCount: 4, bossId: 'Boss_RingArbiter', mode: 'boss' },
+  bossAlive: false, sky: 0x1a0c30, fog: 0x2a1450, fogNear: 18, fogFar: 70, botCount: 6, bossId: null, mode: 'ffa',
+  hemiTop: 0x8060b0, hemiGround: 0x201028, sun: 0xff66cc, sunI: 0.55, hemiI: 0.55, fillI: 0.55 },
+  { id: 'dunes', nameZh: '沙丘前哨', nameEn: 'Dunes', fragLimit: 25, sky: 0xe0b868, fog: 0xd0b070, fogNear: 30, fogFar: 90, botCount: 6, bossId: 'Boss_DuneBeacon', mode: 'ffa',
+  hemiTop: 0xffe0b0, hemiGround: 0x8a7040, sun: 0xffd080, sunI: 1.3, hemiI: 0.65, fillI: 0.2 },
+  { id: 'pulse-coliseum', nameZh: '脈衝競技場', nameEn: 'Pulse Coliseum', fragLimit: 15, sky: 0x141028, fog: 0x221838, fogNear: 20, fogFar: 72, botCount: 4, bossId: 'Boss_RingArbiter', mode: 'boss',
+  hemiTop: 0xa080c0, hemiGround: 0x181020, sun: 0xff88cc, sunI: 0.7, hemiI: 0.6, fillI: 0.45 },
 ];
 
 const ARCHETYPES = [
@@ -99,6 +107,8 @@ const PICKUP_DEFS = {
 
 const MM_VER = 'mm5';
 const MM_EXPAND = 'expand-v1-pickupfix';
+// mm6 hook: bump when Multimedia drops more-realistic map plates / blood FX atlases
+const MM_SCENE = 'mm6-pending';
 const PICKUP_GRAB_R = 3.5; // meters — soft tip: walk-into cubes were missing 1.16m radius
 const MM_URLS = {
   armsAtlas: [`./refs/atlas/fp-arms-atlas.png?v=${MM_VER}`, `./refs/atlas/fp-arms-atlas.jpg?v=${MM_VER}`],
@@ -424,6 +434,7 @@ async function loadMultimedia() {
       mm.pickupIcons[id] = await softLoadTex(urls);
     }
     for (const [id, urls] of Object.entries(MM_URLS.expandMaps)) {
+      // mm6: bump MM_EXPAND / MAP_ASSETS.expandMaps URLs when Multimedia drops realistic plates
       mm.expandMapMoods[id] = await softLoadTex(urls);
     }
 
@@ -454,6 +465,9 @@ const SFX_FILES = {
   kill: ['./refs/sfx/kill.mp3', './refs/sfx/sfx_kill_confirm.mp3'],
   pickup: ['./refs/sfx/pickup.mp3', './refs/sfx/sfx_pickup_power.mp3'],
   boss: ['./refs/sfx/boss.mp3', './refs/sfx/sfx_boss_intro.mp3'],
+  hit: ['./refs/sfx/sfx_hit.mp3', './refs/sfx/hit.mp3'],
+  hit_armor: ['./refs/sfx/sfx_hit_armor.mp3', './refs/sfx/hit_armor.mp3'],
+  death: ['./refs/sfx/sfx_death.mp3', './refs/sfx/death.mp3'],
 };
 
 function ensureAudio() {
@@ -464,6 +478,24 @@ function ensureAudio() {
   }
   if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
   return audioCtx;
+}
+
+function makeFleshHitBuffer(ctx) {
+  // Procedural wet impact — used when no hit.mp3 ships yet
+  const dur = 0.11;
+  const n = Math.max(1, Math.floor(ctx.sampleRate * dur));
+  const buf = ctx.createBuffer(1, n, ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < n; i++) {
+    const t = i / ctx.sampleRate;
+    const env = Math.exp(-t * 32);
+    const thump = Math.sin(2 * Math.PI * (85 + t * 40) * t) * 0.62;
+    const mid = Math.sin(2 * Math.PI * 210 * t) * 0.22 * Math.exp(-t * 18);
+    const noise = (Math.random() * 2 - 1) * 0.5 * Math.exp(-t * 48);
+    const click = Math.sin(2 * Math.PI * 980 * t) * 0.12 * Math.exp(-t * 90);
+    d[i] = (thump + mid + noise + click) * env;
+  }
+  return buf;
 }
 
 async function loadSfxBuffers() {
@@ -480,6 +512,9 @@ async function loadSfxBuffers() {
       } catch (_) { /* try next */ }
     }
   }
+  if (!sfxBuffers.hit) sfxBuffers.hit = makeFleshHitBuffer(ctx);
+  if (!sfxBuffers.hit_armor) sfxBuffers.hit_armor = sfxBuffers.hit;
+  if (!sfxBuffers.death && sfxBuffers.kill) sfxBuffers.death = sfxBuffers.kill;
   sfxReady.ok = Object.keys(sfxBuffers).length > 0;
 }
 
@@ -557,9 +592,24 @@ const SFX = {
     if (playBuf('reload', { vol: 0.55 })) return;
     tone(240, 0.07, 'triangle', 0.09); tone(150, 0.1, 'sine', 0.06, 80);
   },
-  hit() { if (!ENABLE_SFX) return; tone(720, 0.035, 'square', 0.11, 300); },
+  hit() {
+    if (!ENABLE_SFX) return;
+    // confirmed flesh impact (Multimedia provisional sfx_hit)
+    if (playBuf('hit', { vol: 0.66, rate: 0.94 + Math.random() * 0.14 })) return;
+    tone(140, 0.06, 'sine', 0.12, 70);
+    tone(620, 0.03, 'square', 0.07, 220);
+    noiseBurst(0.045, 0.09);
+  },
+  hitArmor() {
+    if (!ENABLE_SFX) return;
+    if (playBuf('hit_armor', { vol: 0.58, rate: 0.96 + Math.random() * 0.1 })) return;
+    tone(880, 0.03, 'triangle', 0.08, 420);
+    noiseBurst(0.03, 0.06);
+  },
   death() {
     if (!ENABLE_SFX) return;
+    // Multimedia provisional sfx_death, then kill confirm as secondary
+    if (playBuf('death', { vol: 0.7 })) return;
     if (playBuf('kill', { vol: 0.6 })) return;
     tone(160, 0.22, 'sawtooth', 0.13, 55); noiseBurst(0.16, 0.1);
   },
@@ -622,7 +672,15 @@ let spawnPoints = [];
 let highPoints = [];
 let bulletTraces = [];
 let particles = [];
+let bloodPool = [];
+let bloodReady = false;
 let worldRoot = null;
+let hemiLight = null;
+let sunLight = null;
+let fillLight = null;
+let _hudAcc = 0;
+let _hudDirty = true;
+let gritTexCache = null;
 let armsRoot = null;
 let gunParts = null;
 let muzzleFlash = null;
@@ -693,7 +751,9 @@ function syncBossHud() {
     bossHud.innerHTML = '';
   }
 }
+function markHud() { _hudDirty = true; }
 function syncHud() {
+  _hudDirty = false;
   const hpVal = Math.max(0, Math.ceil(state.hp));
   const hpHost = document.querySelector('#hudBot .hp');
   if (hpHost) {
@@ -746,6 +806,142 @@ function makeGridFloor(size, divisions, colorA, colorB) {
   mesh.rotation.x = -Math.PI / 2; mesh.position.y = 0.01;
   return mesh;
 }
+function getGritTexture() {
+  if (gritTexCache) return gritTexCache;
+  const c = document.createElement('canvas');
+  c.width = 256; c.height = 256;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#6a6e72';
+  ctx.fillRect(0, 0, 256, 256);
+  for (let i = 0; i < 2200; i++) {
+    const x = Math.random() * 256, y = Math.random() * 256;
+    const v = 70 + Math.random() * 70;
+    ctx.fillStyle = `rgba(${v},${v * 0.95},${v * 0.9},${0.08 + Math.random() * 0.18})`;
+    ctx.fillRect(x, y, 1 + (Math.random() > 0.85 ? 2 : 1), 1);
+  }
+  // subtle cracks
+  ctx.strokeStyle = 'rgba(30,30,28,0.18)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 14; i++) {
+    ctx.beginPath();
+    let x = Math.random() * 256, y = Math.random() * 256;
+    ctx.moveTo(x, y);
+    for (let k = 0; k < 5; k++) {
+      x += (Math.random() - 0.5) * 40;
+      y += (Math.random() - 0.5) * 40;
+      ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(10, 10);
+  tex.anisotropy = renderer ? Math.min(4, renderer.capabilities.getMaxAnisotropy()) : 4;
+  gritTexCache = tex;
+  return tex;
+}
+
+function addGritFloor(size = 70, tint = 0x6a7078) {
+  const mat = new THREE.MeshLambertMaterial({ map: getGritTexture(), color: tint });
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(size, size), mat);
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.y = 0.005;
+  worldRoot.add(floor);
+  return floor;
+}
+
+function addMapMoodBackdrop(mapId) {
+  const tex = mm.expandMapMoods[mapId];
+  if (!tex) return;
+  // Distant mood plates — arcade depth, not photoreal skybox
+  const mat = new THREE.MeshBasicMaterial({
+    map: tex, fog: true, depthWrite: false, transparent: true, opacity: 0.88, side: THREE.DoubleSide,
+  });
+  const geo = new THREE.PlaneGeometry(72, 34);
+  for (let i = 0; i < 4; i++) {
+    const p = new THREE.Mesh(geo, mat);
+    const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
+    p.position.set(Math.sin(a) * 46, 11, Math.cos(a) * 46);
+    p.lookAt(0, 8, 0);
+    p.renderOrder = -2;
+    worldRoot.add(p);
+  }
+}
+
+function applyMapAtmosphere(map) {
+  scene.background = new THREE.Color(map.sky);
+  scene.fog = new THREE.Fog(map.fog, map.fogNear ?? 28, map.fogFar ?? 85);
+  if (hemiLight) {
+    hemiLight.color.setHex(map.hemiTop ?? 0xfff0e0);
+    hemiLight.groundColor.setHex(map.hemiGround ?? 0x3a4538);
+    hemiLight.intensity = map.hemiI ?? 0.75;
+  }
+  if (sunLight) {
+    sunLight.color.setHex(map.sun ?? 0xfff2d6);
+    sunLight.intensity = map.sunI ?? 1.1;
+  }
+  if (fillLight) {
+    fillLight.intensity = map.fillI ?? 0.3;
+  }
+}
+
+function ensureBloodPool() {
+  if (bloodReady) return;
+  bloodReady = true;
+  const geo = new THREE.SphereGeometry(0.055, 5, 4);
+  for (let i = 0; i < MAX_PARTICLES; i++) {
+    const mat = new THREE.MeshBasicMaterial({
+      color: i % 3 === 0 ? 0x6a0a12 : (i % 3 === 1 ? 0xa01018 : 0x3a0508),
+      transparent: true,
+      opacity: 0.92,
+      depthWrite: false,
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.visible = false;
+    mesh.frustumCulled = false;
+    scene.add(mesh);
+    bloodPool.push({ mesh, vx: 0, vy: 0, vz: 0, life: 0 });
+  }
+}
+
+function spawnBloodBurst(x, y, z, count = 10, power = 1) {
+  ensureBloodPool();
+  let spawned = 0;
+  for (const p of bloodPool) {
+    if (p.life > 0) continue;
+    p.life = 0.28 + Math.random() * 0.35;
+    p.vx = (Math.random() - 0.5) * 4.5 * power;
+    p.vy = (1.2 + Math.random() * 3.2) * power;
+    p.vz = (Math.random() - 0.5) * 4.5 * power;
+    p.mesh.position.set(x + (Math.random() - 0.5) * 0.2, y + (Math.random() - 0.5) * 0.25, z + (Math.random() - 0.5) * 0.2);
+    p.mesh.scale.setScalar(0.7 + Math.random() * 1.4);
+    p.mesh.material.opacity = 0.95;
+    p.mesh.visible = true;
+    spawned++;
+    if (spawned >= count) break;
+  }
+}
+
+function updateBlood(dt) {
+  if (!bloodReady) return;
+  for (const p of bloodPool) {
+    if (p.life <= 0) continue;
+    p.life -= dt;
+    p.vy -= 18 * dt;
+    p.mesh.position.x += p.vx * dt;
+    p.mesh.position.y += p.vy * dt;
+    p.mesh.position.z += p.vz * dt;
+    if (p.mesh.position.y < 0.04) {
+      p.mesh.position.y = 0.04;
+      p.vy *= -0.15;
+      p.vx *= 0.55;
+      p.vz *= 0.55;
+    }
+    p.mesh.material.opacity = Math.max(0, Math.min(0.95, p.life * 2.2));
+    if (p.life <= 0) p.mesh.visible = false;
+  }
+}
+
 function addOuterFence(wallH = 5.2) {
   const fence = mm.mats.fence || null;
   const fenceSpan = FENCE_R * 2 + FENCE_THICK;
@@ -785,6 +981,7 @@ function buildArenaYard() {
   } else worldRoot.add(makeGridFloor(70, 16, '#8a8e96', '#6e727a'));
   solidBoxes.push(boxSolid(0, -0.5, 0, 70, 0.5, 70));
   addOuterFence();
+  addGritFloor(70, 0x6a7078);
   addBox(worldRoot, 0, 0.02, 0, 6, 0.08, 40, 0x8a8a96, false, concrete);
   const covers = [
     [-8, 0, -6, 5.2, 2.6, 2.4, 0xe23b3b, cR], [8, 0, -6, 5.2, 2.6, 2.4, 0x2f6fe0, cB],
@@ -822,6 +1019,7 @@ function buildArenaContainers() {
   } else worldRoot.add(makeGridFloor(70, 16, '#6a7078', '#4a5058'));
   solidBoxes.push(boxSolid(0, -0.5, 0, 70, 0.5, 70));
   addOuterFence(6);
+  addGritFloor(70, 0x5a6068);
   // stacked shipping containers — canyon lanes
   const stacks = [
     [-10, 0, -8, 3], [-10, 0, 0, 2], [-10, 0, 8, 3],
@@ -852,6 +1050,7 @@ function buildArenaOasis() {
   worldRoot.add(makeGridFloor(70, 14, '#c8a878', '#a88858'));
   solidBoxes.push(boxSolid(0, -0.5, 0, 70, 0.5, 70));
   addOuterFence();
+  addGritFloor(70, 0xc4a878);
   // roofs / platforms
   addBox(worldRoot, -12, 0, -10, 8, 2.2, 8, 0xd4b070, true, sand);
   addBox(worldRoot, 12, 0, 10, 8, 2.2, 8, 0xc4a060, true, sand2 || sand);
@@ -881,6 +1080,7 @@ function buildArenaPlatforms() {
   worldRoot.add(makeGridFloor(70, 12, '#304060', '#203050'));
   solidBoxes.push(boxSolid(0, -0.5, 0, 70, 0.5, 70));
   addOuterFence(4);
+  addGritFloor(70, 0x5a6880);
   // floating pads ring
   const pads = [];
   for (let i = 0; i < 8; i++) {
@@ -908,6 +1108,7 @@ function buildArenaNeonAlley() {
   worldRoot.add(makeGridFloor(70, 16, '#1a1028', '#2a1840'));
   solidBoxes.push(boxSolid(0, -0.5, 0, 70, 0.5, 70));
   addOuterFence(5.5);
+  addGritFloor(70, 0x2a1838);
   // parallel alley walls
   for (let z = -18; z <= 18; z += 6) {
     addBox(worldRoot, -8, 0, z, 2.5, 4.5, 5, 0x3a2060, true, cB);
@@ -934,6 +1135,7 @@ function buildArenaDunes() {
   worldRoot.add(makeGridFloor(70, 12, '#d8b878', '#b89858'));
   solidBoxes.push(boxSolid(0, -0.5, 0, 70, 0.5, 70));
   addOuterFence();
+  addGritFloor(70, 0xc8a868);
   // low dunes
   for (const [x, z, w, h, d] of [[-14, -10, 10, 1.4, 8], [12, 8, 12, 1.6, 9], [-8, 14, 9, 1.2, 7], [10, -14, 8, 1.5, 8], [0, 0, 6, 0.8, 6]]) {
     addBox(worldRoot, x, 0, z, w, h, d, 0xc8a868, true, sand || sand2);
@@ -954,6 +1156,7 @@ function buildArenaColiseum() {
   worldRoot.add(makeGridFloor(70, 14, '#201828', '#301838'));
   solidBoxes.push(boxSolid(0, -0.5, 0, 70, 0.5, 70));
   addOuterFence(6);
+  addGritFloor(70, 0x2a2038);
   // circular pit ring (approx with boxes)
   for (let i = 0; i < 12; i++) {
     const a = (i / 12) * Math.PI * 2;
@@ -996,8 +1199,7 @@ function buildArena(mapIndex = 0) {
   const map = MAPS[mapIndex] || MAPS[0];
   state.mapIndex = mapIndex;
   state.fragLimit = map.fragLimit;
-  scene.background = new THREE.Color(map.sky);
-  scene.fog = new THREE.Fog(map.fog, 40, 95);
+  applyMapAtmosphere(map);
   const builders = {
     yard: buildArenaYard,
     containers: buildArenaContainers,
@@ -1008,6 +1210,7 @@ function buildArena(mapIndex = 0) {
     'pulse-coliseum': buildArenaColiseum,
   };
   (builders[map.id] || buildArenaYard)();
+  addMapMoodBackdrop(map.id);
   if (ENABLE_PICKUPS) spawnPickupsFromSockets();
   if (ENABLE_BOSSES && map.bossId) spawnBoss(map.bossId);
 }
@@ -1723,6 +1926,7 @@ function spawnBots() {
       mesh, shootCd: 0.4 + Math.random(), aimYaw: Math.random() * Math.PI * 2,
       thinkT: Math.random() * 0.4, target: null, respawnT: 0, onGround: true,
       shieldHp: arch.frontalShield ? 80 : 0, healCd: 0, flashCd: 0, slideT: 0,
+      dying: false, deathT: 0, deathDur: 0.55, deathSign: 1,
       nestAnchor: arch.role === 'nest' ? (highPoints[i % Math.max(1, highPoints.length)] || sp) : null,
     });
   }
@@ -1731,19 +1935,18 @@ function spawnBots() {
 
 
 function damageBot(bot, dmg, fromPlayer, isWeak = false) {
-  if (!bot.alive) return;
+  if (!bot.alive || bot.dying) return;
   let d = dmg * (fromPlayer ? (state.dmgMul || 1) : 1);
+  let hitArmor = false;
   // frontal shield J
   if (bot.shieldHp > 0 && fromPlayer) {
-    const toBotX = bot.x - state.x, toBotZ = bot.z - state.z;
-    const forwardDot = (-Math.sin(bot.aimYaw)) * (toBotX) + (-Math.cos(bot.aimYaw)) * (toBotZ);
-    // hit from front if player is in front of bot facing
     const fx = -Math.sin(bot.aimYaw), fz = -Math.cos(bot.aimYaw);
     const dx = state.x - bot.x, dz = state.z - bot.z;
     const inv = 1 / (Math.hypot(dx, dz) || 1);
     if (fx * dx * inv + fz * dz * inv > 0.25) {
       bot.shieldHp -= d;
       d *= 0.5;
+      hitArmor = true;
       if (bot.shieldHp <= 0) {
         bot.shieldHp = 0;
         const sh = bot.mesh.getObjectByName('shield');
@@ -1753,12 +1956,23 @@ function damageBot(bot, dmg, fromPlayer, isWeak = false) {
   }
   bot.hp -= d;
   flashHit();
-  SFX.hit();
+  if (fromPlayer) {
+    if (hitArmor) SFX.hitArmor();
+    else SFX.hit();
+  }
+  // eng-side blood burst (mm6 atlas swap later via spawnBloodBurst)
+  spawnBloodBurst(bot.x, 1.05 + Math.random() * 0.35, bot.z, hitArmor ? 6 : 11, hitArmor ? 0.7 : 1);
   if (bot.hp <= 0) {
     bot.alive = false;
+    bot.dying = true;
+    bot.deathDur = 0.45 + Math.random() * 0.3;
+    bot.deathT = bot.deathDur;
+    bot.deathSign = Math.random() < 0.5 ? 1 : -1;
     bot.deaths += 1;
-    bot.respawnT = 2.4;
-    bot.mesh.visible = false;
+    bot.respawnT = 2.6;
+    bot.mesh.visible = true;
+    bot.vx = bot.vz = 0;
+    spawnBloodBurst(bot.x, 1.2, bot.z, 16, 1.35);
     SFX.death();
     if (fromPlayer) {
       state.kills += 1;
@@ -1767,6 +1981,7 @@ function damageBot(bot, dmg, fromPlayer, isWeak = false) {
       feedKill(`你 擊殺了 ${bot.name}`);
       if (state.kills >= state.fragLimit) endMatch(true);
     }
+    markHud();
     syncHud();
   }
 }
@@ -1796,13 +2011,21 @@ function damageBoss(dmg, weak) {
   const mul = weak ? boss.weakMul : 1;
   boss.hp -= dmg * (state.dmgMul || 1) * mul;
   flashHit();
+  SFX.hit();
   SFX.boss_hurt();
+  spawnBloodBurst(boss.x, 1.4 * (boss.scale || 1), boss.z, 14, 1.4);
   syncBossHud();
   if (boss.hp <= 0) {
     boss.alive = false;
     state.bossAlive = false;
-    boss.mesh.visible = false;
+    boss.dying = true;
+    boss.deathDur = 0.7;
+    boss.deathT = boss.deathDur;
+    boss.deathSign = 1;
+    boss.mesh.visible = true;
+    spawnBloodBurst(boss.x, 1.6 * (boss.scale || 1), boss.z, 22, 1.8);
     state.kills += boss.scoreBonus || 5;
+    SFX.death();
     SFX.boss_death();
     feedKill(`✔ 擊敗 ${boss.nameZh}`);
     // loot rain
@@ -1837,7 +2060,7 @@ function damageBoss(dmg, weak) {
         x: sp.x, y: 1.65, z: sp.z, vx: 0, vz: 0, vy: 0,
         hp: arch.hp, maxHp: arch.hp, alive: true, kills: 0, deaths: 0,
         mesh, shootCd: 0.3, aimYaw: 0, thinkT: 0, target: 'player', respawnT: 0, onGround: true,
-        shieldHp: 0, healCd: 0, flashCd: 0, slideT: 0, nestAnchor: null,
+        shieldHp: 0, healCd: 0, flashCd: 0, slideT: 0, dying: false, deathT: 0, deathDur: 0.55, deathSign: 1, nestAnchor: null,
       });
     }
     feedKill('貨櫃巨擘召喚游擊單位');
@@ -1927,7 +2150,7 @@ function tryShoot(dt) {
     return;
   }
   if (!w.melee && state.ammo <= 0) { startReload(); return; }
-  if (!w.melee) { state.ammo -= 1; syncHud(); }
+  if (!w.melee) { state.ammo -= 1; markHud(); syncHud(); }
   state.shootCd = 1 / w.firerate;
   SFX.shoot();
   if (muzzleFlash && !w.melee) {
@@ -2024,13 +2247,29 @@ function updateBots(dt) {
     // stagger AI think across frames
     const doThink = ((_aiTick + bi) % 2) === 0;
     if (!b.alive) {
+      // tip-over death anim then hide; respawn after timer
+      if (b.dying) {
+        b.deathT -= dt;
+        const t = 1 - Math.max(0, b.deathT) / (b.deathDur || 0.55);
+        const ease = t * t * (3 - 2 * t);
+        b.mesh.rotation.x = ease * (Math.PI * 0.5) * (b.deathSign || 1);
+        b.mesh.position.y = Math.sin(ease * Math.PI) * 0.12;
+        b.mesh.visible = true;
+        if (b.deathT <= 0) {
+          b.dying = false;
+          b.mesh.visible = false;
+          b.mesh.rotation.x = 0;
+          b.mesh.position.y = 0;
+        }
+      }
       b.respawnT -= dt;
       if (b.respawnT <= 0) {
         const sp = randomSpawn();
         b.x = sp.x; b.z = sp.z; b.y = 1.65;
-        b.hp = b.maxHp; b.alive = true;
+        b.hp = b.maxHp; b.alive = true; b.dying = false;
         b.shieldHp = b.arch.frontalShield ? 80 : 0;
         b.mesh.visible = true;
+        b.mesh.rotation.x = 0;
         b.mesh.position.set(b.x, 0, b.z);
         const sh = b.mesh.getObjectByName('shield');
         if (sh) sh.visible = true;
@@ -2041,7 +2280,7 @@ function updateBots(dt) {
 
     // frustum / distance cull
     const distCam = Math.hypot(b.x - state.x, b.z - state.z);
-    b.mesh.visible = distCam < CULL_DIST;
+    if (!b.dying) b.mesh.visible = distCam < CULL_DIST;
 
     if (doThink) {
       b.thinkT -= dt * 2;
@@ -2093,12 +2332,22 @@ function updateBots(dt) {
     if (b.healCd > 0) b.healCd -= dt;
 
     const len = Math.hypot(wishX, wishZ) || 1;
-    b.vx = (wishX / len) * speed;
-    b.vz = (wishZ / len) * speed;
+    const tvx = (wishX / len) * speed;
+    const tvz = (wishZ / len) * speed;
+    // lerp velocity for smooth bot motion (cuts stutter)
+    const accel = 1 - Math.exp(-14 * dt);
+    b.vx += (tvx - b.vx) * accel;
+    b.vz += (tvz - b.vz) * accel;
     const moved = collideXZ(b.x + b.vx * dt, b.z + b.vz * dt, b.y, 0.4);
     b.x = moved.x; b.z = moved.z;
-    b.mesh.position.set(b.x, 0, b.z);
-    b.mesh.rotation.y = b.aimYaw;
+    const follow = 1 - Math.exp(-18 * dt);
+    b.mesh.position.x += (b.x - b.mesh.position.x) * follow;
+    b.mesh.position.z += (b.z - b.mesh.position.z) * follow;
+    b.mesh.position.y = 0;
+    let dyaw = b.aimYaw - b.mesh.rotation.y;
+    while (dyaw > Math.PI) dyaw -= Math.PI * 2;
+    while (dyaw < -Math.PI) dyaw += Math.PI * 2;
+    b.mesh.rotation.y += dyaw * (1 - Math.exp(-12 * dt));
 
     b.shootCd -= dt;
     if (b.shootCd <= 0 && dist < 26 && dist > 1.2) {
@@ -2129,7 +2378,23 @@ function updateBots(dt) {
 }
 
 function updateBoss(dt) {
-  if (!boss || !boss.alive) return;
+  if (!boss) return;
+  if (!boss.alive) {
+    if (boss.dying && boss.mesh) {
+      boss.deathT -= dt;
+      const t = 1 - Math.max(0, boss.deathT) / (boss.deathDur || 0.7);
+      const ease = t * t * (3 - 2 * t);
+      boss.mesh.rotation.x = ease * (Math.PI * 0.55) * (boss.deathSign || 1);
+      boss.mesh.position.y = Math.sin(ease * Math.PI) * 0.2;
+      if (boss.deathT <= 0) {
+        boss.dying = false;
+        boss.mesh.visible = false;
+        boss.mesh.rotation.x = 0;
+        boss.mesh.position.y = 0;
+      }
+    }
+    return;
+  }
   const def = boss;
   boss.attackCd -= dt;
   // face player
@@ -2282,14 +2547,15 @@ function initThree() {
   if (renderer.outputColorSpace !== undefined) renderer.outputColorSpace = THREE.SRGBColorSpace;
   else if (renderer.outputEncoding !== undefined) renderer.outputEncoding = THREE.sRGBEncoding;
   clock = new THREE.Clock();
-  const hemi = new THREE.HemisphereLight(0xffe8ff, 0x406040, 0.95);
-  scene.add(hemi);
-  const sun = new THREE.DirectionalLight(0xffffff, 0.75);
-  sun.position.set(12, 24, 8);
-  scene.add(sun);
-  const fill = new THREE.DirectionalLight(0x88aaff, 0.35);
-  fill.position.set(-10, 8, -12);
-  scene.add(fill);
+  hemiLight = new THREE.HemisphereLight(0xfff2e8, 0x4a5548, 0.75);
+  scene.add(hemiLight);
+  sunLight = new THREE.DirectionalLight(0xfff0d0, 1.1);
+  sunLight.position.set(14, 26, 10);
+  scene.add(sunLight);
+  fillLight = new THREE.DirectionalLight(0x88aaff, 0.3);
+  fillLight.position.set(-12, 9, -14);
+  scene.add(fillLight);
+  ensureBloodPool();
   buildArena(state.mapIndex || 0);
   buildArms();
   ensureMultimedia();
@@ -2354,7 +2620,8 @@ function drawTraces(dt) {
 function frame() {
   requestAnimationFrame(frame);
   if (document.hidden) return;
-  const dt = Math.min(0.05, clock.getDelta());
+  // tighter clamp reduces hitch cascades on mid-laptops
+  const dt = Math.min(0.033, clock.getDelta());
   if (!running) {
     if (!matchOver && overlay && !overlay.classList.contains('hidden')) {
       const t = performance.now() * 0.00025;
@@ -2362,6 +2629,7 @@ function frame() {
       camera.rotation.order = 'YXZ';
       camera.rotation.set(-0.45, t + Math.PI, 0);
     }
+    updateBlood(dt);
     renderer.render(scene, camera);
     return;
   }
@@ -2380,9 +2648,14 @@ function frame() {
   updateBoss(dt);
   updatePickups(dt);
   updatePowers(dt);
+  updateBlood(dt);
   updateCamera(dt);
   drawTraces(dt);
-  syncHud();
+  _hudAcc += dt;
+  if (_hudDirty || _hudAcc >= 0.12) {
+    syncHud();
+    _hudAcc = 0;
+  }
   if (scoreboard.classList.contains('on')) updateScoreboard();
   renderer.render(scene, camera);
 }
@@ -2465,6 +2738,9 @@ window.addEventListener('popstate', () => applyUrlMap(true));
 // —— debug / smoke hooks ——
 window.__dbg = () => ({
   running, matchOver,
+  mmScene: MM_SCENE, mmExpand: MM_EXPAND, mmVer: MM_VER,
+  sfxHit: !!sfxBuffers.hit, sfxHitArmor: !!sfxBuffers.hit_armor, sfxDeath: !!sfxBuffers.death,
+  bloodPool: bloodPool.filter((p) => p.life > 0).length,
   x: state.x, y: state.y, z: state.z,
   hp: state.hp, armor: state.armor, kills: state.kills, deaths: state.deaths, streak: state.streak,
   weapon: WEAPONS[state.weapon].id, weaponIndex: state.weapon,
