@@ -97,13 +97,14 @@ const PICKUP_DEFS = {
   overheal: { id: 'overheal', nameZh: '過載心', kind: 'overheal', amount: 150, color: 0xff4466, respawn: 120 },
 };
 
-const MM_VER = 'mm4';
+const MM_VER = 'mm5';
 const MM_EXPAND = 'expand-v1-pickupfix';
 const PICKUP_GRAB_R = 3.5; // meters — soft tip: walk-into cubes were missing 1.16m radius
 const MM_URLS = {
   armsAtlas: [`./refs/atlas/fp-arms-atlas.png?v=${MM_VER}`, `./refs/atlas/fp-arms-atlas.jpg?v=${MM_VER}`],
   weaponsAtlas: [`./refs/atlas/weapons-view-atlas.png?v=${MM_VER}`, `./refs/atlas/weapons-view-atlas.jpg?v=${MM_VER}`],
   fpCombined: [`./refs/fp/fp-viewmodel-rifle.png?v=${MM_VER}`, `./refs/atlas/fp-viewmodel-rifle.png?v=${MM_VER}`],
+  uiCrosshair: [`./refs/ui/ui-crosshair.png?v=${MM_VER}`],
   weapons: {
     ar: [`./refs/atlas/vm-rifle.png?v=${MM_VER}`],
     pistol: [`./refs/atlas/vm-pistol.png?v=${MM_VER}`],
@@ -155,6 +156,7 @@ const mm = {
   ready: false, armsSleeve: null, armsSkin: null, weapons: Object.create(null), fpCombined: null,
   botSkins: [], expandBotSkins: Object.create(null), bossSkins: Object.create(null),
   pickupIcons: Object.create(null), expandMapMoods: Object.create(null), mats: Object.create(null),
+  crosshairImg: null,
 };
 
 function srgbTex(tex) {
@@ -291,6 +293,27 @@ function isPngUrl(url) {
   return /\.png(\?|$)/i.test(url || '');
 }
 
+function applyCrosshairImage(canvas) {
+  if (!canvas) return;
+  const dataUrl = canvas.toDataURL();
+  cross.style.cssText = `
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    width: 32px;
+    height: 32px;
+    margin: -16px 0 0 -16px;
+    pointer-events: none;
+    z-index: 5;
+    opacity: 0;
+    background: url(${dataUrl}) center/contain no-repeat;
+  `;
+  const style = document.createElement('style');
+  style.textContent = '#cross.img-crosshair::before, #cross.img-crosshair::after { display: none; }';
+  document.head.appendChild(style);
+  cross.classList.add('img-crosshair');
+}
+
 /** PNG with alpha → copy as-is; JPEG greenscreen → chroma key. */
 function plateToCanvas(img, url) {
   if (isPngUrl(url)) {
@@ -325,6 +348,9 @@ async function loadMultimedia() {
     const botLoaded = await Promise.all(MM_URLS.bots.map((u) => loadImagePrefer(u)));
     let fpCombinedLoaded = null;
     try { fpCombinedLoaded = await loadImagePrefer(MM_URLS.fpCombined); } catch (_) {}
+    
+    let crosshairLoaded = null;
+    try { crosshairLoaded = await loadImagePrefer(MM_URLS.uiCrosshair); } catch (_) {}
 
     const armsKeyed = plateToCanvas(armsLoaded.img, armsLoaded.url);
     const cell = armsKeyed.width / 6;
@@ -356,6 +382,10 @@ async function loadMultimedia() {
     }
     if (fpCombinedLoaded) {
       mm.fpCombined = canvasToTex(tightAlphaCrop(plateToCanvas(fpCombinedLoaded.img, fpCombinedLoaded.url), 2));
+    }
+    if (crosshairLoaded) {
+      mm.crosshairImg = plateToCanvas(crosshairLoaded.img, crosshairLoaded.url);
+      applyCrosshairImage(mm.crosshairImg);
     }
     mm.botSkins = botLoaded.map(({ img, url }) => canvasToTex(tightAlphaCrop(plateToCanvas(img, url), 2)));
 
