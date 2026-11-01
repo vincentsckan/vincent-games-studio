@@ -98,7 +98,7 @@ const PICKUP_DEFS = {
 };
 
 const MM_VER = 'mm4';
-const MM_EXPAND = 'expand-v1-scrub';
+const MM_EXPAND = 'expand-v1-hpfix';
 const MM_URLS = {
   armsAtlas: [`./refs/atlas/fp-arms-atlas.png?v=${MM_VER}`, `./refs/atlas/fp-arms-atlas.jpg?v=${MM_VER}`],
   weaponsAtlas: [`./refs/atlas/weapons-view-atlas.png?v=${MM_VER}`, `./refs/atlas/weapons-view-atlas.jpg?v=${MM_VER}`],
@@ -131,8 +131,8 @@ const MM_URLS = {
     Boss_RingArbiter: [`./refs/expand/bosses/boss-ring-arbiter.png?v=${MM_EXPAND}`, `./refs/expand/bosses/boss-ring-arbiter.jpg?v=${MM_EXPAND}`],
   },
   expandPickups: {
-    hp_s: [`./refs/expand/pickups/pickup-hp-s.png?v=${MM_EXPAND}`],
-    hp_m: [`./refs/expand/pickups/pickup-hp-m.png?v=${MM_EXPAND}`],
+    hp_s: [`./refs/expand/pickups/pickup-hp-s.png?v=${MM_EXPAND}`, `./refs/expand/pickups/pickup-hp_s.png?v=${MM_EXPAND}`],
+    hp_m: [`./refs/expand/pickups/pickup-hp-m.png?v=${MM_EXPAND}`, `./refs/expand/pickups/pickup-hp_m.png?v=${MM_EXPAND}`],
     armor: [`./refs/expand/pickups/pickup-armor.png?v=${MM_EXPAND}`],
     ammo: [`./refs/expand/pickups/pickup-ammo.png?v=${MM_EXPAND}`],
     quad: [`./refs/expand/pickups/pickup-quad.png?v=${MM_EXPAND}`],
