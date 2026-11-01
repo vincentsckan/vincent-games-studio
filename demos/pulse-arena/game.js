@@ -98,7 +98,7 @@ const PICKUP_DEFS = {
 };
 
 const MM_VER = 'mm4';
-const MM_EXPAND = 'expand-v1';
+const MM_EXPAND = 'expand-v1-scrub';
 const MM_URLS = {
   armsAtlas: [`./refs/atlas/fp-arms-atlas.png?v=${MM_VER}`, `./refs/atlas/fp-arms-atlas.jpg?v=${MM_VER}`],
   weaponsAtlas: [`./refs/atlas/weapons-view-atlas.png?v=${MM_VER}`, `./refs/atlas/weapons-view-atlas.jpg?v=${MM_VER}`],
