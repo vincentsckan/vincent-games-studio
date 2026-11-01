@@ -98,7 +98,8 @@ const PICKUP_DEFS = {
 };
 
 const MM_VER = 'mm4';
-const MM_EXPAND = 'expand-v1-mapfix';
+const MM_EXPAND = 'expand-v1-pickupfix';
+const PICKUP_GRAB_R = 3.5; // meters — soft tip: walk-into cubes were missing 1.16m radius
 const MM_URLS = {
   armsAtlas: [`./refs/atlas/fp-arms-atlas.png?v=${MM_VER}`, `./refs/atlas/fp-arms-atlas.jpg?v=${MM_VER}`],
   weaponsAtlas: [`./refs/atlas/weapons-view-atlas.png?v=${MM_VER}`, `./refs/atlas/weapons-view-atlas.jpg?v=${MM_VER}`],
@@ -662,7 +663,14 @@ function syncBossHud() {
   }
 }
 function syncHud() {
-  document.getElementById('hp').textContent = String(Math.max(0, Math.ceil(state.hp)));
+  const hpVal = Math.max(0, Math.ceil(state.hp));
+  const hpHost = document.querySelector('#hudBot .hp');
+  if (hpHost) {
+    const armorBit = state.armor > 0 ? ` · 甲 ${Math.ceil(state.armor)}` : '';
+    hpHost.innerHTML = `HP <b id="hp">${hpVal}</b>${armorBit}`;
+  } else {
+    document.getElementById('hp').textContent = String(hpVal);
+  }
   document.getElementById('ammo').textContent = String(state.ammo);
   document.getElementById('reserve').textContent = String(state.reserve);
   document.getElementById('kills').textContent = String(state.kills);
@@ -1507,15 +1515,37 @@ function makePickupMesh(def) {
   return g;
 }
 
+/** If a pickup socket sits inside a solid volume (container / crate), push XZ to nearest face. */
+function nudgePickupOutOfSolids(x, z, y = 0.6, pad = 0.85) {
+  for (let iter = 0; iter < 8; iter++) {
+    let pushed = false;
+    for (const b of solidBoxes) {
+      if (b.maxY < 0.4) continue; // floor
+      if (y < b.minY || y > b.maxY) continue;
+      if (x <= b.minX || x >= b.maxX || z <= b.minZ || z >= b.maxZ) continue;
+      const dl = x - b.minX, dr = b.maxX - x, db = z - b.minZ, dt = b.maxZ - z;
+      const m = Math.min(dl, dr, db, dt);
+      if (m === dl) x = b.minX - pad;
+      else if (m === dr) x = b.maxX + pad;
+      else if (m === db) z = b.minZ - pad;
+      else z = b.maxZ + pad;
+      pushed = true;
+    }
+    if (!pushed) break;
+  }
+  return { x, z };
+}
+
 function spawnPickupsFromSockets() {
   clearPickups();
   for (const s of pickupSockets) {
     const def = PICKUP_DEFS[s.type];
     if (!def) continue;
+    const nz = nudgePickupOutOfSolids(s.x, s.z, s.y || 0.6);
     const mesh = makePickupMesh(def);
-    mesh.position.set(s.x, 0, s.z);
+    mesh.position.set(nz.x, 0, nz.z);
     scene.add(mesh);
-    pickups.push({ ...def, x: s.x, y: s.y || 0.6, z: s.z, mesh, alive: true, respawnT: 0 });
+    pickups.push({ ...def, x: nz.x, y: s.y || 0.6, z: nz.z, mesh, alive: true, respawnT: 0 });
   }
 }
 
@@ -1536,6 +1566,7 @@ function grabPickup(p) {
   p.mesh.visible = false;
   p.respawnT = p.respawn || 25;
   if (p.kind === 'heal') {
+    // Always feedKill even at full HP so smoke / players see feedback
     state.hp = Math.min(100, state.hp + (p.amount || 25));
     SFX.pickup_hp();
   } else if (p.kind === 'armor') {
@@ -1552,6 +1583,7 @@ function grabPickup(p) {
     SFX.pickup_power();
   }
   feedKill(`＋ ${p.nameZh}`);
+  syncBuffHud();
   syncHud();
 }
 
@@ -1568,7 +1600,7 @@ function updatePickups(dt) {
     p.mesh.rotation.y += dt * 2.2;
     p.mesh.position.y = 0.15 + Math.sin(performance.now() * 0.004 + p.x) * 0.12;
     const d2 = (p.x - state.x) ** 2 + (p.z - state.z) ** 2;
-    if (d2 < 1.35) grabPickup(p);
+    if (d2 < PICKUP_GRAB_R * PICKUP_GRAB_R) grabPickup(p);
   }
 }
 
@@ -2441,6 +2473,7 @@ window.__dbg = () => ({
   enableBosses: ENABLE_BOSSES,
   enablePickups: ENABLE_PICKUPS,
   enableSfx: ENABLE_SFX,
+  pickupGrabR: PICKUP_GRAB_R,
 });
 window.__setKey = (code, down) => { keys[code] = !!down; };
 window.__setMouse = (btn, down) => {
