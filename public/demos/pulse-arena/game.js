@@ -36,7 +36,223 @@ const WEAPONS = [
   { id: 'knife', nameZh: '脈衝短刃', nameEn: 'Pulse Blade', damage: 55, firerate: 1 / 0.5, spread: 0, mag: 1, reserve: 99, reload: 0.05, pellets: 1, melee: true, range: 2.6, cone: 0.72, adsFov: 70 },
 ];
 
-const BOT_NAMES = ['方塊A', '方塊B', '方塊C', '方塊D', '方塊E'];
+const BOT_NAMES = ['戰術橘', '醫療青', '藍警', '沙漠老兵', '方塊E'];
+
+/** Multimedia handoff — chroma #00FF00 greenscreen plates. */
+const MM_VER = 'mm1';
+const MM_URLS = {
+  armsAtlas: `./refs/atlas/fp-arms-atlas.jpg?v=${MM_VER}`,
+  weaponsAtlas: `./refs/atlas/weapons-view-atlas.jpg?v=${MM_VER}`,
+  arenaMats: `./refs/arena/arena-materials.jpg?v=${MM_VER}`,
+  bots: [
+    `./refs/bots/bot-a-tactical.jpg?v=${MM_VER}`,
+    `./refs/bots/bot-b-medic.jpg?v=${MM_VER}`,
+    `./refs/bots/bot-c-police.jpg?v=${MM_VER}`,
+    `./refs/bots/bot-d-desert.jpg?v=${MM_VER}`,
+  ],
+};
+
+const mm = {
+  ready: false,
+  armsSleeve: null,
+  armsSkin: null,
+  weapons: Object.create(null), // id -> THREE.Texture
+  botSkins: [],
+  mats: Object.create(null), // named arena material textures
+};
+
+function srgbTex(tex) {
+  if (tex && 'colorSpace' in tex && THREE.SRGBColorSpace) tex.colorSpace = THREE.SRGBColorSpace;
+  tex.needsUpdate = true;
+  return tex;
+}
+
+/** Solid #00FF00 greenscreen → alpha (Multimedia contract). */
+function chromaKeyToCanvas(img) {
+  const c = document.createElement('canvas');
+  c.width = img.naturalWidth || img.width;
+  c.height = img.naturalHeight || img.height;
+  const ctx = c.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(img, 0, 0);
+  const data = ctx.getImageData(0, 0, c.width, c.height);
+  const px = data.data;
+  const w = c.width;
+  const h = c.height;
+  for (let i = 0; i < px.length; i += 4) {
+    const r = px[i], g = px[i + 1], b = px[i + 2];
+    const maxRB = Math.max(r, b);
+    const greenScreen = g >= 155 && g > r + 55 && g > b + 55 && g >= maxRB * 1.85 && (r + b) < g * 0.82;
+    if (greenScreen) {
+      const excess = Math.min(1, (g - maxRB) / 55);
+      px[i + 3] = excess > 0.16 ? 0 : Math.min(px[i + 3], Math.floor((1 - excess) * 18));
+      if (px[i + 3] > 0 && g > maxRB) {
+        px[i + 1] = Math.min(g, maxRB + 2);
+        px[i] = Math.min(r, maxRB);
+        px[i + 2] = Math.min(b, maxRB);
+      }
+    }
+  }
+  const isGreenPlate = (idx) => {
+    const i = idx * 4;
+    if (px[i + 3] < 16) return true;
+    const r = px[i], g = px[i + 1], b = px[i + 2];
+    const maxRB = Math.max(r, b);
+    return g >= 130 && g > r + 45 && g > b + 45 && g >= maxRB * 1.65;
+  };
+  const n = w * h;
+  const seen = new Uint8Array(n);
+  const stack = [];
+  const push = (x, y) => {
+    if (x < 0 || y < 0 || x >= w || y >= h) return;
+    const idx = y * w + x;
+    if (seen[idx]) return;
+    if (!isGreenPlate(idx)) return;
+    seen[idx] = 1;
+    stack.push(idx);
+  };
+  for (let x = 0; x < w; x++) { push(x, 0); push(x, h - 1); }
+  for (let y = 0; y < h; y++) { push(0, y); push(w - 1, y); }
+  while (stack.length) {
+    const idx = stack.pop();
+    px[idx * 4 + 3] = 0;
+    const x = idx % w;
+    const y = (idx / w) | 0;
+    push(x + 1, y); push(x - 1, y); push(x, y + 1); push(x, y - 1);
+  }
+  ctx.putImageData(data, 0, 0);
+  return c;
+}
+
+function canvasToTex(c, opts = {}) {
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = opts.wrapS ?? THREE.ClampToEdgeWrapping;
+  tex.wrapT = opts.wrapT ?? THREE.ClampToEdgeWrapping;
+  tex.magFilter = THREE.LinearFilter;
+  tex.minFilter = THREE.LinearMipmapLinearFilter;
+  if (opts.repeat) tex.repeat.set(opts.repeat[0], opts.repeat[1]);
+  return srgbTex(tex);
+}
+
+function cropCanvas(srcCanvas, sx, sy, sw, sh) {
+  const c = document.createElement('canvas');
+  c.width = Math.max(1, Math.floor(sw));
+  c.height = Math.max(1, Math.floor(sh));
+  const ctx = c.getContext('2d');
+  ctx.drawImage(srcCanvas, sx, sy, sw, sh, 0, 0, c.width, c.height);
+  return c;
+}
+
+/** Tight crop opaque pixels (for weapon / bot plates). */
+function tightAlphaCrop(srcCanvas, pad = 4) {
+  const ctx = srcCanvas.getContext('2d', { willReadFrequently: true });
+  const { width: w, height: h } = srcCanvas;
+  const data = ctx.getImageData(0, 0, w, h).data;
+  let minX = w, minY = h, maxX = 0, maxY = 0;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (data[(y * w + x) * 4 + 3] > 24) {
+        if (x < minX) minX = x;
+        if (y < minY) minY = y;
+        if (x > maxX) maxX = x;
+        if (y > maxY) maxY = y;
+      }
+    }
+  }
+  if (maxX < minX) return srcCanvas;
+  minX = Math.max(0, minX - pad);
+  minY = Math.max(0, minY - pad);
+  maxX = Math.min(w - 1, maxX + pad);
+  maxY = Math.min(h - 1, maxY + pad);
+  return cropCanvas(srcCanvas, minX, minY, maxX - minX + 1, maxY - minY + 1);
+}
+
+function loadImage(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.decoding = 'async';
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error(`load fail ${url}`));
+    img.src = url;
+  });
+}
+
+let mmPromise = null;
+function ensureMultimedia() {
+  if (!mmPromise) mmPromise = loadMultimedia();
+  return mmPromise;
+}
+
+async function loadMultimedia() {
+  try {
+    const [armsImg, weapImg, matsImg, ...botImgs] = await Promise.all([
+      loadImage(MM_URLS.armsAtlas),
+      loadImage(MM_URLS.weaponsAtlas),
+      loadImage(MM_URLS.arenaMats),
+      ...MM_URLS.bots.map(loadImage),
+    ]);
+
+    // Arms atlas 6×6 cubes — sample sleeve (orange) + skin (peach) tiles
+    const armsKeyed = chromaKeyToCanvas(armsImg);
+    const cell = armsKeyed.width / 6;
+    // (0,0) orange sleeve, (4,0) peach skin per Multimedia grid
+    mm.armsSleeve = canvasToTex(cropCanvas(armsKeyed, cell * 0.12, cell * 0.12, cell * 0.76, cell * 0.76), {
+      wrapS: THREE.RepeatWrapping, wrapT: THREE.RepeatWrapping, repeat: [1, 1],
+    });
+    mm.armsSkin = canvasToTex(cropCanvas(armsKeyed, cell * 4.12, cell * 0.12, cell * 0.76, cell * 0.76), {
+      wrapS: THREE.RepeatWrapping, wrapT: THREE.RepeatWrapping, repeat: [1, 1],
+    });
+
+    // Weapons view atlas — 5 weapons in a row on greenscreen
+    const weapKeyed = chromaKeyToCanvas(weapImg);
+    const ids = ['ar', 'pistol', 'sniper', 'shotgun', 'knife'];
+    const sliceW = weapKeyed.width / 5;
+    for (let i = 0; i < 5; i++) {
+      const slice = cropCanvas(weapKeyed, sliceW * i, 0, sliceW, weapKeyed.height);
+      const tight = tightAlphaCrop(slice, 6);
+      mm.weapons[ids[i]] = canvasToTex(tight);
+    }
+
+    // Bot skins
+    mm.botSkins = botImgs.map((img) => canvasToTex(tightAlphaCrop(chromaKeyToCanvas(img), 2)));
+
+    // Arena materials 3×3 low-poly tiles (NOT photoreal wall plates)
+    const mw = matsImg.naturalWidth || matsImg.width;
+    const mh = matsImg.naturalHeight || matsImg.height;
+    const cw = mw / 3, ch = mh / 3;
+    const inset = 0.08; // skip tile shadow/gap
+    const matCanvas = document.createElement('canvas');
+    matCanvas.width = mw; matCanvas.height = mh;
+    matCanvas.getContext('2d').drawImage(matsImg, 0, 0);
+    const tile = (col, row, repeat = [1, 1]) => {
+      const sx = cw * (col + inset);
+      const sy = ch * (row + inset);
+      const sw = cw * (1 - inset * 2);
+      const sh = ch * (1 - inset * 2);
+      return canvasToTex(cropCanvas(matCanvas, sx, sy, sw, sh), {
+        wrapS: THREE.RepeatWrapping, wrapT: THREE.RepeatWrapping, repeat,
+      });
+    };
+    mm.mats.containerR = tile(0, 0, [1, 1]);
+    mm.mats.containerB = tile(1, 0, [1, 1]);
+    mm.mats.containerY = tile(2, 0, [1, 1]);
+    mm.mats.concrete = tile(0, 1, [4, 4]);
+    mm.mats.sand = tile(1, 1, [3, 3]);
+    mm.mats.hazard = tile(2, 1, [2, 2]);
+    mm.mats.fence = tile(0, 2, [2, 2]);
+    mm.mats.sand2 = tile(1, 2, [2, 2]);
+    mm.mats.water = tile(2, 2, [2, 2]);
+
+    mm.ready = true;
+    // Hot-apply if match already built
+    if (armsRoot) buildArms();
+    if (worldRoot) buildArena();
+    if (bots.length) spawnBots();
+  } catch (err) {
+    console.warn('[pulse-arena] multimedia load failed; using solid fallbacks', err);
+    mm.ready = false;
+  }
+}
+
 
 let running = false;
 let matchOver = false;
@@ -115,9 +331,11 @@ function boxSolid(x, y, z, w, h, d) {
   };
 }
 
-function addBox(group, x, y, z, w, h, d, color, solid = true) {
+function addBox(group, x, y, z, w, h, d, color, solid = true, mapTex = null) {
   const geo = new THREE.BoxGeometry(w, h, d);
-  const mat = new THREE.MeshLambertMaterial({ color });
+  const mat = mapTex
+    ? new THREE.MeshLambertMaterial({ map: mapTex })
+    : new THREE.MeshLambertMaterial({ color });
   const mesh = new THREE.Mesh(geo, mat);
   mesh.position.set(x, y + h / 2, z);
   mesh.castShadow = false;
@@ -163,82 +381,138 @@ function buildArena() {
   scene.background = new THREE.Color(0x6eb7ff);
   scene.fog = new THREE.Fog(0x9ecfff, 40, 90);
 
-  const floor = makeGridFloor(56, 14, '#8a8e96', '#6e727a');
-  worldRoot.add(floor);
+  const concrete = mm.mats.concrete || null;
+  const sand = mm.mats.sand || null;
+  const sand2 = mm.mats.sand2 || null;
+  const water = mm.mats.water || null;
+  const hazard = mm.mats.hazard || null;
+  const fence = mm.mats.fence || null;
+  const cR = mm.mats.containerR || null;
+  const cB = mm.mats.containerB || null;
+  const cY = mm.mats.containerY || null;
+
+  // Floor: low-poly concrete tile (not a photoreal plate)
+  if (concrete) {
+    const floor = new THREE.Mesh(
+      new THREE.PlaneGeometry(56, 56),
+      new THREE.MeshLambertMaterial({ map: concrete }),
+    );
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = 0.01;
+    worldRoot.add(floor);
+  } else {
+    worldRoot.add(makeGridFloor(56, 14, '#8a8e96', '#6e727a'));
+  }
   solidBoxes.push(boxSolid(0, -0.5, 0, 56, 0.5, 56));
 
-  // outer walls (coral / cyan blocks)
+  // outer walls — fence grate material (low-poly), not photo walls
   const wallH = 6;
-  addBox(worldRoot, 0, 0, -27, 56, wallH, 1.2, 0x6a7078);
-  addBox(worldRoot, 0, 0, 27, 56, wallH, 1.2, 0x6a7078);
-  addBox(worldRoot, -27, 0, 0, 1.2, wallH, 56, 0x6a7078);
-  addBox(worldRoot, 27, 0, 0, 1.2, wallH, 56, 0x6a7078);
+  addBox(worldRoot, 0, 0, -27, 56, wallH, 1.2, 0x6a7078, true, fence);
+  addBox(worldRoot, 0, 0, 27, 56, wallH, 1.2, 0x6a7078, true, fence);
+  addBox(worldRoot, -27, 0, 0, 1.2, wallH, 56, 0x6a7078, true, fence);
+  addBox(worldRoot, 27, 0, 0, 1.2, wallH, 56, 0x6a7078, true, fence);
 
-  // central gray path
-  addBox(worldRoot, 0, 0.02, 0, 6, 0.08, 40, 0x8a8a96, false);
+  // central path — concrete strip
+  addBox(worldRoot, 0, 0.02, 0, 6, 0.08, 40, 0x8a8a96, false, concrete);
 
-  // cover blocks — bright arcade palette
+  // cover containers — red / blue / yellow corrugated tiles
   const covers = [
-    [ -8, 0, -6, 5.2, 2.6, 2.4, 0xe23b3b ],
-    [ 8, 0, -6, 5.2, 2.6, 2.4, 0x2f6fe0 ],
-    [ -8, 0, 8, 5.2, 2.6, 2.4, 0xf0c42e ],
-    [ 8, 0, 8, 5.2, 2.6, 2.4, 0xe23b3b ],
-    [ 0, 0, -12, 5.2, 2.6, 2.4, 0xf0c42e ],
-    [ 0, 0, 12, 5.2, 2.6, 2.4, 0x2f6fe0 ],
-    [ -14, 0, 0, 2.4, 2.6, 5.2, 0xf0c42e ],
-    [ 14, 0, 0, 2.4, 2.6, 5.2, 0xe23b3b ],
-    [ -4, 0, 0, 2.2, 1.1, 2.2, 0xe07020 ],
-    [ 4, 0, -2, 2.2, 1.1, 2.2, 0xe07020 ],
+    [ -8, 0, -6, 5.2, 2.6, 2.4, 0xe23b3b, cR ],
+    [ 8, 0, -6, 5.2, 2.6, 2.4, 0x2f6fe0, cB ],
+    [ -8, 0, 8, 5.2, 2.6, 2.4, 0xf0c42e, cY ],
+    [ 8, 0, 8, 5.2, 2.6, 2.4, 0xe23b3b, cR ],
+    [ 0, 0, -12, 5.2, 2.6, 2.4, 0xf0c42e, cY ],
+    [ 0, 0, 12, 5.2, 2.6, 2.4, 0x2f6fe0, cB ],
+    [ -14, 0, 0, 2.4, 2.6, 5.2, 0xf0c42e, cY ],
+    [ 14, 0, 0, 2.4, 2.6, 5.2, 0xe23b3b, cR ],
+    [ -4, 0, 0, 2.2, 1.1, 2.2, 0xe07020, cR ],
+    [ 4, 0, -2, 2.2, 1.1, 2.2, 0xe07020, cB ],
   ];
-  for (const c of covers) addBox(worldRoot, c[0], c[1], c[2], c[3], c[4], c[5], c[6]);
+  for (const c of covers) addBox(worldRoot, c[0], c[1], c[2], c[3], c[4], c[5], c[6], true, c[7]);
 
-  // ramps / wedges as stepped boxes
+  // ramps — hazard stripes
   for (let i = 0; i < 4; i++) {
-    addBox(worldRoot, -18 + i * 0.9, i * 0.45, -18, 2.2, 0.45, 3.2, 0xff9ad4);
-    addBox(worldRoot, 18 - i * 0.9, i * 0.45, 18, 2.2, 0.45, 3.2, 0x7ef0ff);
+    addBox(worldRoot, -18 + i * 0.9, i * 0.45, -18, 2.2, 0.45, 3.2, 0xff9ad4, true, hazard);
+    addBox(worldRoot, 18 - i * 0.9, i * 0.45, 18, 2.2, 0.45, 3.2, 0x7ef0ff, true, hazard);
   }
 
-  // raised platforms
-  addBox(worldRoot, -18, 0, 12, 6, 2.4, 6, 0x4a90d9);
-  addBox(worldRoot, 18, 0, -12, 6, 2.4, 6, 0xd94a90);
+  // raised platforms — sand tiles
+  addBox(worldRoot, -18, 0, 12, 6, 2.4, 6, 0x4a90d9, true, sand);
+  addBox(worldRoot, 18, 0, -12, 6, 2.4, 6, 0xd94a90, true, sand2 || sand);
 
-  // center pad (objective look)
-  const pad = new THREE.Mesh(
-    new THREE.CylinderGeometry(2.2, 2.2, 0.18, 24),
-    new THREE.MeshLambertMaterial({ color: 0xffffff, emissive: 0x2244aa, emissiveIntensity: 0.35 }),
-  );
-  pad.position.set(0, 0.12, 0);
-  worldRoot.add(pad);
+  // center pad — water material (shallow pool look)
+  if (water) {
+    const pad = new THREE.Mesh(
+      new THREE.CylinderGeometry(2.2, 2.2, 0.18, 24),
+      new THREE.MeshLambertMaterial({ map: water, transparent: true, opacity: 0.92 }),
+    );
+    pad.position.set(0, 0.12, 0);
+    worldRoot.add(pad);
+  } else {
+    const pad = new THREE.Mesh(
+      new THREE.CylinderGeometry(2.2, 2.2, 0.18, 24),
+      new THREE.MeshLambertMaterial({ color: 0xffffff, emissive: 0x2244aa, emissiveIntensity: 0.35 }),
+    );
+    pad.position.set(0, 0.12, 0);
+    worldRoot.add(pad);
+  }
 
-  // cargo-ish crates
-  for (const [x, z, col] of [[-10, -14, 0xe23b3b], [10, 14, 0x2f6fe0], [-16, -8, 0xf0c42e], [16, 8, 0xe23b3b]]) {
-    addBox(worldRoot, x, 0, z, 2.4, 2.4, 2.4, col);
+  // cargo crates — container materials
+  const crates = [[-10, -14, cR, 0xe23b3b], [10, 14, cB, 0x2f6fe0], [-16, -8, cY, 0xf0c42e], [16, 8, cR, 0xe23b3b]];
+  for (const [x, z, tex, col] of crates) {
+    addBox(worldRoot, x, 0, z, 2.4, 2.4, 2.4, col, true, tex);
   }
 
   spawnPoints = [
     { x: 0, z: 18 }, { x: 0, z: -18 }, { x: 18, z: 0 }, { x: -18, z: 0 },
     { x: 12, z: 12 }, { x: -12, z: -12 }, { x: 12, z: -12 }, { x: -12, z: 12 },
   ];
-
-  // soft fill lights already on scene
 }
 
-function makeBotMesh(color) {
+function makeBotMesh(skinTex, fallbackColor) {
   const g = new THREE.Group();
-  const body = new THREE.Mesh(
-    new THREE.BoxGeometry(0.7, 0.9, 0.45),
-    new THREE.MeshLambertMaterial({ color }),
-  );
-  body.position.y = 0.95;
-  const head = new THREE.Mesh(
-    new THREE.BoxGeometry(0.45, 0.45, 0.45),
-    new THREE.MeshLambertMaterial({ color: 0xffe0c0 }),
-  );
-  head.position.y = 1.6;
-  const legL = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.55, 0.3), new THREE.MeshLambertMaterial({ color: 0x333344 }));
-  legL.position.set(-0.16, 0.28, 0);
-  const legR = legL.clone(); legR.position.x = 0.16;
-  g.add(body, head, legL, legR);
+  if (skinTex) {
+    const img = skinTex.image;
+    const aspect = (img && img.width && img.height) ? (img.width / img.height) : (312 / 577);
+    const h = 1.85;
+    const w = h * aspect;
+    const mat = new THREE.MeshBasicMaterial({
+      map: skinTex,
+      transparent: true,
+      alphaTest: 0.12,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+    });
+    const plane = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
+    plane.position.y = h * 0.5;
+    // Face local -Z (movement/aim forward) so skins read from the front
+    plane.rotation.y = Math.PI;
+    plane.name = 'botSkin';
+    g.add(plane);
+    // thin shadow disc so feet read on sand/concrete
+    const shadow = new THREE.Mesh(
+      new THREE.CircleGeometry(0.35, 12),
+      new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.28 }),
+    );
+    shadow.rotation.x = -Math.PI / 2;
+    shadow.position.y = 0.02;
+    g.add(shadow);
+  } else {
+    const body = new THREE.Mesh(
+      new THREE.BoxGeometry(0.7, 0.9, 0.45),
+      new THREE.MeshLambertMaterial({ color: fallbackColor }),
+    );
+    body.position.y = 0.95;
+    const head = new THREE.Mesh(
+      new THREE.BoxGeometry(0.45, 0.45, 0.45),
+      new THREE.MeshLambertMaterial({ color: 0xffe0c0 }),
+    );
+    head.position.y = 1.6;
+    const legL = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.55, 0.3), new THREE.MeshLambertMaterial({ color: 0x333344 }));
+    legL.position.set(-0.16, 0.28, 0);
+    const legR = legL.clone(); legR.position.x = 0.16;
+    g.add(body, head, legL, legR);
+  }
   return g;
 }
 
@@ -247,14 +521,24 @@ function buildArms() {
   armsRoot = new THREE.Group();
   camera.add(armsRoot);
 
-  // right arm blocky
-  const skin = new THREE.MeshLambertMaterial({ color: 0xffd0a8 });
-  const sleeve = new THREE.MeshLambertMaterial({ color: 0xe07020 }); // Multimedia fp-arms orange jacket vibe
-  const arm = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.22, 0.55), sleeve);
+  // Textured FPS arms from Multimedia atlas tiles (sleeve + skin), chroma already applied
+  const sleeveMat = mm.armsSleeve
+    ? new THREE.MeshLambertMaterial({ map: mm.armsSleeve })
+    : new THREE.MeshLambertMaterial({ color: 0xe07020 });
+  const skinMat = mm.armsSkin
+    ? new THREE.MeshLambertMaterial({ map: mm.armsSkin })
+    : new THREE.MeshLambertMaterial({ color: 0xffd0a8 });
+
+  const arm = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.22, 0.55), sleeveMat);
   arm.position.set(0.28, -0.28, -0.45);
-  const hand = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.16, 0.18), skin);
+  const hand = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.16, 0.18), skinMat);
   hand.position.set(0.28, -0.32, -0.78);
-  armsRoot.add(arm, hand);
+  // left support arm (subtle)
+  const armL = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.18, 0.42), sleeveMat);
+  armL.position.set(-0.12, -0.34, -0.55);
+  const handL = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.12, 0.14), skinMat);
+  handL.position.set(-0.12, -0.36, -0.8);
+  armsRoot.add(arm, hand, armL, handL);
 
   gunParts = new THREE.Group();
   armsRoot.add(gunParts);
@@ -273,9 +557,39 @@ function rebuildGunMesh() {
   while (gunParts.children.length) {
     const c = gunParts.children.pop();
     c.geometry?.dispose?.();
-    c.material?.dispose?.();
+    // keep shared multimedia textures; only dispose fallback materials without maps
+    if (c.material && !c.material.map) c.material.dispose?.();
   }
   const w = WEAPONS[state.weapon];
+  const viewTex = mm.weapons[w.id];
+
+  // Textured FPS viewmodel from weapons-view-atlas (chroma #00FF00)
+  if (viewTex) {
+    const img = viewTex.image;
+    const aspect = (img && img.width && img.height) ? (img.width / img.height) : 1.6;
+    const h = w.melee ? 0.42 : (w.id === 'sniper' ? 0.38 : w.id === 'pistol' ? 0.36 : 0.4);
+    const ww = h * aspect;
+    const plane = new THREE.Mesh(
+      new THREE.PlaneGeometry(ww, h),
+      new THREE.MeshBasicMaterial({
+        map: viewTex,
+        transparent: true,
+        alphaTest: 0.1,
+        depthTest: true,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+      }),
+    );
+    plane.position.set(0.18, -0.26, -0.92);
+    plane.rotation.y = 0.08;
+    gunParts.add(plane);
+    if (muzzleFlash) {
+      muzzleFlash.position.set(0.18 + (w.melee ? 0 : ww * 0.22), -0.22, -0.92 - h * 0.15);
+    }
+    return;
+  }
+
+  // Solid fallback if atlas missing
   const mat = new THREE.MeshLambertMaterial({ color: 0xb8c0cc });
   const dark = new THREE.MeshLambertMaterial({ color: 0x222830 });
   const accent = new THREE.MeshLambertMaterial({ color: 0xff6bcb });
@@ -320,7 +634,8 @@ function spawnBots() {
   const colors = [0xff6b6b, 0x6bc5ff, 0x7dff9a, 0xffd36a, 0xc08cff];
   for (let i = 0; i < BOT_COUNT; i++) {
     const sp = randomSpawn();
-    const mesh = makeBotMesh(colors[i % colors.length]);
+    const skin = mm.botSkins[i % Math.max(1, mm.botSkins.length)] || null;
+    const mesh = makeBotMesh(skin, colors[i % colors.length]);
     mesh.position.set(sp.x, 0, sp.z);
     scene.add(mesh);
     bots.push({
@@ -333,6 +648,7 @@ function spawnBots() {
       aimYaw: Math.random() * Math.PI * 2,
       thinkT: 0, target: null, respawnT: 0,
       onGround: true,
+      skinIndex: i % 4,
     });
   }
 }
@@ -749,7 +1065,8 @@ function endMatch(won) {
     <div><b>${bots.filter((b) => !b.alive).length}</b><span>倒地 BOT</span></div>`;
 }
 
-function startMatch() {
+async function startMatch() {
+  await ensureMultimedia();
   matchOver = false;
   running = true;
   state.kills = 0; state.deaths = 0; state.hp = 100;
@@ -791,6 +1108,7 @@ function initThree() {
 
   buildArena();
   buildArms();
+  ensureMultimedia();
 
   function resize() {
     const w = window.innerWidth, h = window.innerHeight;
@@ -950,6 +1268,10 @@ window.__dbg = () => ({
   botCount: bots.length,
   timeLeft: state.timeLeft,
   pointerLocked,
+  mmReady: mm.ready,
+  mmWeapons: Object.keys(mm.weapons).length,
+  mmBotSkins: mm.botSkins.length,
+  mmMats: Object.keys(mm.mats).length,
 });
 window.__setKey = (code, down) => { keys[code] = !!down; };
 window.__setMouse = (btn, down) => {
@@ -1022,4 +1344,5 @@ window.__killNearestBot = () => {
 window.__teleport = (x, z) => { state.x = x; state.z = z; state.y = eyeHeight(); };
 
 initThree();
+ensureMultimedia();
 frame();
