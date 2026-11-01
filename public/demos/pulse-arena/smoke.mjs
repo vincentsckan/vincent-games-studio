@@ -156,6 +156,50 @@ try {
   check('Tab scoreboard rows', sbRows >= 2, String(sbRows));
   await page.keyboard.up('Tab');
 
+
+  // —— expand-v1: multi-map, archetypes, pickups, boss, sfx ——
+  const mapsDbg = await page.evaluate(() => window.__dbg());
+  check('multi-level maps >=7', mapsDbg.mapCount >= 7, JSON.stringify(mapsDbg.maps));
+  check('maps include yard+containers+oasis', Array.isArray(mapsDbg.maps) && mapsDbg.maps.includes('yard') && mapsDbg.maps.includes('containers') && mapsDbg.maps.includes('oasis'), JSON.stringify(mapsDbg.maps));
+  check('maps include platforms+neon-alley+dunes+coliseum', mapsDbg.maps?.includes('platforms') && mapsDbg.maps?.includes('neon-alley') && mapsDbg.maps?.includes('dunes') && mapsDbg.maps?.includes('pulse-coliseum'), JSON.stringify(mapsDbg.maps));
+
+  const switched = await page.evaluate(async () => window.__loadMap('containers'));
+  check('switch map containers', !!(switched && switched.ok && switched.mapId === 'containers'), JSON.stringify(switched));
+  const afterMap = await page.evaluate(() => window.__dbg());
+  check('containers bots spawned', afterMap.botCount >= 4, String(afterMap.botCount));
+  check('new archetype E+ present', afterMap.hasNewArchetype === true, JSON.stringify(afterMap.botTags));
+  check('pickups spawned', afterMap.pickupCount >= 4, String(afterMap.pickupCount));
+
+  // fence regression still on yard
+  await page.evaluate(async () => window.__loadMap('yard'));
+  const wall2 = await page.evaluate(() => window.__forceWallEmbedProbe());
+  check('yard fence sky-clear after expand', !!(wall2 && wall2.ok), JSON.stringify(wall2));
+
+  const grab = await page.evaluate(() => {
+    // ensure pickups on yard
+    return window.__grabNearestPickup();
+  });
+  check('pickup grab works', !!(grab && grab.ok), JSON.stringify(grab));
+
+  // boss spawn smoke on coliseum
+  const bossMap = await page.evaluate(async () => window.__loadMap('pulse-coliseum'));
+  check('coliseum loads', !!(bossMap && bossMap.ok), JSON.stringify(bossMap));
+  const bossSpawn = await page.evaluate(() => {
+    const d = window.__dbg();
+    if (d.bossAlive) return { ok: true, via: 'map', bossId: d.bossId, hp: d.bossHp };
+    return window.__spawnBossNow('Boss_ContainerTitan');
+  });
+  check('boss spawn', !!(bossSpawn && bossSpawn.ok), JSON.stringify(bossSpawn));
+  const bossDmg = await page.evaluate(() => window.__damageBoss(250));
+  check('boss takes damage', !!(bossDmg && bossDmg.ok && bossDmg.hp < 1200), JSON.stringify(bossDmg));
+
+  // SFX hooks — buffers may or may not be decoded in headless; ensure API present
+  const sfx = await page.evaluate(() => {
+    const d = window.__dbg();
+    return { enableSfx: d.enableSfx, sfxReady: d.sfxReady, keys: d.sfxBuffers };
+  });
+  check('SFX enabled flag', sfx.enableSfx === true, JSON.stringify(sfx));
+
   // Exit via back link exists (don't navigate away mid-test)
   check('can exit via catalog link', backHref === '/vincent-games-studio/games');
 
