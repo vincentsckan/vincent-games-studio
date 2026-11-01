@@ -19,9 +19,13 @@ const sbBody = document.getElementById('sbBody');
 const MATCH_SECONDS = 180;
 const BOT_COUNT = 4;
 const GRAVITY = 28;
-const PLAYER_RADIUS = 0.42;
+const PLAYER_RADIUS = 0.48;
 const PLAYER_HEIGHT = 1.65;
 const CROUCH_HEIGHT = 1.05;
+/** Keep walk/sprint/slide clear of outer fence inner face (±26.4). */
+const ARENA_BOUND = 25.0;
+/** Camera / eye pad so FOV never sits inside wall/fence solids. */
+const CAM_SOLID_PAD = 0.78;
 const SLIDE_BOOST = 1.55;
 const SLIDE_DURATION = 0.55;
 const MOVE_SPEED = 9.2;
@@ -39,7 +43,7 @@ const WEAPONS = [
 const BOT_NAMES = ['戰術橘', '醫療青', '藍警', '沙漠老兵', '方塊E'];
 
 /** Multimedia handoff — prefer hard-edge transparent PNGs; JPEG chroma #00FF00 fallback. */
-const MM_VER = 'mm2';
+const MM_VER = 'mm3';
 const MM_URLS = {
   armsAtlas: [
     `./refs/atlas/fp-arms-atlas.png?v=${MM_VER}`,
@@ -60,7 +64,10 @@ const MM_URLS = {
     shotgun: [`./refs/atlas/vm-shotgun.png?v=${MM_VER}`],
     knife: [`./refs/atlas/vm-knife.png?v=${MM_VER}`],
   },
-  arenaMats: [`./refs/arena/arena-materials.jpg?v=${MM_VER}`],
+  arenaMats: [
+    `./refs/arena/arena-materials.png?v=${MM_VER}`,
+    `./refs/arena/arena-materials.jpg?v=${MM_VER}`,
+  ],
   bots: [
     [`./refs/bots/bot-a-tactical.png?v=${MM_VER}`, `./refs/bots/bot-a-tactical.jpg?v=${MM_VER}`],
     [`./refs/bots/bot-b-medic.png?v=${MM_VER}`, `./refs/bots/bot-b-medic.jpg?v=${MM_VER}`],
@@ -761,27 +768,28 @@ function randomSpawn() {
   return { x: 0, z: 14 };
 }
 
-function nudgeEyeOutOfSolids(x, y, z, pad = 0.48) {
-  for (let iter = 0; iter < 5; iter++) {
+function nudgeEyeOutOfSolids(x, y, z, pad = CAM_SOLID_PAD) {
+  // Expanded-AABB nearest-face push (handles deep embed; FOV never inside geometry)
+  for (let iter = 0; iter < 6; iter++) {
     let pushed = false;
     for (const b of solidBoxes) {
-      if (y < b.minY - 0.02 || y > b.maxY + 0.02) continue;
-      if (x <= b.minX - pad || x >= b.maxX + pad || z <= b.minZ - pad || z >= b.maxZ + pad) continue;
-      const left = Math.abs(x - (b.minX - pad));
-      const right = Math.abs(x - (b.maxX + pad));
-      const near = Math.abs(z - (b.minZ - pad));
-      const far = Math.abs(z - (b.maxZ + pad));
-      const m = Math.min(left, right, near, far);
-      if (m === left) x = b.minX - pad;
-      else if (m === right) x = b.maxX + pad;
-      else if (m === near) z = b.minZ - pad;
-      else z = b.maxZ + pad;
+      if (b.maxY < 0.35) continue;
+      if (y < b.minY - 0.05 || y > b.maxY + 0.05) continue;
+      const minX = b.minX - pad, maxX = b.maxX + pad;
+      const minZ = b.minZ - pad, maxZ = b.maxZ + pad;
+      if (x <= minX || x >= maxX || z <= minZ || z >= maxZ) continue;
+      const dl = x - minX, dr = maxX - x, db = z - minZ, dt = maxZ - z;
+      const m = Math.min(dl, dr, db, dt);
+      if (m === dl) x = minX;
+      else if (m === dr) x = maxX;
+      else if (m === db) z = minZ;
+      else z = maxZ;
       pushed = true;
     }
     if (!pushed) break;
   }
-  x = Math.max(-25.2, Math.min(25.2, x));
-  z = Math.max(-25.2, Math.min(25.2, z));
+  x = Math.max(-ARENA_BOUND, Math.min(ARENA_BOUND, x));
+  z = Math.max(-ARENA_BOUND, Math.min(ARENA_BOUND, z));
   return { x, y, z };
 }
 
@@ -812,23 +820,54 @@ function spawnBots() {
   }
 }
 
-function collideXZ(x, z, r = PLAYER_RADIUS) {
+function bodyYRange(y = state.y) {
+  const live = eyeHeight();
+  const top = y + 0.12;
+  const bottom = y - live + 0.12;
+  return { bottom, top };
+}
+
+/** True if point is inside any non-floor solid (camera/body embed check). */
+function pointInSolid(x, y, z, pad = 0.02) {
   for (const b of solidBoxes) {
-    if (b.maxY < 0.4) continue; // skip floor
-    const cx = Math.max(b.minX, Math.min(x, b.maxX));
-    const cz = Math.max(b.minZ, Math.min(z, b.maxZ));
-    const dx = x - cx, dz = z - cz;
-    const dist2 = dx * dx + dz * dz;
-    if (dist2 < r * r) {
-      const dist = Math.sqrt(dist2) || 0.0001;
-      const push = (r - dist) / dist;
-      x += dx * push;
-      z += dz * push;
-    }
+    if (b.maxY < 0.4) continue;
+    if (y < b.minY - pad || y > b.maxY + pad) continue;
+    if (x >= b.minX - pad && x <= b.maxX + pad && z >= b.minZ - pad && z <= b.maxZ + pad) return true;
   }
-  x = Math.max(-25.5, Math.min(25.5, x));
-  z = Math.max(-25.5, Math.min(25.5, z));
-  return { x, z };
+  return false;
+}
+
+/**
+ * Nearest-face push out of expanded AABB. Fixes deep embed (circle vs AABB
+ * fails when center is inside the box — the sprint/slide fence FAIL).
+ */
+function collideXZ(x, z, y = state.y, r = PLAYER_RADIUS) {
+  let nx = x, nz = z;
+  const { bottom, top } = bodyYRange(y);
+  for (let iter = 0; iter < 5; iter++) {
+    let hit = false;
+    for (const b of solidBoxes) {
+      if (b.maxY < 0.4) continue; // skip floor
+      // no vertical overlap with body capsule
+      if (top < b.minY + 0.02 || bottom > b.maxY - 0.05) continue;
+      // standing on top of this box — skip side push
+      if (bottom >= b.maxY - 0.22) continue;
+      const minX = b.minX - r, maxX = b.maxX + r;
+      const minZ = b.minZ - r, maxZ = b.maxZ + r;
+      if (nx <= minX || nx >= maxX || nz <= minZ || nz >= maxZ) continue;
+      const dl = nx - minX, dr = maxX - nx, db = nz - minZ, dt = maxZ - nz;
+      const m = Math.min(dl, dr, db, dt);
+      if (m === dl) nx = minX;
+      else if (m === dr) nx = maxX;
+      else if (m === db) nz = minZ;
+      else nz = maxZ;
+      hit = true;
+    }
+    if (!hit) break;
+  }
+  nx = Math.max(-ARENA_BOUND, Math.min(ARENA_BOUND, nx));
+  nz = Math.max(-ARENA_BOUND, Math.min(ARENA_BOUND, nz));
+  return { x: nx, z: nz };
 }
 
 function eyeHeight() {
@@ -923,9 +962,20 @@ function applyPlayerPhysics(dt) {
     state.onGround = false;
   }
 
-  const moved = collideXZ(state.x + state.vx * dt, state.z + state.vz * dt);
-  state.x = moved.x;
-  state.z = moved.z;
+  // Sub-step XZ so slide/sprint cannot tunnel into thin fence/containers
+  const stepDist = Math.hypot(state.vx * dt, state.vz * dt);
+  const steps = Math.max(1, Math.min(10, Math.ceil(stepDist / 0.22)));
+  const sdt = dt / steps;
+  for (let i = 0; i < steps; i++) {
+    const ix = state.x + state.vx * sdt;
+    const iz = state.z + state.vz * sdt;
+    const moved = collideXZ(ix, iz, state.y, PLAYER_RADIUS);
+    // Only kill the blocked axis when we actually tried to enter a solid
+    if (moved.x !== ix && Math.sign(state.vx) === Math.sign(ix - moved.x)) state.vx = 0;
+    if (moved.z !== iz && Math.sign(state.vz) === Math.sign(iz - moved.z)) state.vz = 0;
+    state.x = moved.x;
+    state.z = moved.z;
+  }
 }
 
 function dirFromAngles(y, p) {
@@ -1172,7 +1222,7 @@ function updateBots(dt) {
     }
     b.vx = wishX * speed;
     b.vz = wishZ * speed;
-    const moved = collideXZ(b.x + b.vx * dt, b.z + b.vz * dt, 0.4);
+    const moved = collideXZ(b.x + b.vx * dt, b.z + b.vz * dt, b.y, 0.4);
     b.x = moved.x; b.z = moved.z;
     b.mesh.position.set(b.x, 0, b.z);
     b.mesh.rotation.y = b.aimYaw;
@@ -1257,7 +1307,7 @@ async function startMatch() {
 function initThree() {
   scene = new THREE.Scene();
   // near 0.02 so close FP viewmodels are not clipped
-  camera = new THREE.PerspectiveCamera(75, 2, 0.02, 120);
+  camera = new THREE.PerspectiveCamera(75, 2, 0.08, 120);
   // CRITICAL: camera must be in the scene or camera.add(arms) never renders
   scene.add(camera);
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
@@ -1292,7 +1342,10 @@ function updateCamera(dt) {
   camera.fov += (targetFov - camera.fov) * Math.min(1, dt * 12);
   camera.updateProjectionMatrix();
   // Pull eye out of walls/containers so FOV never embeds in geometry
-  const eye = nudgeEyeOutOfSolids(state.x, state.y, state.z);
+  const body = collideXZ(state.x, state.z, state.y, PLAYER_RADIUS);
+  state.x = body.x;
+  state.z = body.z;
+  const eye = nudgeEyeOutOfSolids(state.x, state.y, state.z, CAM_SOLID_PAD);
   state.x = eye.x;
   state.z = eye.z;
   camera.position.set(eye.x, eye.y, eye.z);
@@ -1452,6 +1505,9 @@ window.__dbg = () => ({
   armsChildCount: armsRoot ? armsRoot.children.length : 0,
   viewmodelGun: gunParts ? gunParts.children.length : 0,
   spawnClear: isSpawnClear(state.x, state.z, 1.0),
+  eyeInSolid: pointInSolid(state.x, state.y, state.z, 0.05),
+  camPad: CAM_SOLID_PAD,
+  arenaBound: ARENA_BOUND,
 });
 window.__setKey = (code, down) => { keys[code] = !!down; };
 window.__setMouse = (btn, down) => {
@@ -1483,14 +1539,18 @@ window.__forceJumpProbe = () => {
   });
 };
 window.__forceSlideProbe = () => {
-  // Ensure grounded, accelerate, then slide with Shift
-  state.vy = 0;
+  // Open midfield — avoid cover sticky radius — then accelerate & slide
+  const c = collideXZ(0, 10, eyeHeight(), PLAYER_RADIUS);
+  state.x = c.x; state.z = c.z;
+  state.vy = 0; state.vx = 0; state.vz = 0;
   state.onGround = true;
   state.y = eyeHeight();
   state.sliding = false;
+  yaw = 0; pitch = 0;
   keys.Space = false;
   keys.KeyW = true;
   keys.ShiftLeft = false;
+  keys.KeyC = false;
   return new Promise((resolve) => {
     setTimeout(() => {
       keys.ShiftLeft = true;
@@ -1501,9 +1561,9 @@ window.__forceSlideProbe = () => {
         keys.KeyW = false;
         keys.ShiftLeft = false;
         keys.KeyC = false;
-        resolve({ ok, sliding: state.sliding, speed, onGround: state.onGround });
-      }, 180);
-    }, 500);
+        resolve({ ok, sliding: state.sliding, speed, onGround: state.onGround, x: state.x, z: state.z });
+      }, 220);
+    }, 550);
   });
 };
 window.__killNearestBot = () => {
@@ -1521,7 +1581,55 @@ window.__killNearestBot = () => {
   damageBot(best, 999, true);
   return { ok: state.kills > before, kills: state.kills, bot: best.name };
 };
-window.__teleport = (x, z) => { state.x = x; state.z = z; state.y = eyeHeight(); };
+window.__teleport = (x, z) => {
+  const c = collideXZ(x, z, eyeHeight(), PLAYER_RADIUS);
+  state.x = c.x; state.z = c.z; state.y = eyeHeight();
+  state.vx = state.vz = state.vy = 0;
+};
+/** Sprint/slide into outer fence (+Z) and assert eye never embeds. */
+window.__forceWallEmbedProbe = async () => {
+  // Place just inside +Z fence, face it, sprint then slide
+  state.x = 0; state.z = 24.2; state.y = eyeHeight();
+  state.vx = 0; state.vz = 0; state.vy = 0;
+  state.onGround = true; state.sliding = false;
+  yaw = 0; pitch = 0; // look toward +Z? forward is -Z in this game (sin/cos of yaw)
+  // wish.z -= 1 with yaw=0 → wz = -1 → move toward -Z. Face +Z wall: yaw = Math.PI
+  yaw = Math.PI;
+  keys.KeyW = true;
+  await new Promise((r) => setTimeout(r, 700));
+  const afterSprint = {
+    x: state.x, z: state.z, y: state.y,
+    inSolid: pointInSolid(state.x, state.y, state.z, 0.08),
+    beyondBound: Math.abs(state.z) > ARENA_BOUND + 0.05 || Math.abs(state.x) > ARENA_BOUND + 0.05,
+  };
+  // Slide into same wall
+  state.x = 0; state.z = 24.0; state.y = eyeHeight();
+  state.vx = 0; state.vz = MOVE_SPEED * 1.2; // toward +Z into fence
+  state.onGround = true; state.sliding = false;
+  keys.KeyW = true; keys.ShiftLeft = true; keys.KeyC = true;
+  await new Promise((r) => setTimeout(r, 550));
+  const afterSlide = {
+    x: state.x, z: state.z, y: state.y, sliding: state.sliding,
+    inSolid: pointInSolid(state.x, state.y, state.z, 0.08),
+    beyondBound: Math.abs(state.z) > ARENA_BOUND + 0.05 || Math.abs(state.x) > ARENA_BOUND + 0.05,
+  };
+  keys.KeyW = false; keys.ShiftLeft = false; keys.KeyC = false;
+  // Also ram diamond outer wall corner (fence at x=+27)
+  state.x = 24.2; state.z = 24.2; state.y = eyeHeight();
+  state.vx = MOVE_SPEED * SLIDE_BOOST; state.vz = MOVE_SPEED * SLIDE_BOOST;
+  state.onGround = true; state.sliding = true; state.slideT = SLIDE_DURATION;
+  await new Promise((r) => setTimeout(r, 500));
+  const afterCorner = {
+    x: state.x, z: state.z, y: state.y,
+    inSolid: pointInSolid(state.x, state.y, state.z, 0.08),
+    beyondBound: Math.abs(state.z) > ARENA_BOUND + 0.05 || Math.abs(state.x) > ARENA_BOUND + 0.05,
+  };
+  state.sliding = false; state.vx = state.vz = 0;
+  const ok = !afterSprint.inSolid && !afterSprint.beyondBound
+    && !afterSlide.inSolid && !afterSlide.beyondBound
+    && !afterCorner.inSolid && !afterCorner.beyondBound;
+  return { ok, afterSprint, afterSlide, afterCorner };
+};
 
 initThree();
 ensureMultimedia();
