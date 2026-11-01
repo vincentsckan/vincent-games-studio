@@ -113,6 +113,19 @@ try {
   const slide = await page.evaluate(() => window.__forceSlideProbe());
   check('slide works', !!(slide && slide.ok), JSON.stringify(slide));
 
+  // Hard FAIL: sprint/slide must not embed into outer fence / diamond wall
+  const wall = await page.evaluate(() => window.__forceWallEmbedProbe());
+  check(
+    'no fence/wall embed on sprint+slide',
+    !!(wall && wall.ok),
+    JSON.stringify(wall),
+  );
+  const eyeClear = await page.evaluate(() => {
+    const d = window.__dbg();
+    return { eyeInSolid: d.eyeInSolid, x: d.x, z: d.z, y: d.y };
+  });
+  check('eye outside solids after wall probe', eyeClear.eyeInSolid === false, JSON.stringify(eyeClear));
+
   const weapons = await page.evaluate(async () => {
     const ids = [];
     for (let i = 0; i < 5; i++) {
