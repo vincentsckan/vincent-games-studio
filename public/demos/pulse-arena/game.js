@@ -4,6 +4,7 @@
  * expand-v1 per pulse-arena-expansion-brief.md
  * Maps: yard|containers|oasis|platforms|neon-alley|dunes|pulse-coliseum
  * Bots A–J · Boss×3 · Pickups · SFX · hit-blood · death-tip · scene-VQ · perf · FENCE_R sky-clear
+ * mm6-realism: hit spark/blood spray sprites · kill bot-fall + ground decal · expand-v1-realism maps
  */
 import * as THREE from 'three';
 
@@ -105,10 +106,9 @@ const PICKUP_DEFS = {
   overheal: { id: 'overheal', nameZh: '過載心', kind: 'overheal', amount: 150, color: 0xff4466, respawn: 120 },
 };
 
-const MM_VER = 'mm5';
-const MM_EXPAND = 'expand-v1-pickupfix';
-// mm6 hook: bump when Multimedia drops more-realistic map plates / blood FX atlases
-const MM_SCENE = 'mm6-pending';
+const MM_VER = 'mm5'; // keep mm5 so shared atlases/viewmodels stay cache-stable
+const MM_EXPAND = 'expand-v1-realism';
+const MM_SCENE = 'mm6-realism';
 const PICKUP_GRAB_R = 3.5; // meters — soft tip: walk-into cubes were missing 1.16m radius
 const MM_URLS = {
   armsAtlas: [`./refs/atlas/fp-arms-atlas.png?v=${MM_VER}`, `./refs/atlas/fp-arms-atlas.jpg?v=${MM_VER}`],
@@ -160,6 +160,12 @@ const MM_URLS = {
     dunes: [`./refs/expand/maps/expand-map-dunes.jpg?v=${MM_EXPAND}`],
     'pulse-coliseum': [`./refs/expand/maps/expand-map-pulse-coliseum.jpg?v=${MM_EXPAND}`],
   },
+  fx: {
+    hitSpark: [`./refs/fx/fx-hit-spark.png?v=${MM_SCENE}`],
+    bloodSpray: [`./refs/fx/fx-blood-spray.png?v=${MM_SCENE}`],
+    bloodDecal: [`./refs/fx/fx-blood-decal.png?v=${MM_SCENE}`],
+    botFall: [`./refs/fx/fx-bot-fall.png?v=${MM_SCENE}`],
+  },
 };
 
 const mm = {
@@ -167,6 +173,7 @@ const mm = {
   botSkins: [], expandBotSkins: Object.create(null), bossSkins: Object.create(null),
   pickupIcons: Object.create(null), expandMapMoods: Object.create(null), mats: Object.create(null),
   crosshairImg: null,
+  fx: { hitSpark: null, bloodSpray: null, bloodDecal: null, botFall: null },
 };
 
 function srgbTex(tex) {
@@ -344,6 +351,14 @@ async function softLoadTex(urls) {
   } catch (_) { return null; }
 }
 
+/** FX plates keep full framing (hard-edge PNG overlays). */
+async function softLoadFx(urls) {
+  try {
+    const { img, url } = await loadImagePrefer(urls);
+    return canvasToTex(plateToCanvas(img, url));
+  } catch (_) { return null; }
+}
+
 let mmPromise = null;
 function ensureMultimedia() {
   if (!mmPromise) mmPromise = loadMultimedia();
@@ -434,8 +449,10 @@ async function loadMultimedia() {
       mm.pickupIcons[id] = await softLoadTex(urls);
     }
     for (const [id, urls] of Object.entries(MM_URLS.expandMaps)) {
-      // mm6: bump MM_EXPAND / MAP_ASSETS.expandMaps URLs when Multimedia drops realistic plates
       mm.expandMapMoods[id] = await softLoadTex(urls);
+    }
+    for (const [id, urls] of Object.entries(MM_URLS.fx)) {
+      mm.fx[id] = await softLoadFx(urls);
     }
 
     mm.ready = true;
@@ -674,6 +691,11 @@ let bulletTraces = [];
 let particles = [];
 let bloodPool = [];
 let bloodReady = false;
+const MAX_FX_SPRITES = 28;
+const MAX_FX_DECALS = 14;
+let fxSprites = [];
+let fxDecals = [];
+let fxReady = false;
 let worldRoot = null;
 let hemiLight = null;
 let sunLight = null;
@@ -939,6 +961,145 @@ function updateBlood(dt) {
     }
     p.mesh.material.opacity = Math.max(0, Math.min(0.95, p.life * 2.2));
     if (p.life <= 0) p.mesh.visible = false;
+  }
+}
+
+function ensureFxPools() {
+  if (fxReady) return;
+  fxReady = true;
+  for (let i = 0; i < MAX_FX_SPRITES; i++) {
+    const mat = new THREE.SpriteMaterial({
+      transparent: true, depthWrite: false, opacity: 0, fog: true,
+    });
+    const spr = new THREE.Sprite(mat);
+    spr.visible = false;
+    spr.frustumCulled = false;
+    spr.renderOrder = 6;
+    scene.add(spr);
+    fxSprites.push({ spr, life: 0, maxLife: 0.4, baseScale: 1, additive: false });
+  }
+  const decalGeo = new THREE.PlaneGeometry(1, 1);
+  for (let i = 0; i < MAX_FX_DECALS; i++) {
+    const mat = new THREE.MeshBasicMaterial({
+      transparent: true, depthWrite: false, opacity: 0, fog: true, side: THREE.DoubleSide,
+    });
+    const mesh = new THREE.Mesh(decalGeo, mat);
+    mesh.rotation.x = -Math.PI / 2;
+    mesh.visible = false;
+    mesh.frustumCulled = false;
+    mesh.renderOrder = 2;
+    scene.add(mesh);
+    fxDecals.push({ mesh, life: 0, maxLife: 3.2 });
+  }
+}
+
+function acquireFxSprite() {
+  ensureFxPools();
+  for (const s of fxSprites) if (s.life <= 0) return s;
+  // steal oldest
+  let worst = fxSprites[0];
+  for (const s of fxSprites) if (s.life < worst.life) worst = s;
+  return worst;
+}
+
+function acquireFxDecal() {
+  ensureFxPools();
+  for (const d of fxDecals) if (d.life <= 0) return d;
+  let worst = fxDecals[0];
+  for (const d of fxDecals) if (d.life < worst.life) worst = d;
+  return worst;
+}
+
+function spawnFxSprite(tex, x, y, z, scale, life, opts = {}) {
+  if (!tex) return;
+  const slot = acquireFxSprite();
+  const mat = slot.spr.material;
+  mat.map = tex;
+  mat.needsUpdate = true;
+  mat.opacity = opts.opacity ?? 1;
+  mat.blending = opts.additive ? THREE.AdditiveBlending : THREE.NormalBlending;
+  mat.depthTest = opts.depthTest !== false;
+  slot.spr.position.set(x, y, z);
+  slot.spr.scale.set(scale, scale, 1);
+  slot.spr.visible = true;
+  slot.life = life;
+  slot.maxLife = life;
+  slot.baseScale = scale;
+  slot.additive = !!opts.additive;
+  if (opts.grow) slot.grow = opts.grow;
+  else slot.grow = 0;
+}
+
+function spawnFxDecal(tex, x, z, size, life) {
+  if (!tex) return;
+  const slot = acquireFxDecal();
+  const mat = slot.mesh.material;
+  mat.map = tex;
+  mat.needsUpdate = true;
+  mat.opacity = 0.92;
+  slot.mesh.position.set(x, 0.03 + Math.random() * 0.01, z);
+  slot.mesh.scale.set(size, size, 1);
+  slot.mesh.rotation.z = Math.random() * Math.PI * 2;
+  slot.mesh.visible = true;
+  slot.life = life;
+  slot.maxLife = life;
+}
+
+/** Hit: spark + blood spray billboards (augments eng sphere blood). */
+function spawnHitFx(x, y, z, hitArmor = false) {
+  const sparkScale = hitArmor ? 0.55 : 0.85;
+  const sprayScale = hitArmor ? 0.9 : 1.35;
+  spawnFxSprite(mm.fx.hitSpark, x, y, z, sparkScale, 0.18 + Math.random() * 0.08, {
+    additive: true, opacity: 1, grow: 0.6,
+  });
+  spawnFxSprite(
+    mm.fx.bloodSpray,
+    x + (Math.random() - 0.5) * 0.15,
+    y + (Math.random() - 0.5) * 0.12,
+    z + (Math.random() - 0.5) * 0.15,
+    sprayScale,
+    0.28 + Math.random() * 0.12,
+    { opacity: 0.95, grow: 0.35 },
+  );
+}
+
+/** Kill: bot-fall overlay + ground blood decal. */
+function spawnKillFx(x, y, z, scaleMul = 1) {
+  spawnFxSprite(mm.fx.botFall, x, 0.95 * scaleMul, z, 1.7 * scaleMul, 0.75 + Math.random() * 0.2, {
+    opacity: 0.98, grow: 0.05,
+  });
+  spawnFxDecal(mm.fx.bloodDecal, x + (Math.random() - 0.5) * 0.35, z + (Math.random() - 0.5) * 0.35, (0.85 + Math.random() * 0.45) * scaleMul, 3.4 + Math.random() * 1.2);
+  // extra spray punch on kill
+  spawnFxSprite(mm.fx.bloodSpray, x, y, z, 1.55 * scaleMul, 0.4, { opacity: 1, grow: 0.45 });
+  spawnFxSprite(mm.fx.hitSpark, x, y + 0.15, z, 1.05 * scaleMul, 0.22, { additive: true, opacity: 1, grow: 0.7 });
+}
+
+function updateFx(dt) {
+  if (!fxReady) return;
+  for (const s of fxSprites) {
+    if (s.life <= 0) continue;
+    s.life -= dt;
+    const t = Math.max(0, s.life) / (s.maxLife || 0.3);
+    const fade = t < 0.35 ? t / 0.35 : 1;
+    s.spr.material.opacity = Math.max(0, fade * (s.additive ? 1 : 0.98));
+    const grow = 1 + (1 - t) * (s.grow || 0);
+    const sc = s.baseScale * grow;
+    s.spr.scale.set(sc, sc, 1);
+    if (s.life <= 0) {
+      s.spr.visible = false;
+      s.spr.material.opacity = 0;
+    }
+  }
+  for (const d of fxDecals) {
+    if (d.life <= 0) continue;
+    d.life -= dt;
+    const t = Math.max(0, d.life) / (d.maxLife || 3);
+    // linger then fade last 35%
+    d.mesh.material.opacity = t > 0.35 ? 0.9 : Math.max(0, (t / 0.35) * 0.9);
+    if (d.life <= 0) {
+      d.mesh.visible = false;
+      d.mesh.material.opacity = 0;
+    }
   }
 }
 
@@ -1960,8 +2121,10 @@ function damageBot(bot, dmg, fromPlayer, isWeak = false) {
     if (hitArmor) SFX.hitArmor();
     else SFX.hit();
   }
-  // eng-side blood burst (mm6 atlas swap later via spawnBloodBurst)
-  spawnBloodBurst(bot.x, 1.05 + Math.random() * 0.35, bot.z, hitArmor ? 6 : 11, hitArmor ? 0.7 : 1);
+  // eng blood spheres + mm6-realism spark/spray sprites
+  const hitY = 1.05 + Math.random() * 0.35;
+  spawnBloodBurst(bot.x, hitY, bot.z, hitArmor ? 6 : 11, hitArmor ? 0.7 : 1);
+  spawnHitFx(bot.x, hitY, bot.z, hitArmor);
   if (bot.hp <= 0) {
     bot.alive = false;
     bot.dying = true;
@@ -1973,6 +2136,7 @@ function damageBot(bot, dmg, fromPlayer, isWeak = false) {
     bot.mesh.visible = true;
     bot.vx = bot.vz = 0;
     spawnBloodBurst(bot.x, 1.2, bot.z, 16, 1.35);
+    spawnKillFx(bot.x, 1.15, bot.z, bot.arch?.scale || 1);
     SFX.death();
     if (fromPlayer) {
       state.kills += 1;
@@ -2013,7 +2177,9 @@ function damageBoss(dmg, weak) {
   flashHit();
   SFX.hit();
   SFX.boss_hurt();
-  spawnBloodBurst(boss.x, 1.4 * (boss.scale || 1), boss.z, 14, 1.4);
+  const bossHitY = 1.4 * (boss.scale || 1);
+  spawnBloodBurst(boss.x, bossHitY, boss.z, 14, 1.4);
+  spawnHitFx(boss.x, bossHitY, boss.z, false);
   syncBossHud();
   if (boss.hp <= 0) {
     boss.alive = false;
@@ -2024,6 +2190,7 @@ function damageBoss(dmg, weak) {
     boss.deathSign = 1;
     boss.mesh.visible = true;
     spawnBloodBurst(boss.x, 1.6 * (boss.scale || 1), boss.z, 22, 1.8);
+    spawnKillFx(boss.x, 1.5 * (boss.scale || 1), boss.z, boss.scale || 1.4);
     state.kills += boss.scoreBonus || 5;
     SFX.death();
     SFX.boss_death();
@@ -2630,6 +2797,7 @@ function frame() {
       camera.rotation.set(-0.45, t + Math.PI, 0);
     }
     updateBlood(dt);
+    updateFx(dt);
     renderer.render(scene, camera);
     return;
   }
@@ -2649,6 +2817,7 @@ function frame() {
   updatePickups(dt);
   updatePowers(dt);
   updateBlood(dt);
+  updateFx(dt);
   updateCamera(dt);
   drawTraces(dt);
   _hudAcc += dt;
@@ -2741,6 +2910,9 @@ window.__dbg = () => ({
   mmScene: MM_SCENE, mmExpand: MM_EXPAND, mmVer: MM_VER,
   sfxHit: !!sfxBuffers.hit, sfxHitArmor: !!sfxBuffers.hit_armor, sfxDeath: !!sfxBuffers.death,
   bloodPool: bloodPool.filter((p) => p.life > 0).length,
+  fxSprites: fxSprites.filter((p) => p.life > 0).length,
+  fxDecals: fxDecals.filter((p) => p.life > 0).length,
+  fxReady: !!(mm.fx.hitSpark && mm.fx.bloodSpray && mm.fx.bloodDecal && mm.fx.botFall),
   x: state.x, y: state.y, z: state.z,
   hp: state.hp, armor: state.armor, kills: state.kills, deaths: state.deaths, streak: state.streak,
   weapon: WEAPONS[state.weapon].id, weaponIndex: state.weapon,
