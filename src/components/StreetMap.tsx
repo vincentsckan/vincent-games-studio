@@ -11,6 +11,12 @@ type ZoneDef = {
 
 const ZONES: ZoneDef[] = [
   {
+    zoneTitle: '脈衝競技場',
+    blurb: '方塊場地，滑行跳射混戰。',
+    match: (g) => g.id === 'pulse-arena' || g.slug === 'pulse-arena',
+    fallbackSlug: 'pulse-arena',
+  },
+  {
     zoneTitle: '舊邨走廊',
     blurb: '電燈忽明忽滅，找鑰匙落樓。',
     match: (g) => g.id === 'midnight-estate' || g.slug === 'midnight-estate',
