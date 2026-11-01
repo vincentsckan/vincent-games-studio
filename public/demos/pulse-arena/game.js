@@ -98,7 +98,7 @@ const PICKUP_DEFS = {
 };
 
 const MM_VER = 'mm4';
-const MM_EXPAND = 'expand-v1-hpfix';
+const MM_EXPAND = 'expand-v1-mapfix';
 const MM_URLS = {
   armsAtlas: [`./refs/atlas/fp-arms-atlas.png?v=${MM_VER}`, `./refs/atlas/fp-arms-atlas.jpg?v=${MM_VER}`],
   weaponsAtlas: [`./refs/atlas/weapons-view-atlas.png?v=${MM_VER}`, `./refs/atlas/weapons-view-atlas.jpg?v=${MM_VER}`],
@@ -1496,12 +1496,12 @@ function makePickupMesh(def) {
   const icon = mm.pickupIcons[def.id];
   if (icon) {
     const pl = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.7, 0.7),
+      new THREE.PlaneGeometry(0.85, 0.85),
       new THREE.MeshBasicMaterial({ map: icon, transparent: true, alphaTest: 0.1, side: THREE.DoubleSide, depthWrite: false }),
     );
     pl.position.y = 0.55; g.add(pl);
   }
-  const cube = new THREE.Mesh(pooledBox(0.55, 0.55, 0.55), new THREE.MeshLambertMaterial({ color: def.color, emissive: def.color, emissiveIntensity: 0.35 }));
+  const cube = new THREE.Mesh(pooledBox(0.7, 0.7, 0.7), new THREE.MeshLambertMaterial({ color: def.color, emissive: def.color, emissiveIntensity: 0.35 }));
   cube.position.y = 0.45;
   g.add(cube);
   return g;
@@ -2148,6 +2148,33 @@ function selectMap(index) {
   });
 }
 
+/** Apply ?map= into lobby selection once (or on popstate). Never inside startMatch. */
+function applyUrlMap(force = false) {
+  if (applyUrlMap._done && !force) return applyUrlMap._applied;
+  applyUrlMap._done = true;
+  const q = new URLSearchParams(location.search).get('map');
+  if (!q) { applyUrlMap._applied = false; return false; }
+  const idx = MAPS.findIndex((m) => m.id === q);
+  if (idx < 0) { applyUrlMap._applied = false; return false; }
+  selectMap(idx);
+  applyUrlMap._applied = true;
+  return true;
+}
+applyUrlMap._done = false;
+applyUrlMap._applied = false;
+
+function goLobby() {
+  matchOver = false;
+  running = false;
+  SFX.slideStop?.();
+  document.exitPointerLock?.();
+  hud.classList.remove('on');
+  cross.classList.remove('on');
+  scoreboard.classList.remove('on');
+  if (overlay) overlay.classList.remove('hidden');
+  showPanel('panelLobby');
+}
+
 async function startMatch() {
   ensureAudio();
   loadSfxBuffers();
@@ -2163,12 +2190,7 @@ async function startMatch() {
   state.power = null; state.powerT = 0; state.dmgMul = 1; state.speedMul = 1; state.ghost = false;
   yaw = 0; pitch = 0;
   if (camera) { camera.rotation.order = 'YXZ'; camera.rotation.set(0, 0, 0); }
-  // honor ?map= query once
-  const q = new URLSearchParams(location.search).get('map');
-  if (q) {
-    const idx = MAPS.findIndex((m) => m.id === q);
-    if (idx >= 0) state.mapIndex = idx;
-  }
+  // lobby / prior selectMap owns mapIndex — do not re-read ?map= here
   buildArena(state.mapIndex);
   buildArms();
   rebuildGunMesh();
@@ -2201,7 +2223,7 @@ function initThree() {
   const fill = new THREE.DirectionalLight(0x88aaff, 0.35);
   fill.position.set(-10, 8, -12);
   scene.add(fill);
-  buildArena(0);
+  buildArena(state.mapIndex || 0);
   buildArms();
   ensureMultimedia();
   function resize() {
@@ -2310,14 +2332,23 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'Digit3') switchWeapon(2);
   if (e.code === 'Digit4') switchWeapon(3);
   if (e.code === 'Digit5') switchWeapon(4);
-  if (e.code === 'KeyN' && running) {
-    // dev: cycle map
+  if (e.code === 'KeyN') {
+    // cycle map: mid-match remaps in place; end/lobby starts the next map
     selectMap((state.mapIndex + 1) % MAPS.length);
-    buildArena(state.mapIndex);
-    spawnBots();
-    const sp = randomSpawn();
-    state.x = sp.x; state.z = sp.z; state.y = eyeHeight();
-    syncHud();
+    if (running) {
+      buildArena(state.mapIndex);
+      spawnBots();
+      const sp = randomSpawn();
+      state.x = sp.x; state.z = sp.z; state.y = eyeHeight();
+      syncHud();
+    } else {
+      // from end card or lobby — leave stuck end screen without a perfect click
+      startMatch();
+    }
+  }
+  if (e.code === 'Escape' && matchOver) {
+    e.preventDefault();
+    goLobby();
   }
   if (e.code === 'KeyE' && running && wantPointer && !pointerLocked) canvas.requestPointerLock?.();
 });
@@ -2357,10 +2388,12 @@ document.addEventListener('pointerlockchange', () => {
 
 document.getElementById('btnStart').addEventListener('click', () => { ensureAudio(); loadSfxBuffers(); startMatch(); });
 document.getElementById('btnAgain').addEventListener('click', () => startMatch());
-document.getElementById('btnLobby').addEventListener('click', () => { showPanel('panelLobby'); });
+document.getElementById('btnLobby').addEventListener('click', () => { goLobby(); });
 document.querySelectorAll('[data-map]').forEach((el) => {
   el.addEventListener('click', () => selectMap(Number(el.getAttribute('data-map'))));
 });
+applyUrlMap(false);
+window.addEventListener('popstate', () => applyUrlMap(true));
 
 // —— debug / smoke hooks ——
 window.__dbg = () => ({
@@ -2420,16 +2453,26 @@ window.__startMatch = () => startMatch();
 window.__selectMap = (i) => { selectMap(i); };
 window.__loadMap = async (idOrIndex) => {
   const idx = typeof idOrIndex === 'number' ? idOrIndex : MAPS.findIndex((m) => m.id === idOrIndex);
-  if (idx < 0) return { ok: false };
+  if (idx < 0) return { ok: false, mapId: null, botCount: 0, pickups: 0, bossId: null };
   selectMap(idx);
   if (running) {
+    // mid-match remap: rebuild arena (pickups/boss via buildArena) and keep running
     buildArena(state.mapIndex);
     spawnBots();
     const sp = randomSpawn();
     state.x = sp.x; state.z = sp.z; state.y = eyeHeight();
     syncHud();
+  } else {
+    // lobby / end card / smoke: reliably enter the selected map
+    await startMatch();
   }
-  return { ok: true, mapId: currentMap().id, botCount: bots.length, pickups: pickups.length, bossId: boss?.id || null };
+  return {
+    ok: true,
+    mapId: currentMap().id,
+    botCount: bots.length,
+    pickups: pickups.length,
+    bossId: boss?.id || currentMap().bossId || null,
+  };
 };
 window.__forceWasdProbe = (secs = 0.6) => {
   const before = { x: state.x, z: state.z };
@@ -2557,6 +2600,8 @@ window.__forceWallEmbedProbe = async () => {
   return { ok, minFenceClear: MIN_FENCE_VIEW_CLEAR, arenaBound: ARENA_BOUND, fenceInner: FENCE_INNER, afterSprint, afterSlide, afterCorner };
 };
 
+applyUrlMap(false);
 initThree();
+selectMap(state.mapIndex || 0);
 ensureMultimedia();
 frame();
