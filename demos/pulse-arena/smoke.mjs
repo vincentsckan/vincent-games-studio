@@ -60,6 +60,17 @@ try {
   check('running after start', started.running === true, JSON.stringify(started));
   check('bots spawned >=3', started.botCount >= 3, String(started.botCount));
 
+  // Multimedia textured assets (chroma viewmodels / bot skins / arena mats)
+  await page.waitForFunction(() => {
+    const d = window.__dbg();
+    return d && d.mmReady === true && d.mmWeapons >= 5 && d.mmBotSkins >= 4 && d.mmMats >= 6;
+  }, { timeout: 15000 }).catch(() => {});
+  const mm = await page.evaluate(() => window.__dbg());
+  check('multimedia ready', mm.mmReady === true, JSON.stringify({ mmReady: mm.mmReady, mmWeapons: mm.mmWeapons, mmBotSkins: mm.mmBotSkins, mmMats: mm.mmMats }));
+  check('5 weapon viewmodels', mm.mmWeapons >= 5, String(mm.mmWeapons));
+  check('4 bot skins', mm.mmBotSkins >= 4, String(mm.mmBotSkins));
+  check('arena materials', mm.mmMats >= 6, String(mm.mmMats));
+
   const wasd = await page.evaluate(() => window.__forceWasdProbe(0.7));
   check('WASD moves player', !!(wasd && wasd.ok), JSON.stringify(wasd));
 
