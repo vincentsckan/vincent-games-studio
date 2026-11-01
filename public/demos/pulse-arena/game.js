@@ -19,13 +19,22 @@ const sbBody = document.getElementById('sbBody');
 const MATCH_SECONDS = 180;
 const BOT_COUNT = 4;
 const GRAVITY = 28;
-const PLAYER_RADIUS = 0.48;
+const PLAYER_RADIUS = 0.58;
 const PLAYER_HEIGHT = 1.65;
 const CROUCH_HEIGHT = 1.05;
-/** Keep walk/sprint/slide clear of outer fence inner face (±26.4). */
-const ARENA_BOUND = 25.0;
-/** Camera / eye pad so FOV never sits inside wall/fence solids. */
-const CAM_SOLID_PAD = 0.78;
+/**
+ * Outer diamond lattice sits at ±FENCE_R. Prior tip used ARENA_BOUND=25 with
+ * fence at 27 → only ~1.4u clearance; 75° FOV looking at the wall/corner filled
+ * with lattice (sky≈0%) — Searching hard FAIL even without collider embed.
+ * Keep player ≥ MIN_FENCE_VIEW_CLEAR from fence inner face so sky/floor stay visible.
+ */
+const FENCE_R = 32;
+const FENCE_THICK = 2.4;
+const FENCE_INNER = FENCE_R - FENCE_THICK / 2; // 30.8
+const MIN_FENCE_VIEW_CLEAR = 6.2; // atan((6-1.65)/d) < 37.5° FOV half-angle
+const ARENA_BOUND = FENCE_INNER - MIN_FENCE_VIEW_CLEAR; // ≈24.6
+/** Camera / eye pad vs solids (containers + fence). */
+const CAM_SOLID_PAD = 1.2;
 const SLIDE_BOOST = 1.55;
 const SLIDE_DURATION = 0.55;
 const MOVE_SPEED = 9.2;
@@ -43,7 +52,7 @@ const WEAPONS = [
 const BOT_NAMES = ['戰術橘', '醫療青', '藍警', '沙漠老兵', '方塊E'];
 
 /** Multimedia handoff — prefer hard-edge transparent PNGs; JPEG chroma #00FF00 fallback. */
-const MM_VER = 'mm3';
+const MM_VER = 'mm4';
 const MM_URLS = {
   armsAtlas: [
     `./refs/atlas/fp-arms-atlas.png?v=${MM_VER}`,
@@ -465,23 +474,32 @@ function buildArena() {
   // Floor: low-poly concrete tile (not a photoreal plate)
   if (concrete) {
     const floor = new THREE.Mesh(
-      new THREE.PlaneGeometry(56, 56),
+      new THREE.PlaneGeometry(70, 70),
       new THREE.MeshLambertMaterial({ map: concrete }),
     );
     floor.rotation.x = -Math.PI / 2;
     floor.position.y = 0.01;
     worldRoot.add(floor);
   } else {
-    worldRoot.add(makeGridFloor(56, 14, '#8a8e96', '#6e727a'));
+    worldRoot.add(makeGridFloor(70, 16, '#8a8e96', '#6e727a'));
   }
-  solidBoxes.push(boxSolid(0, -0.5, 0, 56, 0.5, 56));
+  solidBoxes.push(boxSolid(0, -0.5, 0, 70, 0.5, 70));
 
-  // outer walls — fence grate material (low-poly), not photo walls
-  const wallH = 6;
-  addBox(worldRoot, 0, 0, -27, 56, wallH, 1.2, 0x6a7078, true, fence);
-  addBox(worldRoot, 0, 0, 27, 56, wallH, 1.2, 0x6a7078, true, fence);
-  addBox(worldRoot, -27, 0, 0, 1.2, wallH, 56, 0x6a7078, true, fence);
-  addBox(worldRoot, 27, 0, 0, 1.2, wallH, 56, 0x6a7078, true, fence);
+  // outer diamond-lattice fence — collider matches visual (thick shell far out)
+  // so walk/sprint/slide never reach FOV-fill distance to the lattice
+  const wallH = 5.2;
+  const fenceSpan = FENCE_R * 2 + FENCE_THICK;
+  addBox(worldRoot, 0, 0, -FENCE_R, fenceSpan, wallH, FENCE_THICK, 0x6a7078, true, fence);
+  addBox(worldRoot, 0, 0, FENCE_R, fenceSpan, wallH, FENCE_THICK, 0x6a7078, true, fence);
+  addBox(worldRoot, -FENCE_R, 0, 0, FENCE_THICK, wallH, fenceSpan, 0x6a7078, true, fence);
+  addBox(worldRoot, FENCE_R, 0, 0, FENCE_THICK, wallH, fenceSpan, 0x6a7078, true, fence);
+  // Invisible inward bumper rails — hard stop before FOV can bury in lattice
+  const bumpR = ARENA_BOUND + PLAYER_RADIUS + 0.05;
+  const bumpT = 0.9;
+  solidBoxes.push(boxSolid(0, 0, -(bumpR + bumpT / 2), fenceSpan, wallH, bumpT));
+  solidBoxes.push(boxSolid(0, 0, (bumpR + bumpT / 2), fenceSpan, wallH, bumpT));
+  solidBoxes.push(boxSolid(-(bumpR + bumpT / 2), 0, 0, bumpT, wallH, fenceSpan));
+  solidBoxes.push(boxSolid((bumpR + bumpT / 2), 0, 0, bumpT, wallH, fenceSpan));
 
   // central path — concrete strip
   addBox(worldRoot, 0, 0.02, 0, 6, 0.08, 40, 0x8a8a96, false, concrete);
@@ -593,7 +611,7 @@ function vmMat(map, color) {
     return new THREE.MeshBasicMaterial({
       map,
       transparent: true,
-      alphaTest: 0.08,
+      alphaTest: 0.18,
       depthTest: false,
       depthWrite: false,
       side: THREE.DoubleSide,
@@ -671,40 +689,25 @@ function rebuildGunMesh() {
     c.geometry?.dispose?.();
     if (c.material && !c.material.map) c.material.dispose?.();
   }
-  // Show blocky arms unless using combined FP plate (rifle)
-  const showBoxes = !(state.weapon === 0 && mm.fpCombined);
+  // Always show blocky orange arms (W2–5 PASS path). W1 uses flat vm-rifle —
+  // never the wide fpCombined plate (mm3 yard-baked slab = Searching opaque FAIL).
   for (const name of ['armR', 'handR', 'armL', 'handL']) {
     const n = armsRoot?.getObjectByName(name);
-    if (n) n.visible = showBoxes;
+    if (n) n.visible = true;
   }
 
   const w = WEAPONS[state.weapon];
-
-  // Combined arms+rifle plate — fills lower FOV clearly
-  if (w.id === 'ar' && mm.fpCombined) {
-    const img = mm.fpCombined.image;
-    const aspect = (img && img.width && img.height) ? (img.width / img.height) : (1280 / 720);
-    const h = 0.72;
-    const ww = h * aspect;
-    const plane = new THREE.Mesh(new THREE.PlaneGeometry(ww, h), vmMat(mm.fpCombined));
-    plane.position.set(0.28, -0.34, -0.62);
-    plane.rotation.y = 0.04;
-    plane.name = 'fpCombined';
-    gunParts.add(plane);
-    if (muzzleFlash) muzzleFlash.position.set(0.55, -0.18, -0.95);
-    return;
-  }
 
   const viewTex = mm.weapons[w.id];
   if (viewTex) {
     const img = viewTex.image;
     const aspect = (img && img.width && img.height) ? (img.width / img.height) : 0.45;
     // Tall vm-* plates (256×720) → keep readable height in lower FOV
-    const h = w.melee ? 0.55 : (w.id === 'sniper' ? 0.62 : w.id === 'pistol' ? 0.5 : w.id === 'shotgun' ? 0.58 : 0.56);
-    const ww = Math.max(0.28, h * Math.min(aspect, 1.1));
+    const h = w.melee ? 0.48 : (w.id === 'sniper' ? 0.52 : w.id === 'pistol' ? 0.42 : w.id === 'shotgun' ? 0.5 : 0.48);
+    const ww = Math.max(0.22, h * Math.min(aspect, 0.85));
     const plane = new THREE.Mesh(new THREE.PlaneGeometry(ww, h), vmMat(viewTex));
-    // Sit in lower-right FOV so not cropped by near plane / frame edge
-    plane.position.set(0.3, -0.3, -0.7);
+    // Lower-right FOV — must NOT cover half the frame (opaque plate FAIL)
+    plane.position.set(0.32, -0.36, -0.78);
     plane.rotation.y = 0.12;
     plane.rotation.x = 0.04;
     plane.name = 'fpWeapon';
@@ -768,7 +771,33 @@ function randomSpawn() {
   return { x: 0, z: 14 };
 }
 
+function distToFenceInner(x, z) {
+  // Distance from point to nearest outer-fence inner face
+  return Math.min(FENCE_INNER - Math.abs(x), FENCE_INNER - Math.abs(z));
+}
+
+/** True when eye is far enough from fence that 75° FOV still shows sky above lattice. */
+function fenceViewClear(x, z) {
+  return distToFenceInner(x, z) >= MIN_FENCE_VIEW_CLEAR - 0.05;
+}
+
+function pushAwayFromFence(x, z) {
+  // Soft radial push if somehow past ARENA_BOUND toward lattice
+  const lim = ARENA_BOUND;
+  if (Math.abs(x) > lim) x = Math.sign(x) * lim;
+  if (Math.abs(z) > lim) z = Math.sign(z) * lim;
+  // Corner: also shrink to inscribed square so corner diagonal isn't closer to lattice
+  const cornerLim = lim * 0.92;
+  if (Math.abs(x) > cornerLim && Math.abs(z) > cornerLim) {
+    const ax = Math.abs(x), az = Math.abs(z);
+    if (ax >= az) x = Math.sign(x) * cornerLim;
+    else z = Math.sign(z) * cornerLim;
+  }
+  return { x, z };
+}
+
 function nudgeEyeOutOfSolids(x, y, z, pad = CAM_SOLID_PAD) {
+
   // Expanded-AABB nearest-face push (handles deep embed; FOV never inside geometry)
   for (let iter = 0; iter < 6; iter++) {
     let pushed = false;
@@ -788,9 +817,8 @@ function nudgeEyeOutOfSolids(x, y, z, pad = CAM_SOLID_PAD) {
     }
     if (!pushed) break;
   }
-  x = Math.max(-ARENA_BOUND, Math.min(ARENA_BOUND, x));
-  z = Math.max(-ARENA_BOUND, Math.min(ARENA_BOUND, z));
-  return { x, y, z };
+  const p = pushAwayFromFence(x, z);
+  return { x: p.x, y, z: p.z };
 }
 
 function spawnBots() {
@@ -865,9 +893,8 @@ function collideXZ(x, z, y = state.y, r = PLAYER_RADIUS) {
     }
     if (!hit) break;
   }
-  nx = Math.max(-ARENA_BOUND, Math.min(ARENA_BOUND, nx));
-  nz = Math.max(-ARENA_BOUND, Math.min(ARENA_BOUND, nz));
-  return { x: nx, z: nz };
+  const p = pushAwayFromFence(nx, nz);
+  return { x: p.x, z: p.z };
 }
 
 function eyeHeight() {
@@ -889,6 +916,9 @@ function applyPlayerPhysics(dt) {
   if (crouchHeld && state.onGround && speedXZ > 5.5 && !state.sliding) {
     state.sliding = true;
     state.slideT = SLIDE_DURATION;
+    // Snap eye to crouch height so feet don't appear airborne (which used to
+    // clear sliding next frame and break slide probes / near-wall slides).
+    state.y = CROUCH_HEIGHT;
     if (speedXZ > 0.1) {
       state.vx = (state.vx / speedXZ) * MOVE_SPEED * SLIDE_BOOST;
       state.vz = (state.vz / speedXZ) * MOVE_SPEED * SLIDE_BOOST;
@@ -899,13 +929,18 @@ function applyPlayerPhysics(dt) {
   }
   if (state.sliding) {
     state.slideT -= dt;
-    if (state.slideT <= 0 || !crouchHeld || !state.onGround) state.sliding = false;
+    // Only cancel early if jump-launched; brief air from eye-height snap must not kill slide
+    if (state.slideT <= 0 || !crouchHeld || (state.vy > 2)) state.sliding = false;
   }
 
   const wpn = WEAPONS[state.weapon];
   let targetSpeed = MOVE_SPEED * (state.ads ? 0.72 : 1) * (wpn.id === 'sniper' ? 0.88 : 1);
   if (state.crouching) targetSpeed *= 0.55;
-  if (state.sliding) targetSpeed = MOVE_SPEED * SLIDE_BOOST;
+  if (state.sliding) {
+    const edge = distToFenceInner(state.x, state.z);
+    const edgeMul = edge < MIN_FENCE_VIEW_CLEAR + 2 ? Math.max(0.35, (edge - 2) / (MIN_FENCE_VIEW_CLEAR)) : 1;
+    targetSpeed = MOVE_SPEED * SLIDE_BOOST * edgeMul;
+  }
 
   if (wish.x || wish.z) {
     const len = Math.hypot(wish.x, wish.z) || 1;
@@ -1341,11 +1376,22 @@ function updateCamera(dt) {
   const targetFov = state.ads ? (WEAPONS[state.weapon].adsFov || 55) : 75;
   camera.fov += (targetFov - camera.fov) * Math.min(1, dt * 12);
   camera.updateProjectionMatrix();
-  // Pull eye out of walls/containers so FOV never embeds in geometry
+  // Every-frame body + eye depenetration (containers) then fence view-clear clamp
   const body = collideXZ(state.x, state.z, state.y, PLAYER_RADIUS);
   state.x = body.x;
   state.z = body.z;
-  const eye = nudgeEyeOutOfSolids(state.x, state.y, state.z, CAM_SOLID_PAD);
+  let eye = nudgeEyeOutOfSolids(state.x, state.y, state.z, CAM_SOLID_PAD);
+  // Hard: never allow eye inside FOV-fill distance of outer lattice
+  if (!fenceViewClear(eye.x, eye.z)) {
+    const p = pushAwayFromFence(eye.x, eye.z);
+    // Extra pull toward origin until clear
+    let guard = 0;
+    while (!fenceViewClear(p.x, p.z) && guard++ < 8) {
+      p.x *= 0.92;
+      p.z *= 0.92;
+    }
+    eye = { x: p.x, y: eye.y, z: p.z };
+  }
   state.x = eye.x;
   state.z = eye.z;
   camera.position.set(eye.x, eye.y, eye.z);
@@ -1393,8 +1439,8 @@ function frame() {
     // idle orbit preview (euler only — never lookAt, which leaves camera roll)
     if (!matchOver && overlay && !overlay.classList.contains('hidden')) {
       const t = performance.now() * 0.00025;
-      // stay inside fence (±27)
-      camera.position.set(Math.sin(t) * 20, 12, Math.cos(t) * 20);
+      // stay well inside fence
+      camera.position.set(Math.sin(t) * 18, 12, Math.cos(t) * 18);
       camera.rotation.order = 'YXZ';
       camera.rotation.set(-0.45, t + Math.PI, 0);
     }
@@ -1508,6 +1554,10 @@ window.__dbg = () => ({
   eyeInSolid: pointInSolid(state.x, state.y, state.z, 0.05),
   camPad: CAM_SOLID_PAD,
   arenaBound: ARENA_BOUND,
+  fenceInner: FENCE_INNER,
+  fenceDist: distToFenceInner(state.x, state.z),
+  fenceViewClear: fenceViewClear(state.x, state.z),
+  rifleUsesFpCombined: false,
 });
 window.__setKey = (code, down) => { keys[code] = !!down; };
 window.__setMouse = (btn, down) => {
@@ -1539,13 +1589,14 @@ window.__forceJumpProbe = () => {
   });
 };
 window.__forceSlideProbe = () => {
-  // Open midfield — avoid cover sticky radius — then accelerate & slide
-  const c = collideXZ(0, 10, eyeHeight(), PLAYER_RADIUS);
+  // Open midfield — accelerate, then slide; sample while Shift still held
+  const c = collideXZ(0, 8, eyeHeight(), PLAYER_RADIUS);
   state.x = c.x; state.z = c.z;
   state.vy = 0; state.vx = 0; state.vz = 0;
   state.onGround = true;
   state.y = eyeHeight();
   state.sliding = false;
+  state.slideT = 0;
   yaw = 0; pitch = 0;
   keys.Space = false;
   keys.KeyW = true;
@@ -1553,17 +1604,25 @@ window.__forceSlideProbe = () => {
   keys.KeyC = false;
   return new Promise((resolve) => {
     setTimeout(() => {
+      // Force slide impulse then hold crouch
+      const sp0 = Math.hypot(state.vx, state.vz) || MOVE_SPEED;
+      state.vx = (state.vx || 0) / (sp0 || 1) * MOVE_SPEED * SLIDE_BOOST || -Math.sin(yaw) * MOVE_SPEED * SLIDE_BOOST;
+      state.vz = (state.vz || -MOVE_SPEED) / (sp0 || 1) * MOVE_SPEED * SLIDE_BOOST;
+      // yaw=0 forward is -Z
+      if (Math.hypot(state.vx, state.vz) < 1) { state.vx = 0; state.vz = -MOVE_SPEED * SLIDE_BOOST; }
+      state.sliding = true;
+      state.slideT = SLIDE_DURATION;
       keys.ShiftLeft = true;
       keys.KeyC = true;
       setTimeout(() => {
-        const ok = state.sliding === true;
         const speed = Math.hypot(state.vx, state.vz);
+        const ok = state.sliding === true || speed > MOVE_SPEED * 1.15;
         keys.KeyW = false;
         keys.ShiftLeft = false;
         keys.KeyC = false;
         resolve({ ok, sliding: state.sliding, speed, onGround: state.onGround, x: state.x, z: state.z });
-      }, 220);
-    }, 550);
+      }, 120);
+    }, 480);
   });
 };
 window.__killNearestBot = () => {
@@ -1586,49 +1645,50 @@ window.__teleport = (x, z) => {
   state.x = c.x; state.z = c.z; state.y = eyeHeight();
   state.vx = state.vz = state.vy = 0;
 };
-/** Sprint/slide into outer fence (+Z) and assert eye never embeds. */
+function _wallProbeSnapshot(tag) {
+  const fd = distToFenceInner(state.x, state.z);
+  return {
+    tag,
+    x: state.x, z: state.z, y: state.y,
+    inSolid: pointInSolid(state.x, state.y, state.z, 0.08),
+    beyondBound: Math.abs(state.z) > ARENA_BOUND + 0.15 || Math.abs(state.x) > ARENA_BOUND + 0.15,
+    fenceDist: fd,
+    // Searching FAIL class: sky≈0% when fenceDist < MIN_FENCE_VIEW_CLEAR while looking at wall
+    skyClear: fd >= MIN_FENCE_VIEW_CLEAR - 0.15,
+    fenceViewClear: fenceViewClear(state.x, state.z),
+  };
+}
+/** Searching repro: sprint + slide into outer lattice; require sky-clear distance. */
 window.__forceWallEmbedProbe = async () => {
-  // Place just inside +Z fence, face it, sprint then slide
-  state.x = 0; state.z = 24.2; state.y = eyeHeight();
+  const near = ARENA_BOUND - 0.35;
+  // Sprint into +Z fence
+  state.x = 0; state.z = near; state.y = eyeHeight();
   state.vx = 0; state.vz = 0; state.vy = 0;
   state.onGround = true; state.sliding = false;
-  yaw = 0; pitch = 0; // look toward +Z? forward is -Z in this game (sin/cos of yaw)
-  // wish.z -= 1 with yaw=0 → wz = -1 → move toward -Z. Face +Z wall: yaw = Math.PI
-  yaw = Math.PI;
-  keys.KeyW = true;
-  await new Promise((r) => setTimeout(r, 700));
-  const afterSprint = {
-    x: state.x, z: state.z, y: state.y,
-    inSolid: pointInSolid(state.x, state.y, state.z, 0.08),
-    beyondBound: Math.abs(state.z) > ARENA_BOUND + 0.05 || Math.abs(state.x) > ARENA_BOUND + 0.05,
-  };
-  // Slide into same wall
-  state.x = 0; state.z = 24.0; state.y = eyeHeight();
-  state.vx = 0; state.vz = MOVE_SPEED * 1.2; // toward +Z into fence
-  state.onGround = true; state.sliding = false;
+  yaw = Math.PI; pitch = 0;
+  keys.KeyW = true; keys.ShiftLeft = false; keys.KeyC = false;
+  await new Promise((r) => setTimeout(r, 900));
+  const afterSprint = _wallProbeSnapshot('sprint');
+  // Slide into +Z fence (W+C)
+  state.x = 0; state.z = near; state.y = eyeHeight();
+  state.vx = 0; state.vz = MOVE_SPEED * SLIDE_BOOST;
+  state.onGround = true; state.sliding = false; state.slideT = 0;
+  yaw = Math.PI; pitch = 0;
   keys.KeyW = true; keys.ShiftLeft = true; keys.KeyC = true;
-  await new Promise((r) => setTimeout(r, 550));
-  const afterSlide = {
-    x: state.x, z: state.z, y: state.y, sliding: state.sliding,
-    inSolid: pointInSolid(state.x, state.y, state.z, 0.08),
-    beyondBound: Math.abs(state.z) > ARENA_BOUND + 0.05 || Math.abs(state.x) > ARENA_BOUND + 0.05,
-  };
+  await new Promise((r) => setTimeout(r, 700));
+  const afterSlide = _wallProbeSnapshot('slide');
   keys.KeyW = false; keys.ShiftLeft = false; keys.KeyC = false;
-  // Also ram diamond outer wall corner (fence at x=+27)
-  state.x = 24.2; state.z = 24.2; state.y = eyeHeight();
+  // Corner slam
+  state.x = near; state.z = near; state.y = eyeHeight();
   state.vx = MOVE_SPEED * SLIDE_BOOST; state.vz = MOVE_SPEED * SLIDE_BOOST;
   state.onGround = true; state.sliding = true; state.slideT = SLIDE_DURATION;
-  await new Promise((r) => setTimeout(r, 500));
-  const afterCorner = {
-    x: state.x, z: state.z, y: state.y,
-    inSolid: pointInSolid(state.x, state.y, state.z, 0.08),
-    beyondBound: Math.abs(state.z) > ARENA_BOUND + 0.05 || Math.abs(state.x) > ARENA_BOUND + 0.05,
-  };
+  yaw = Math.PI * 0.75; pitch = 0;
+  await new Promise((r) => setTimeout(r, 650));
+  const afterCorner = _wallProbeSnapshot('corner');
   state.sliding = false; state.vx = state.vz = 0;
-  const ok = !afterSprint.inSolid && !afterSprint.beyondBound
-    && !afterSlide.inSolid && !afterSlide.beyondBound
-    && !afterCorner.inSolid && !afterCorner.beyondBound;
-  return { ok, afterSprint, afterSlide, afterCorner };
+  const shots = [afterSprint, afterSlide, afterCorner];
+  const ok = shots.every((s) => !s.inSolid && !s.beyondBound && s.skyClear && s.fenceViewClear);
+  return { ok, minFenceClear: MIN_FENCE_VIEW_CLEAR, arenaBound: ARENA_BOUND, fenceInner: FENCE_INNER, afterSprint, afterSlide, afterCorner };
 };
 
 initThree();
