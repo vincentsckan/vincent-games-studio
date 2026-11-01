@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-HK">
+<head>
+<meta charset="utf-8"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<meta http-equiv="Pragma" content="no-cache"/>
+<meta http-equiv="Expires" content="0"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
+<title>脈衝槍戰 · Pulse Arena — Vincent Games Studio</title>
+<meta name="description" content="脈衝槍戰 · Pulse Arena — 低面數街機競技場第一人稱混戰。Vincent Games Studio 瀏覽器試玩。"/>
+<meta property="og:title" content="脈衝槍戰 · Pulse Arena"/>
+<meta property="og:description" content="方塊競技場，脈衝槍火。FFA 對 AI，滑行與跳射。"/>
+<meta property="og:type" content="website"/>
+<meta property="og:url" content="https://vincentsckan.github.io/vincent-games-studio/demos/pulse-arena/"/>
+<meta property="og:image" content="https://vincentsckan.github.io/vincent-games-studio/demos/pulse-arena/cover.jpg"/>
+<meta property="og:locale" content="zh_HK"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:title" content="脈衝槍戰 · Pulse Arena"/>
+<meta name="twitter:description" content="方塊競技場，脈衝槍火。"/>
+<meta name="twitter:image" content="https://vincentsckan.github.io/vincent-games-studio/demos/pulse-arena/cover.jpg"/>
+<link rel="image_src" href="cover.jpg"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:#1a1030;color:#fff;font-family:"Noto Sans TC",system-ui,sans-serif;overflow:hidden;touch-action:none;user-select:none}
+#wrap{position:fixed;inset:0}
+#c{display:block;width:100%;height:100%;outline:none;background:#2a1848}
+#cross{position:fixed;left:50%;top:50%;width:20px;height:20px;margin:-10px 0 0 -10px;pointer-events:none;z-index:5;opacity:0}
+#cross.on{opacity:.95}
+#cross:before,#cross:after{content:"";position:absolute;background:#ffe66d;box-shadow:0 0 8px #ffe66d}
+#cross:before{left:9px;top:0;width:2px;height:20px}
+#cross:after{left:0;top:9px;width:20px;height:2px}
+#cross.ads:before{height:28px;top:-4px}#cross.ads:after{width:28px;left:-4px}
+#hud{position:fixed;inset:0;pointer-events:none;z-index:4;opacity:0;transition:opacity .2s}
+#hud.on{opacity:1}
+#hudTop{position:absolute;left:14px;top:calc(12px + env(safe-area-inset-top));padding-right:160px;font-weight:800;text-shadow:0 2px 10px #000}
+#hudTop small{display:block;font-family:Syne,sans-serif;font-size:10px;opacity:.7;letter-spacing:.08em;margin-bottom:2px}
+#hudTop .row{display:flex;gap:14px;flex-wrap:wrap;font-size:15px}
+#hudTop .k{color:#ff6bcb}#hudTop .d{color:#ff9aa8}#hudTop .t{color:#7ef0ff}
+#killfeed{position:absolute;right:14px;top:calc(64px + env(safe-area-inset-top));text-align:right;font-size:13px;font-weight:800;text-shadow:0 2px 8px #000;max-width:46vw}
+#killfeed div{margin-bottom:4px;color:#ffe8ff;animation:kf .35s ease}
+@keyframes kf{from{opacity:0;transform:translateX(10px)}to{opacity:1;transform:none}}
+#hudBot{position:absolute;left:14px;bottom:calc(14px + env(safe-area-inset-bottom));font-weight:900;font-size:18px;text-shadow:0 2px 10px #000}
+#hudBot .hp{color:#6dff9a}#hudBot .ammo{color:#ffe66d;margin-left:16px}
+#hudBot .gun{margin-left:14px;color:#7ef0ff;font-size:14px}
+#hudBot .slide{color:#7ef0ff;margin-left:14px;opacity:0;font-size:14px}
+#hudBot .slide.on{opacity:1}
+#dmgFlash{position:fixed;inset:0;pointer-events:none;z-index:6;background:radial-gradient(ellipse at center,transparent 42%,rgba(180,0,50,.5));opacity:0;transition:opacity .12s}
+#hitmark{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);font-size:26px;font-weight:900;color:#ff6bcb;text-shadow:0 0 12px #ff6bcb;pointer-events:none;z-index:7;opacity:0}
+#scoreboard{position:fixed;inset:0;z-index:15;display:none;align-items:center;justify-content:center;background:rgba(10,6,24,.72);padding:20px}
+#scoreboard.on{display:flex}
+#scoreboard .sheet{min-width:min(420px,92vw);background:linear-gradient(165deg,#2a1848,#12102a);border:2px solid #7ef0ff66;border-radius:16px;padding:18px 16px;box-shadow:0 0 32px #7ef0ff33}
+#scoreboard h2{font-family:Syne,sans-serif;font-size:14px;letter-spacing:.14em;color:#7ef0ff;margin-bottom:10px}
+#scoreboard table{width:100%;border-collapse:collapse;font-size:14px;font-weight:800}
+#scoreboard th{text-align:left;color:#ffe66d;font-size:11px;padding:4px 6px;opacity:.85}
+#scoreboard td{padding:6px;border-top:1px solid #ffffff14}
+#scoreboard tr.you td{color:#ffe66d}
+#overlay{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:rgba(18,10,36,.9);padding:20px;overflow-y:auto}
+#overlay.hidden{display:none}
+.card{max-width:520px;width:100%;background:linear-gradient(165deg,#2e1a55,#14122e);border:1px solid #ff6bcb66;border-radius:22px;padding:26px 22px;text-align:center;box-shadow:0 0 48px #ff6bcb22;max-height:min(94vh,900px);overflow-y:auto}
+.card h1{font-family:Syne,sans-serif;font-size:clamp(1.7rem,4vw,2.3rem);font-weight:800;background:linear-gradient(90deg,#ff6bcb,#7ef0ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero{width:100%;max-height:180px;object-fit:cover;border-radius:14px;margin-top:14px;border:1px solid #7ef0ff44}
+.card .sub{margin-top:6px;color:#ffe66d;font-size:13px;letter-spacing:.06em}
+.card p{margin-top:12px;color:#d8c8e8;font-size:14px;line-height:1.55;text-align:left}
+.card .story{margin-top:14px;padding:12px 14px;border-radius:12px;background:#0c0820aa;border:1px solid #7ef0ff33;font-size:13px;line-height:1.55;color:#c8b8d8;text-align:left}
+.card .ctrls{margin-top:12px;font-size:12px;color:#a898b8;line-height:1.55;text-align:left}
+button.play{margin-top:18px;min-height:52px;padding:0 28px;border:0;border-radius:999px;background:linear-gradient(90deg,#ff6bcb,#5a4cff);color:#fff;font-weight:900;font-size:17px;cursor:pointer;font-family:inherit;box-shadow:0 8px 28px #ff6bcb55}
+button.ghost{margin-top:10px;background:transparent;border:1px solid #7ef0ff66;color:#7ef0ff;min-height:42px;padding:0 18px;border-radius:999px;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit}
+#endStats{margin-top:14px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+#endStats div{background:#fff1;border-radius:12px;padding:10px 14px;min-width:90px}
+#endStats b{display:block;font-size:1.35rem;color:#7ef0ff}
+#endStats span{font-size:11px;opacity:.7}
+.panel{display:none}.panel.on{display:block}
+#vg-back-root{position:fixed;inset:0;z-index:2147483647;pointer-events:none}
+#vg-back-root a.vg-back-btn{pointer-events:auto;position:fixed;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 14px;border-radius:14px;font:800 15px/1.2 "Noto Sans TC",system-ui,sans-serif;text-decoration:none;letter-spacing:.02em;border:2px solid #7ef0ff;background:#12081e;color:#7ef0ff;box-shadow:0 6px 28px rgba(0,0,0,.65)}
+#vg-back-tr{right:max(12px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));left:auto;bottom:auto}
+</style>
+<script type="importmap">
+{"imports":{"three":"../vendor/three.module.min.js"}}
+</script>
+</head>
+<body>
+<div id="wrap"><canvas id="c" tabindex="0"></canvas></div>
+<div id="cross"></div>
+<div id="dmgFlash"></div>
+<div id="hitmark">✕</div>
+<div id="hud">
+  <div id="hudTop">
+    <small>PULSE ARENA · 脈衝槍戰 · FPS</small>
+    <div class="row">
+      <span class="k">擊殺 <b id="kills">0</b></span>
+      <span class="d">死亡 <b id="deaths">0</b></span>
+      <span class="t">剩餘 <b id="time">3:00</b></span>
+    </div>
+  </div>
+  <div id="killfeed"></div>
+  <div id="hudBot">
+    <span class="hp">HP <b id="hp">100</b></span>
+    <span class="ammo">彈藥 <b id="ammo">30</b>/<b id="reserve">90</b></span>
+    <span class="gun" id="gunHud">脈衝步槍</span>
+    <span class="slide" id="slideTag">滑行中</span>
+  </div>
+</div>
+<div id="scoreboard" aria-hidden="true">
+  <div class="sheet">
+    <h2>SCOREBOARD · 計分板（Tab）</h2>
+    <table>
+      <thead><tr><th>#</th><th>玩家</th><th>K</th><th>D</th></tr></thead>
+      <tbody id="sbBody"></tbody>
+    </table>
+  </div>
+</div>
+<div id="overlay">
+  <div class="card">
+    <div class="panel on" id="panelLobby">
+      <h1>PULSE ARENA</h1>
+      <div class="sub">脈衝槍戰 · 低面數競技場</div>
+      <img id="lobbyHero" class="hero" src="cover.jpg" alt="Pulse Arena cover" width="1200" height="630"/>
+      <div class="story" id="lobbyStory">
+        <b style="color:#ffe66d">故事草稿（佔位）</b><br/>
+        城市被切成發光方塊之後，競技場成了唯一合法的戰場。你帶住脈衝槍械，喺貨櫃同色塊之間滑行、跳射——唔係為榮譽，係為證明自己仲喺「脈衝網」入面。
+      </div>
+      <p class="ctrls">
+        <b style="color:#7ef0ff">操作</b><br/>
+        WASD 移動 · Space 跳 · Shift / C 滑行<br/>
+        滑鼠瞄準 · 左鍵射擊 · 右鍵開鏡 · R 換彈<br/>
+        1–5 / 滾輪換槍 · Tab 計分板 · Esc 解除滑鼠鎖定
+      </p>
+      <button class="play" id="btnStart" type="button">進入競技場 START</button>
+    </div>
+    <div class="panel" id="panelEnd">
+      <h1 id="endTitle">比賽結束</h1>
+      <div class="sub" id="endSub">FFA</div>
+      <div id="endStats"></div>
+      <button class="play" id="btnAgain" type="button">再來一局</button>
+      <button class="ghost" id="btnLobby" type="button">返回大廳</button>
+    </div>
+  </div>
+</div>
+<div id="vg-back-root" aria-hidden="false">
+  <a id="vg-back-tr" class="vg-back-btn" href="/vincent-games-studio/games">← 返回目錄</a>
+</div>
+<script type="module" src="./game.js"></script>
+</body>
+</html>

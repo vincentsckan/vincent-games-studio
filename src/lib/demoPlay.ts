@@ -14,6 +14,7 @@ export const BUILD_SHA: string =
   'dev'
 
 const DEMO_SLUGS = [
+  'pulse-arena',
   'midnight-estate',
   'neon-chase',
   'rooftop-cat',

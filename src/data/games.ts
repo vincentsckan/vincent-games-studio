@@ -62,6 +62,58 @@ The studio's aim is simple: make players stop—and hit "play again."`,
 }
 
 export const games: Game[] = [
+
+  {
+    id: 'pulse-arena',
+    slug: 'pulse-arena',
+    titleZh: '脈衝槍戰',
+    titleEn: 'Pulse Arena',
+    taglineZh: '方塊競技場，脈衝槍火。',
+    taglineEn: 'Blocky arena. Pulse fire. Arcade FFA.',
+    dimension: '3D',
+    status: 'demo',
+    year: 2026,
+    genres: ['射擊', '街機', '競技'],
+    hookZh:
+      '城市被切成發光方塊之後，競技場成了唯一合法的戰場。你帶着脈衝槍械，在貨櫃與色塊之間滑行、跳射——證明自己還在「脈衝網」裡面。',
+    hookEn:
+      'After the city was sliced into glowing blocks, the arena became the only legal battlefield. Slide, jump-shot, and prove you still belong on the Pulse Net.',
+    gameplayZh:
+      '瀏覽器第一人稱競技場：WASD 移動、跳躍與滑行、五種武器（步槍／手槍／狙擊／散彈／短刃），對戰 3–5 名 AI。支援開鏡、換彈與計分板。',
+    gameplayEn:
+      'Browser FPS arena: WASD, jump, slide, five weapons (AR / pistol / sniper / shotgun / blade) vs AI bots. ADS, reload, and Tab scoreboard.',
+    features: [
+      {
+        titleZh: '低面數競技場',
+        titleEn: 'Low-poly arena',
+        bodyZh: '明亮方塊地圖，貨櫃與掩體，街機節奏。',
+        bodyEn: 'Bright blocky map with crates and cover—arcade tempo.',
+      },
+      {
+        titleZh: '滑行與跳射',
+        titleEn: 'Slide & jump-shot',
+        bodyZh: 'Shift／C 滑行，Space 跳，手感偏街機。',
+        bodyEn: 'Shift/C slide, Space jump—arcade movement feel.',
+      },
+      {
+        titleZh: '武器輪盤',
+        titleEn: 'Weapon wheel',
+        bodyZh: '1–5 或滾輪切換步槍、手槍、狙擊、散彈、短刃。',
+        bodyEn: '1–5 or scroll: rifle, pistol, sniper, shotgun, blade.',
+      },
+    ],
+    coverImage: 'covers/pulse-arena.jpg',
+    palette: {
+      from: '#1a1030',
+      via: '#5a2a7a',
+      to: '#ff6bcb',
+      accent: '#7ef0ff',
+      pattern: 'fault',
+    },
+    links: {
+      play: '/vincent-games-studio/demos/pulse-arena/',
+    },
+  },
   {
     id: 'midnight-estate',
     slug: 'midnight-estate',
