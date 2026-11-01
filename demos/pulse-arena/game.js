@@ -38,17 +38,34 @@ const WEAPONS = [
 
 const BOT_NAMES = ['戰術橘', '醫療青', '藍警', '沙漠老兵', '方塊E'];
 
-/** Multimedia handoff — chroma #00FF00 greenscreen plates. */
-const MM_VER = 'mm1';
+/** Multimedia handoff — prefer hard-edge transparent PNGs; JPEG chroma #00FF00 fallback. */
+const MM_VER = 'mm2';
 const MM_URLS = {
-  armsAtlas: `./refs/atlas/fp-arms-atlas.jpg?v=${MM_VER}`,
-  weaponsAtlas: `./refs/atlas/weapons-view-atlas.jpg?v=${MM_VER}`,
-  arenaMats: `./refs/arena/arena-materials.jpg?v=${MM_VER}`,
+  armsAtlas: [
+    `./refs/atlas/fp-arms-atlas.png?v=${MM_VER}`,
+    `./refs/atlas/fp-arms-atlas.jpg?v=${MM_VER}`,
+  ],
+  weaponsAtlas: [
+    `./refs/atlas/weapons-view-atlas.png?v=${MM_VER}`,
+    `./refs/atlas/weapons-view-atlas.jpg?v=${MM_VER}`,
+  ],
+  fpCombined: [
+    `./refs/fp/fp-viewmodel-rifle.png?v=${MM_VER}`,
+    `./refs/atlas/fp-viewmodel-rifle.png?v=${MM_VER}`,
+  ],
+  weapons: {
+    ar: [`./refs/atlas/vm-rifle.png?v=${MM_VER}`],
+    pistol: [`./refs/atlas/vm-pistol.png?v=${MM_VER}`],
+    sniper: [`./refs/atlas/vm-sniper.png?v=${MM_VER}`],
+    shotgun: [`./refs/atlas/vm-shotgun.png?v=${MM_VER}`],
+    knife: [`./refs/atlas/vm-knife.png?v=${MM_VER}`],
+  },
+  arenaMats: [`./refs/arena/arena-materials.jpg?v=${MM_VER}`],
   bots: [
-    `./refs/bots/bot-a-tactical.jpg?v=${MM_VER}`,
-    `./refs/bots/bot-b-medic.jpg?v=${MM_VER}`,
-    `./refs/bots/bot-c-police.jpg?v=${MM_VER}`,
-    `./refs/bots/bot-d-desert.jpg?v=${MM_VER}`,
+    [`./refs/bots/bot-a-tactical.png?v=${MM_VER}`, `./refs/bots/bot-a-tactical.jpg?v=${MM_VER}`],
+    [`./refs/bots/bot-b-medic.png?v=${MM_VER}`, `./refs/bots/bot-b-medic.jpg?v=${MM_VER}`],
+    [`./refs/bots/bot-c-police.png?v=${MM_VER}`, `./refs/bots/bot-c-police.jpg?v=${MM_VER}`],
+    [`./refs/bots/bot-d-desert.png?v=${MM_VER}`, `./refs/bots/bot-d-desert.jpg?v=${MM_VER}`],
   ],
 };
 
@@ -57,6 +74,7 @@ const mm = {
   armsSleeve: null,
   armsSkin: null,
   weapons: Object.create(null), // id -> THREE.Texture
+  fpCombined: null, // arms+rifle plate
   botSkins: [],
   mats: Object.create(null), // named arena material textures
 };
@@ -176,6 +194,37 @@ function loadImage(url) {
   });
 }
 
+/** Try URLs in order (PNG first). */
+async function loadImagePrefer(urls) {
+  const list = Array.isArray(urls) ? urls : [urls];
+  let lastErr;
+  for (const url of list) {
+    try {
+      const img = await loadImage(url);
+      return { img, url };
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+  throw lastErr || new Error('loadImagePrefer: empty');
+}
+
+function isPngUrl(url) {
+  return /\.png(\?|$)/i.test(url || '');
+}
+
+/** PNG with alpha → copy as-is; JPEG greenscreen → chroma key. */
+function plateToCanvas(img, url) {
+  if (isPngUrl(url)) {
+    const c = document.createElement('canvas');
+    c.width = img.naturalWidth || img.width;
+    c.height = img.naturalHeight || img.height;
+    c.getContext('2d').drawImage(img, 0, 0);
+    return c;
+  }
+  return chromaKeyToCanvas(img);
+}
+
 let mmPromise = null;
 function ensureMultimedia() {
   if (!mmPromise) mmPromise = loadMultimedia();
@@ -184,17 +233,17 @@ function ensureMultimedia() {
 
 async function loadMultimedia() {
   try {
-    const [armsImg, weapImg, matsImg, ...botImgs] = await Promise.all([
-      loadImage(MM_URLS.armsAtlas),
-      loadImage(MM_URLS.weaponsAtlas),
-      loadImage(MM_URLS.arenaMats),
-      ...MM_URLS.bots.map(loadImage),
-    ]);
+    const armsLoaded = await loadImagePrefer(MM_URLS.armsAtlas);
+    const weapAtlasLoaded = await loadImagePrefer(MM_URLS.weaponsAtlas);
+    const matsLoaded = await loadImagePrefer(MM_URLS.arenaMats);
+    const botLoaded = await Promise.all(MM_URLS.bots.map((u) => loadImagePrefer(u)));
+
+    let fpCombinedLoaded = null;
+    try { fpCombinedLoaded = await loadImagePrefer(MM_URLS.fpCombined); } catch (_) { /* optional */ }
 
     // Arms atlas 6×6 cubes — sample sleeve (orange) + skin (peach) tiles
-    const armsKeyed = chromaKeyToCanvas(armsImg);
+    const armsKeyed = plateToCanvas(armsLoaded.img, armsLoaded.url);
     const cell = armsKeyed.width / 6;
-    // (0,0) orange sleeve, (4,0) peach skin per Multimedia grid
     mm.armsSleeve = canvasToTex(cropCanvas(armsKeyed, cell * 0.12, cell * 0.12, cell * 0.76, cell * 0.76), {
       wrapS: THREE.RepeatWrapping, wrapT: THREE.RepeatWrapping, repeat: [1, 1],
     });
@@ -202,20 +251,35 @@ async function loadMultimedia() {
       wrapS: THREE.RepeatWrapping, wrapT: THREE.RepeatWrapping, repeat: [1, 1],
     });
 
-    // Weapons view atlas — 5 weapons in a row on greenscreen
-    const weapKeyed = chromaKeyToCanvas(weapImg);
+    // Per-weapon hard-edge PNGs first; atlas slice fallback
     const ids = ['ar', 'pistol', 'sniper', 'shotgun', 'knife'];
+    const weapKeyed = plateToCanvas(weapAtlasLoaded.img, weapAtlasLoaded.url);
     const sliceW = weapKeyed.width / 5;
     for (let i = 0; i < 5; i++) {
-      const slice = cropCanvas(weapKeyed, sliceW * i, 0, sliceW, weapKeyed.height);
-      const tight = tightAlphaCrop(slice, 6);
-      mm.weapons[ids[i]] = canvasToTex(tight);
+      const id = ids[i];
+      let tex = null;
+      const prefer = MM_URLS.weapons[id];
+      if (prefer) {
+        try {
+          const w = await loadImagePrefer(prefer);
+          tex = canvasToTex(tightAlphaCrop(plateToCanvas(w.img, w.url), 4));
+        } catch (_) { /* fall through */ }
+      }
+      if (!tex) {
+        const slice = cropCanvas(weapKeyed, sliceW * i, 0, sliceW, weapKeyed.height);
+        tex = canvasToTex(tightAlphaCrop(slice, 6));
+      }
+      mm.weapons[id] = tex;
     }
 
-    // Bot skins
-    mm.botSkins = botImgs.map((img) => canvasToTex(tightAlphaCrop(chromaKeyToCanvas(img), 2)));
+    if (fpCombinedLoaded) {
+      mm.fpCombined = canvasToTex(tightAlphaCrop(plateToCanvas(fpCombinedLoaded.img, fpCombinedLoaded.url), 2));
+    }
+
+    mm.botSkins = botLoaded.map(({ img, url }) => canvasToTex(tightAlphaCrop(plateToCanvas(img, url), 2)));
 
     // Arena materials 3×3 low-poly tiles (NOT photoreal wall plates)
+    const matsImg = matsLoaded.img;
     const mw = matsImg.naturalWidth || matsImg.width;
     const mh = matsImg.naturalHeight || matsImg.height;
     const cw = mw / 3, ch = mh / 3;
@@ -463,9 +527,10 @@ function buildArena() {
     addBox(worldRoot, x, 0, z, 2.4, 2.4, 2.4, col, true, tex);
   }
 
+  // Inward of outer fence (±27) and clear of ramps/platforms at ±18
   spawnPoints = [
-    { x: 0, z: 18 }, { x: 0, z: -18 }, { x: 18, z: 0 }, { x: -18, z: 0 },
-    { x: 12, z: 12 }, { x: -12, z: -12 }, { x: 12, z: -12 }, { x: -12, z: 12 },
+    { x: 0, z: 14 }, { x: 0, z: -14 }, { x: 14, z: 0 }, { x: -14, z: 0 },
+    { x: 9, z: 9 }, { x: -9, z: -9 }, { x: 9, z: -9 }, { x: -9, z: 9 },
   ];
 }
 
@@ -516,114 +581,208 @@ function makeBotMesh(skinTex, fallbackColor) {
   return g;
 }
 
+function vmMat(map, color) {
+  if (map) {
+    return new THREE.MeshBasicMaterial({
+      map,
+      transparent: true,
+      alphaTest: 0.08,
+      depthTest: false,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+    });
+  }
+  return new THREE.MeshBasicMaterial({
+    color: color ?? 0xb8c0cc,
+    depthTest: false,
+    depthWrite: false,
+  });
+}
+
 function buildArms() {
+  if (!camera) return;
   if (armsRoot) camera.remove(armsRoot);
   armsRoot = new THREE.Group();
+  armsRoot.name = 'armsRoot';
+  armsRoot.renderOrder = 1000;
+  // Keep viewmodel in lower FOV; bob applied later
+  armsRoot.position.set(0, -0.02, 0);
   camera.add(armsRoot);
 
-  // Textured FPS arms from Multimedia atlas tiles (sleeve + skin), chroma already applied
-  const sleeveMat = mm.armsSleeve
-    ? new THREE.MeshLambertMaterial({ map: mm.armsSleeve })
-    : new THREE.MeshLambertMaterial({ color: 0xe07020 });
-  const skinMat = mm.armsSkin
-    ? new THREE.MeshLambertMaterial({ map: mm.armsSkin })
-    : new THREE.MeshLambertMaterial({ color: 0xffd0a8 });
+  const sleeveMat = vmMat(mm.armsSleeve, 0xe07020);
+  const skinMat = vmMat(mm.armsSkin, 0xffd0a8);
 
-  const arm = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.22, 0.55), sleeveMat);
-  arm.position.set(0.28, -0.28, -0.45);
-  const hand = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.16, 0.18), skinMat);
-  hand.position.set(0.28, -0.32, -0.78);
-  // left support arm (subtle)
-  const armL = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.18, 0.42), sleeveMat);
-  armL.position.set(-0.12, -0.34, -0.55);
-  const handL = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.12, 0.14), skinMat);
-  handL.position.set(-0.12, -0.36, -0.8);
+  // Blocky FP arms — always visible under/ beside gun for all 5 weapons
+  const arm = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.24, 0.62), sleeveMat);
+  arm.position.set(0.34, -0.32, -0.42);
+  arm.rotation.x = 0.12;
+  arm.name = 'armR';
+  const hand = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.18, 0.2), skinMat);
+  hand.position.set(0.34, -0.36, -0.78);
+  hand.name = 'handR';
+  const armL = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.2, 0.5), sleeveMat);
+  armL.position.set(-0.18, -0.38, -0.52);
+  armL.rotation.x = 0.18;
+  armL.rotation.y = -0.1;
+  armL.name = 'armL';
+  const handL = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.14, 0.16), skinMat);
+  handL.position.set(-0.14, -0.4, -0.82);
+  handL.name = 'handL';
   armsRoot.add(arm, hand, armL, handL);
 
   gunParts = new THREE.Group();
+  gunParts.name = 'gunParts';
+  gunParts.renderOrder = 1001;
   armsRoot.add(gunParts);
   rebuildGunMesh();
 
   muzzleFlash = new THREE.Mesh(
-    new THREE.SphereGeometry(0.08, 6, 6),
-    new THREE.MeshBasicMaterial({ color: 0xffee88 }),
+    new THREE.SphereGeometry(0.1, 6, 6),
+    new THREE.MeshBasicMaterial({ color: 0xffee88, depthTest: false, depthWrite: false }),
   );
-  muzzleFlash.position.set(0.22, -0.22, -1.15);
+  muzzleFlash.position.set(0.28, -0.22, -1.05);
   muzzleFlash.visible = false;
+  muzzleFlash.renderOrder = 1002;
   armsRoot.add(muzzleFlash);
+
+  // Ensure every mesh draws above world
+  armsRoot.traverse((o) => {
+    if (o.isMesh) {
+      o.renderOrder = 1000;
+      if (o.material) {
+        o.material.depthTest = false;
+        o.material.depthWrite = false;
+      }
+    }
+  });
 }
 
 function rebuildGunMesh() {
+  if (!gunParts) return;
   while (gunParts.children.length) {
     const c = gunParts.children.pop();
     c.geometry?.dispose?.();
-    // keep shared multimedia textures; only dispose fallback materials without maps
     if (c.material && !c.material.map) c.material.dispose?.();
   }
-  const w = WEAPONS[state.weapon];
-  const viewTex = mm.weapons[w.id];
+  // Show blocky arms unless using combined FP plate (rifle)
+  const showBoxes = !(state.weapon === 0 && mm.fpCombined);
+  for (const name of ['armR', 'handR', 'armL', 'handL']) {
+    const n = armsRoot?.getObjectByName(name);
+    if (n) n.visible = showBoxes;
+  }
 
-  // Textured FPS viewmodel from weapons-view-atlas (chroma #00FF00)
+  const w = WEAPONS[state.weapon];
+
+  // Combined arms+rifle plate — fills lower FOV clearly
+  if (w.id === 'ar' && mm.fpCombined) {
+    const img = mm.fpCombined.image;
+    const aspect = (img && img.width && img.height) ? (img.width / img.height) : (1280 / 720);
+    const h = 0.72;
+    const ww = h * aspect;
+    const plane = new THREE.Mesh(new THREE.PlaneGeometry(ww, h), vmMat(mm.fpCombined));
+    plane.position.set(0.28, -0.34, -0.62);
+    plane.rotation.y = 0.04;
+    plane.name = 'fpCombined';
+    gunParts.add(plane);
+    if (muzzleFlash) muzzleFlash.position.set(0.55, -0.18, -0.95);
+    return;
+  }
+
+  const viewTex = mm.weapons[w.id];
   if (viewTex) {
     const img = viewTex.image;
-    const aspect = (img && img.width && img.height) ? (img.width / img.height) : 1.6;
-    const h = w.melee ? 0.42 : (w.id === 'sniper' ? 0.38 : w.id === 'pistol' ? 0.36 : 0.4);
-    const ww = h * aspect;
-    const plane = new THREE.Mesh(
-      new THREE.PlaneGeometry(ww, h),
-      new THREE.MeshBasicMaterial({
-        map: viewTex,
-        transparent: true,
-        alphaTest: 0.1,
-        depthTest: true,
-        depthWrite: false,
-        side: THREE.DoubleSide,
-      }),
-    );
-    plane.position.set(0.18, -0.26, -0.92);
-    plane.rotation.y = 0.08;
+    const aspect = (img && img.width && img.height) ? (img.width / img.height) : 0.45;
+    // Tall vm-* plates (256×720) → keep readable height in lower FOV
+    const h = w.melee ? 0.55 : (w.id === 'sniper' ? 0.62 : w.id === 'pistol' ? 0.5 : w.id === 'shotgun' ? 0.58 : 0.56);
+    const ww = Math.max(0.28, h * Math.min(aspect, 1.1));
+    const plane = new THREE.Mesh(new THREE.PlaneGeometry(ww, h), vmMat(viewTex));
+    // Sit in lower-right FOV so not cropped by near plane / frame edge
+    plane.position.set(0.3, -0.3, -0.7);
+    plane.rotation.y = 0.12;
+    plane.rotation.x = 0.04;
+    plane.name = 'fpWeapon';
     gunParts.add(plane);
     if (muzzleFlash) {
-      muzzleFlash.position.set(0.18 + (w.melee ? 0 : ww * 0.22), -0.22, -0.92 - h * 0.15);
+      muzzleFlash.position.set(0.3 + (w.melee ? 0 : ww * 0.15), -0.2, -0.7 - h * 0.05);
     }
     return;
   }
 
   // Solid fallback if atlas missing
-  const mat = new THREE.MeshLambertMaterial({ color: 0xb8c0cc });
-  const dark = new THREE.MeshLambertMaterial({ color: 0x222830 });
-  const accent = new THREE.MeshLambertMaterial({ color: 0xff6bcb });
+  const mat = vmMat(null, 0xb8c0cc);
+  const dark = vmMat(null, 0x222830);
+  const accent = vmMat(null, 0xff6bcb);
 
   if (w.melee) {
     const handle = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.28), dark);
-    handle.position.set(0.22, -0.28, -0.85);
+    handle.position.set(0.28, -0.3, -0.75);
     const blade = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.14, 0.42), accent);
-    blade.position.set(0.22, -0.24, -1.15);
+    blade.position.set(0.28, -0.26, -1.05);
     gunParts.add(handle, blade);
     return;
   }
 
   const bodyLen = w.id === 'sniper' ? 0.95 : w.id === 'shotgun' ? 0.7 : w.id === 'pistol' ? 0.38 : 0.72;
-  const body = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.16, bodyLen), mat);
-  body.position.set(0.22, -0.24, -0.75 - bodyLen * 0.15);
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.18, bodyLen), mat);
+  body.position.set(0.28, -0.26, -0.7 - bodyLen * 0.12);
   const mag = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.22, 0.12), dark);
-  mag.position.set(0.22, -0.4, -0.72);
+  mag.position.set(0.28, -0.42, -0.68);
   gunParts.add(body, mag);
   if (w.id === 'sniper') {
     const scope = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.28), dark);
-    scope.position.set(0.22, -0.1, -0.9);
+    scope.position.set(0.28, -0.12, -0.85);
     gunParts.add(scope);
   }
   if (w.id === 'shotgun') {
     const pump = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.22), dark);
-    pump.position.set(0.22, -0.32, -1.0);
+    pump.position.set(0.28, -0.34, -0.95);
     gunParts.add(pump);
   }
 }
 
+function isSpawnClear(x, z, r = 1.35) {
+  for (const b of solidBoxes) {
+    if (b.maxY < 0.55) continue;
+    const cx = Math.max(b.minX, Math.min(x, b.maxX));
+    const cz = Math.max(b.minZ, Math.min(z, b.maxZ));
+    const dx = x - cx, dz = z - cz;
+    if (dx * dx + dz * dz < r * r) return false;
+  }
+  return Math.abs(x) < 23.5 && Math.abs(z) < 23.5;
+}
+
 function randomSpawn() {
-  const sp = spawnPoints[Math.floor(Math.random() * spawnPoints.length)];
-  return { x: sp.x + (Math.random() - 0.5) * 1.5, z: sp.z + (Math.random() - 0.5) * 1.5 };
+  for (let i = 0; i < 28; i++) {
+    const sp = spawnPoints[Math.floor(Math.random() * spawnPoints.length)] || { x: 0, z: 14 };
+    const x = sp.x + (Math.random() - 0.5) * 1.1;
+    const z = sp.z + (Math.random() - 0.5) * 1.1;
+    if (isSpawnClear(x, z)) return { x, z };
+  }
+  return { x: 0, z: 14 };
+}
+
+function nudgeEyeOutOfSolids(x, y, z, pad = 0.48) {
+  for (let iter = 0; iter < 5; iter++) {
+    let pushed = false;
+    for (const b of solidBoxes) {
+      if (y < b.minY - 0.02 || y > b.maxY + 0.02) continue;
+      if (x <= b.minX - pad || x >= b.maxX + pad || z <= b.minZ - pad || z >= b.maxZ + pad) continue;
+      const left = Math.abs(x - (b.minX - pad));
+      const right = Math.abs(x - (b.maxX + pad));
+      const near = Math.abs(z - (b.minZ - pad));
+      const far = Math.abs(z - (b.maxZ + pad));
+      const m = Math.min(left, right, near, far);
+      if (m === left) x = b.minX - pad;
+      else if (m === right) x = b.maxX + pad;
+      else if (m === near) z = b.minZ - pad;
+      else z = b.maxZ + pad;
+      pushed = true;
+    }
+    if (!pushed) break;
+  }
+  x = Math.max(-25.2, Math.min(25.2, x));
+  z = Math.max(-25.2, Math.min(25.2, z));
+  return { x, y, z };
 }
 
 function spawnBots() {
@@ -1074,12 +1233,17 @@ async function startMatch() {
   state.reloading = false; state.sliding = false; state.ads = false;
   state.timeLeft = MATCH_SECONDS; state.invuln = 1.2;
   yaw = 0; pitch = 0;
+  if (camera) {
+    camera.rotation.order = 'YXZ';
+    camera.rotation.set(0, 0, 0);
+  }
   buildArena();
   buildArms();
   rebuildGunMesh();
   spawnBots();
   const sp = randomSpawn();
-  state.x = sp.x; state.y = PLAYER_HEIGHT; state.z = sp.z;
+  const cleared = nudgeEyeOutOfSolids(sp.x, PLAYER_HEIGHT, sp.z);
+  state.x = cleared.x; state.y = cleared.y; state.z = cleared.z;
   state.vx = state.vy = state.vz = 0;
   overlay.classList.add('hidden');
   hud.classList.add('on');
@@ -1092,7 +1256,10 @@ async function startMatch() {
 
 function initThree() {
   scene = new THREE.Scene();
-  camera = new THREE.PerspectiveCamera(75, 2, 0.05, 120);
+  // near 0.02 so close FP viewmodels are not clipped
+  camera = new THREE.PerspectiveCamera(75, 2, 0.02, 120);
+  // CRITICAL: camera must be in the scene or camera.add(arms) never renders
+  scene.add(camera);
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   clock = new THREE.Clock();
@@ -1124,18 +1291,23 @@ function updateCamera(dt) {
   const targetFov = state.ads ? (WEAPONS[state.weapon].adsFov || 55) : 75;
   camera.fov += (targetFov - camera.fov) * Math.min(1, dt * 12);
   camera.updateProjectionMatrix();
-  camera.position.set(state.x, state.y, state.z);
+  // Pull eye out of walls/containers so FOV never embeds in geometry
+  const eye = nudgeEyeOutOfSolids(state.x, state.y, state.z);
+  state.x = eye.x;
+  state.z = eye.z;
+  camera.position.set(eye.x, eye.y, eye.z);
+  // Full euler reset — idle lookAt must not leave roll/tilt into match
   camera.rotation.order = 'YXZ';
-  camera.rotation.y = yaw;
-  camera.rotation.x = pitch;
+  camera.rotation.set(pitch, yaw, 0);
 
-  // bob arms slightly
+  // bob arms slightly; keep gun in lower FOV
   if (armsRoot) {
     const moving = Math.hypot(state.vx, state.vz) > 1 && state.onGround;
     const t = performance.now() * 0.01;
-    armsRoot.position.y = moving ? Math.sin(t) * 0.012 : 0;
-    armsRoot.position.x = state.ads ? -0.08 : 0;
-    armsRoot.position.z = state.ads ? 0.08 : 0;
+    armsRoot.position.y = -0.02 + (moving ? Math.sin(t) * 0.012 : 0);
+    armsRoot.position.x = state.ads ? -0.06 : 0;
+    armsRoot.position.z = state.ads ? 0.06 : 0;
+    armsRoot.visible = true;
   }
 }
 
@@ -1165,11 +1337,13 @@ function frame() {
   requestAnimationFrame(frame);
   const dt = Math.min(0.05, clock.getDelta());
   if (!running) {
-    // idle orbit preview
+    // idle orbit preview (euler only — never lookAt, which leaves camera roll)
     if (!matchOver && overlay && !overlay.classList.contains('hidden')) {
       const t = performance.now() * 0.00025;
-      camera.position.set(Math.sin(t) * 28, 16, Math.cos(t) * 28);
-      camera.lookAt(0, 1, 0);
+      // stay inside fence (±27)
+      camera.position.set(Math.sin(t) * 20, 12, Math.cos(t) * 20);
+      camera.rotation.order = 'YXZ';
+      camera.rotation.set(-0.45, t + Math.PI, 0);
     }
     renderer.render(scene, camera);
     return;
@@ -1272,6 +1446,12 @@ window.__dbg = () => ({
   mmWeapons: Object.keys(mm.weapons).length,
   mmBotSkins: mm.botSkins.length,
   mmMats: Object.keys(mm.mats).length,
+  mmFpCombined: !!mm.fpCombined,
+  cameraInScene: !!(camera && camera.parent === scene),
+  armsVisible: !!(armsRoot && armsRoot.parent === camera && armsRoot.visible && armsRoot.children.length > 0),
+  armsChildCount: armsRoot ? armsRoot.children.length : 0,
+  viewmodelGun: gunParts ? gunParts.children.length : 0,
+  spawnClear: isSpawnClear(state.x, state.z, 1.0),
 });
 window.__setKey = (code, down) => { keys[code] = !!down; };
 window.__setMouse = (btn, down) => {
