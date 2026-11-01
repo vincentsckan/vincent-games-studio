@@ -76,6 +76,18 @@ button.ghost{margin-top:10px;background:transparent;border:1px solid #7ef0ff66;c
 #vg-back-root{position:fixed;inset:0;z-index:2147483647;pointer-events:none}
 #vg-back-root a.vg-back-btn{pointer-events:auto;position:fixed;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 14px;border-radius:14px;font:800 15px/1.2 "Noto Sans TC",system-ui,sans-serif;text-decoration:none;letter-spacing:.02em;border:2px solid #7ef0ff;background:#12081e;color:#7ef0ff;box-shadow:0 6px 28px rgba(0,0,0,.65)}
 #vg-back-tr{right:max(12px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));left:auto;bottom:auto}
+
+#bossHud{position:absolute;left:50%;top:calc(12px + env(safe-area-inset-top));transform:translateX(-50%);min-width:min(420px,70vw);text-align:center;opacity:0;pointer-events:none;z-index:5}
+#bossHud .bn{font-weight:900;font-size:14px;color:#ffe66d;text-shadow:0 2px 10px #000;margin-bottom:4px}
+#bossHud .bb{height:10px;border-radius:999px;background:#0008;border:1px solid #ff6bcb88;overflow:hidden}
+#bossHud .bb i{display:block;height:100%;background:linear-gradient(90deg,#ff6bcb,#ffe66d);width:100%}
+#buffHud{position:absolute;left:50%;bottom:calc(56px + env(safe-area-inset-bottom));transform:translateX(-50%);font-weight:800;font-size:13px;color:#7ef0ff;text-shadow:0 2px 8px #000;opacity:0;pointer-events:none}
+#levelHud{display:block;font-size:12px;color:#ffe66d;margin-top:2px}
+#flashOverlay{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:8;transition:opacity .05s}
+.mapGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:14px;text-align:left}
+.mapGrid button{appearance:none;border:1px solid #7ef0ff44;background:#0c0820aa;color:#d8c8e8;border-radius:12px;padding:10px 8px;font:800 12px/1.3 "Noto Sans TC",system-ui,sans-serif;cursor:pointer}
+.mapGrid button.sel{border-color:#ff6bcb;box-shadow:0 0 16px #ff6bcb44;color:#ffe66d}
+.mapGrid button small{display:block;opacity:.65;font-size:10px;font-weight:700;margin-top:2px}
 </style>
 <script type="importmap">
 {"imports":{"three":"../vendor/three.module.min.js"}}
@@ -85,17 +97,21 @@ button.ghost{margin-top:10px;background:transparent;border:1px solid #7ef0ff66;c
 <div id="wrap"><canvas id="c" tabindex="0"></canvas></div>
 <div id="cross"></div>
 <div id="dmgFlash"></div>
+<div id="flashOverlay"></div>
 <div id="hitmark">✕</div>
 <div id="hud">
   <div id="hudTop">
     <small>PULSE ARENA · 脈衝槍戰 · FPS</small>
+    <span id="levelHud">訓練圍場 · Yard</span>
     <div class="row">
       <span class="k">擊殺 <b id="kills">0</b></span>
       <span class="d">死亡 <b id="deaths">0</b></span>
       <span class="t">剩餘 <b id="time">3:00</b></span>
     </div>
   </div>
+  <div id="bossHud"></div>
   <div id="killfeed"></div>
+  <div id="buffHud"></div>
   <div id="hudBot">
     <span class="hp">HP <b id="hp">100</b></span>
     <span class="ammo">彈藥 <b id="ammo">30</b>/<b id="reserve">90</b></span>
@@ -120,7 +136,7 @@ button.ghost{margin-top:10px;background:transparent;border:1px solid #7ef0ff66;c
       <img id="lobbyHero" class="hero" src="cover.jpg" alt="Pulse Arena cover" width="1200" height="630"/>
       <div class="story" id="lobbyStory">
         <b style="color:#ffe66d">故事草稿（佔位）</b><br/>
-        城市被切成發光方塊之後，競技場成了唯一合法的戰場。你帶住脈衝槍械，喺貨櫃同色塊之間滑行、跳射——唔係為榮譽，係為證明自己仲喺「脈衝網」入面。
+        脈衝聯賽開通七個競技場：圍場、貨櫃峽谷、綠洲、懸浮階、霓虹巷、沙丘前哨、脈衝競技場。收集護甲／四倍／疾步，對抗游擊到盾衛，挑戰貨櫃巨擘與環階仲裁者。
       </div>
       <p class="ctrls">
         <b style="color:#7ef0ff">操作</b><br/>
@@ -128,6 +144,15 @@ button.ghost{margin-top:10px;background:transparent;border:1px solid #7ef0ff66;c
         滑鼠瞄準 · 左鍵射擊 · 右鍵開鏡 · R 換彈<br/>
         1–5 / 滾輪換槍 · Tab 計分板 · Esc 解除滑鼠鎖定
       </p>
+      <div class="mapGrid" id="mapGrid">
+      <button type="button" data-map="0" data-map-id="yard" class="sel">訓練圍場<small>Yard</small></button>
+      <button type="button" data-map="1" data-map-id="containers" class="">貨櫃峽谷<small>Containers</small></button>
+      <button type="button" data-map="2" data-map-id="oasis" class="">綠洲平台<small>Oasis</small></button>
+      <button type="button" data-map="3" data-map-id="platforms" class="">懸浮階環<small>Platforms</small></button>
+      <button type="button" data-map="4" data-map-id="neon-alley" class="">霓虹巷戰<small>Neon Alley</small></button>
+      <button type="button" data-map="5" data-map-id="dunes" class="">沙丘前哨<small>Dunes</small></button>
+      <button type="button" data-map="6" data-map-id="pulse-coliseum" class="">脈衝競技場<small>Coliseum</small></button>
+      </div>
       <button class="play" id="btnStart" type="button">進入競技場 START</button>
     </div>
     <div class="panel" id="panelEnd">
@@ -142,6 +167,6 @@ button.ghost{margin-top:10px;background:transparent;border:1px solid #7ef0ff66;c
 <div id="vg-back-root" aria-hidden="false">
   <a id="vg-back-tr" class="vg-back-btn" href="/vincent-games-studio/games">← 返回目錄</a>
 </div>
-<script type="module" src="./game.js?v=305e56c"></script>
+<script type="module" src="./game.js?v=dfe201c"></script>
 </body>
 </html>
