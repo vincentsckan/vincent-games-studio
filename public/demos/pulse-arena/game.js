@@ -47,10 +47,10 @@ const CULL_DIST = 52;
 const AUDIO_POOL_CAP = 6;
 
 const WEAPONS = [
-  { id: 'ar', nameZh: '脈衝步槍', nameEn: 'Pulse Rifle', damage: 22, firerate: 9.5, spread: 0.028, mag: 30, reserve: 90, reload: 1.45, pellets: 1, adsSpread: 0.01, adsFov: 58 },
-  { id: 'pistol', nameZh: '脈衝手槍', nameEn: 'Pulse Pistol', damage: 34, firerate: 3.6, spread: 0.018, mag: 12, reserve: 48, reload: 1.2, pellets: 1, adsSpread: 0.008, adsFov: 55 },
-  { id: 'sniper', nameZh: '脈衝狙擊', nameEn: 'Pulse Sniper', damage: 92, firerate: 1.05, spread: 0.004, mag: 5, reserve: 25, reload: 2.1, pellets: 1, adsSpread: 0.0008, adsFov: 32 },
-  { id: 'shotgun', nameZh: '方塊散彈', nameEn: 'Block Shotgun', damage: 16, firerate: 1.25, spread: 0.11, mag: 6, reserve: 24, reload: 2.2, pellets: 7, adsSpread: 0.07, adsFov: 60 },
+  { id: 'ar', nameZh: '脈衝步槍', nameEn: 'Pulse Rifle', damage: 22, firerate: 9.5, spread: 0.022, mag: 30, reserve: 90, reload: 1.45, pellets: 1, adsSpread: 0.006, adsFov: 58 },
+  { id: 'pistol', nameZh: '脈衝手槍', nameEn: 'Pulse Pistol', damage: 34, firerate: 3.6, spread: 0.012, mag: 12, reserve: 48, reload: 1.2, pellets: 1, adsSpread: 0.004, adsFov: 55 },
+  { id: 'sniper', nameZh: '脈衝狙擊', nameEn: 'Pulse Sniper', damage: 92, firerate: 1.05, spread: 0.003, mag: 5, reserve: 25, reload: 2.1, pellets: 1, adsSpread: 0.0002, adsFov: 32 },
+  { id: 'shotgun', nameZh: '方塊散彈', nameEn: 'Block Shotgun', damage: 16, firerate: 1.25, spread: 0.09, mag: 6, reserve: 24, reload: 2.2, pellets: 7, adsSpread: 0.05, adsFov: 60 },
   { id: 'knife', nameZh: '脈衝短刃', nameEn: 'Pulse Blade', damage: 55, firerate: 1 / 0.5, spread: 0, mag: 1, reserve: 99, reload: 0.05, pellets: 1, melee: true, range: 2.6, cone: 0.72, adsFov: 70 },
 ];
 
@@ -224,6 +224,7 @@ function canvasToTex(c, opts = {}) {
   tex.wrapT = opts.wrapT ?? THREE.ClampToEdgeWrapping;
   tex.magFilter = THREE.LinearFilter;
   tex.minFilter = THREE.LinearMipmapLinearFilter;
+  tex.anisotropy = renderer ? Math.min(4, renderer.capabilities.getMaxAnisotropy()) : 4;
   if (opts.repeat) tex.repeat.set(opts.repeat[0], opts.repeat[1]);
   return srgbTex(tex);
 }
@@ -2245,7 +2246,11 @@ function initThree() {
   camera = new THREE.PerspectiveCamera(75, 2, 0.08, 120);
   scene.add(camera);
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2.0));
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.0;
+  if (renderer.outputColorSpace !== undefined) renderer.outputColorSpace = THREE.SRGBColorSpace;
+  else if (renderer.outputEncoding !== undefined) renderer.outputEncoding = THREE.sRGBEncoding;
   clock = new THREE.Clock();
   const hemi = new THREE.HemisphereLight(0xffe8ff, 0x406040, 0.95);
   scene.add(hemi);
