@@ -70,6 +70,32 @@ try {
   check('5 weapon viewmodels', mm.mmWeapons >= 5, String(mm.mmWeapons));
   check('4 bot skins', mm.mmBotSkins >= 4, String(mm.mmBotSkins));
   check('arena materials', mm.mmMats >= 6, String(mm.mmMats));
+  check('camera in scene', mm.cameraInScene === true, JSON.stringify({ cameraInScene: mm.cameraInScene }));
+  check('viewmodel arms visible', mm.armsVisible === true && mm.armsChildCount >= 2, JSON.stringify({ armsVisible: mm.armsVisible, armsChildCount: mm.armsChildCount, viewmodelGun: mm.viewmodelGun }));
+  check('weapon viewmesh present', mm.viewmodelGun >= 1, String(mm.viewmodelGun));
+  check('spawn clear of geometry', mm.spawnClear === true, JSON.stringify({ x: mm.x, z: mm.z, spawnClear: mm.spawnClear }));
+
+  // Cycle all 5 weapons — each must keep arms + gun mesh
+  const vmCycle = await page.evaluate(() => {
+    const out = [];
+    for (let i = 0; i < 5; i++) {
+      window.__switchWeapon(i);
+      const d = window.__dbg();
+      out.push({
+        weapon: d.weapon,
+        armsVisible: d.armsVisible,
+        armsChildCount: d.armsChildCount,
+        viewmodelGun: d.viewmodelGun,
+      });
+    }
+    window.__switchWeapon(0);
+    return out;
+  });
+  check(
+    'all 5 weapons have viewmodel',
+    vmCycle.length === 5 && vmCycle.every((v) => v.armsVisible && v.viewmodelGun >= 1),
+    JSON.stringify(vmCycle),
+  );
 
   const wasd = await page.evaluate(() => window.__forceWasdProbe(0.7));
   check('WASD moves player', !!(wasd && wasd.ok), JSON.stringify(wasd));
