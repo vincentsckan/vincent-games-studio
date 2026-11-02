@@ -7,6 +7,7 @@
  * mm6-realism: hit spark/blood spray sprites · kill bot-fall + ground decal · expand-v1-realism maps
  * expand-v1-weaponswitch: instant 1–5 / wheel / Q firearm switch · per-slot ammo bags · HUD strip · recoil kick
  * mm7-weapon-switch: HUD hotbar icons + slot-selected frame (ui-weapon-*); vm-* FP plates unchanged
+ * mm8-crosshair: always-visible center reticle (fix inline opacity:0 overriding #cross.on) + thicker cyan/yellow plate
  */
 import * as THREE from 'three';
 
@@ -109,7 +110,7 @@ const PICKUP_DEFS = {
   overheal: { id: 'overheal', nameZh: '過載心', kind: 'overheal', amount: 150, color: 0xff4466, respawn: 120 },
 };
 
-const MM_VER = 'mm7'; // mm7-weapon-switch hotbar/highlight; vm-* / atlas paths unchanged (query bust only)
+const MM_VER = 'mm8'; // mm8-crosshair reticle + keep mm7 hotbar query bust; vm-* / atlas paths unchanged
 const MM_EXPAND = 'expand-v1-weaponswitch'; // was expand-v1-realism; map/bot/pickup plates still resolve via same files
 const MM_SCENE = 'mm6-realism'; // keep b4c9b88 hit/FX sprites
 const PICKUP_GRAB_R = 3.5; // meters — soft tip: walk-into cubes were missing 1.16m radius
@@ -118,6 +119,7 @@ const MM_URLS = {
   weaponsAtlas: [`./refs/atlas/weapons-view-atlas.png?v=${MM_VER}`, `./refs/atlas/weapons-view-atlas.jpg?v=${MM_VER}`],
   fpCombined: [`./refs/fp/fp-viewmodel-rifle.png?v=${MM_VER}`, `./refs/atlas/fp-viewmodel-rifle.png?v=${MM_VER}`],
   uiCrosshair: [`./refs/ui/ui-crosshair.png?v=${MM_VER}`],
+  uiCrosshairAds: [`./refs/ui/ui-crosshair-ads.png?v=${MM_VER}`],
   uiWeaponIcons: {
     ar: `./refs/ui/ui-weapon-ar.png?v=${MM_VER}`,
     pistol: `./refs/ui/ui-weapon-pistol.png?v=${MM_VER}`,
@@ -185,6 +187,7 @@ const mm = {
   botSkins: [], expandBotSkins: Object.create(null), bossSkins: Object.create(null),
   pickupIcons: Object.create(null), expandMapMoods: Object.create(null), mats: Object.create(null),
   crosshairImg: null,
+  crosshairAdsImg: null,
   fx: { hitSpark: null, bloodSpray: null, bloodDecal: null, botFall: null },
 };
 
@@ -322,25 +325,38 @@ function isPngUrl(url) {
   return /\.png(\?|$)/i.test(url || '');
 }
 
-function applyCrosshairImage(canvas) {
+function applyCrosshairImage(canvas, adsCanvas) {
   if (!canvas) return;
   const dataUrl = canvas.toDataURL();
+  const adsUrl = adsCanvas ? adsCanvas.toDataURL() : dataUrl;
+  // Do NOT set opacity here — inline opacity overrides #cross.on and hid the reticle (mm5–mm7 bug).
   cross.style.cssText = `
     position: fixed;
     left: 50%;
     top: 50%;
-    width: 32px;
-    height: 32px;
-    margin: -16px 0 0 -16px;
+    width: 44px;
+    height: 44px;
+    margin: -22px 0 0 -22px;
     pointer-events: none;
-    z-index: 5;
-    opacity: 0;
+    z-index: 6;
     background: url(${dataUrl}) center/contain no-repeat;
   `;
-  const style = document.createElement('style');
-  style.textContent = '#cross.img-crosshair::before, #cross.img-crosshair::after { display: none; }';
-  document.head.appendChild(style);
+  cross.dataset.crossUrl = dataUrl;
+  cross.dataset.crossAdsUrl = adsUrl;
+  if (!document.getElementById('cross-img-style')) {
+    const style = document.createElement('style');
+    style.id = 'cross-img-style';
+    style.textContent = '#cross.img-crosshair::before, #cross.img-crosshair::after { display: none; }';
+    document.head.appendChild(style);
+  }
   cross.classList.add('img-crosshair');
+  syncCrosshairPlate();
+}
+
+function syncCrosshairPlate() {
+  if (!cross.classList.contains('img-crosshair')) return;
+  const url = (state.ads && cross.dataset.crossAdsUrl) ? cross.dataset.crossAdsUrl : cross.dataset.crossUrl;
+  if (url) cross.style.backgroundImage = `url(${url})`;
 }
 
 /** PNG with alpha → copy as-is; JPEG greenscreen → chroma key. */
