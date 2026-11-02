@@ -20,6 +20,9 @@ const DEMO_SLUGS = [
   'rooftop-cat',
   'tea-rush',
   'mist-harbor-lights',
+  'faultline-walker',
+  'paper-crane-epoch',
+  'echoes-of-void',
 ] as const
 
 export type DemoSlug = (typeof DEMO_SLUGS)[number]

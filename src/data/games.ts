@@ -417,7 +417,7 @@ export const games: Game[] = [
       pattern: 'fault',
     },
     links: {
-      play: '#play-demo',
+      play: '/vincent-games-studio/demos/faultline-walker/',
       steam: 'https://store.steampowered.com',
       itch: 'https://itch.io',
     },
@@ -430,7 +430,7 @@ export const games: Game[] = [
     taglineZh: '摺一隻鶴，改寫一個時代。',
     taglineEn: 'Fold one crane. Rewrite an age.',
     dimension: '2D',
-    status: 'coming-soon',
+    status: 'demo',
     year: 2026,
     genres: ['解謎', '奇幻', '溫柔'],
     hookZh:
@@ -470,6 +470,7 @@ export const games: Game[] = [
       pattern: 'crane',
     },
     links: {
+      play: '/vincent-games-studio/demos/paper-crane-epoch/',
       itch: 'https://itch.io',
       steam: 'https://store.steampowered.com',
     },
@@ -522,8 +523,7 @@ export const games: Game[] = [
       pattern: 'void',
     },
     links: {
-      play: '#play-demo',
-      download: '#download',
+      play: '/vincent-games-studio/demos/echoes-of-void/',
       steam: 'https://store.steampowered.com',
       itch: 'https://itch.io',
     },
