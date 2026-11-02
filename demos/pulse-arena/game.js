@@ -8,6 +8,7 @@
  * expand-v1-weaponswitch: instant 1–5 / wheel / Q firearm switch · per-slot ammo bags · HUD strip · recoil kick
  * mm7-weapon-switch: HUD hotbar icons + slot-selected frame (ui-weapon-*); vm-* FP plates unchanged
  * mm8-crosshair: always-visible center reticle (fix inline opacity:0 overriding #cross.on) + thicker cyan/yellow plate
+ * expand-v1-timer: per-map countdown timeLimit · HUD 剩餘 urgent/critical · time-up → 「時間到」 end card · map change resets timer
  */
 import * as THREE from 'three';
 
@@ -31,7 +32,11 @@ const ENABLE_BOSSES = true;
 const ENABLE_PICKUPS = true;
 const ENABLE_SFX = true;
 
-const MATCH_SECONDS = 240;
+/** Fallback if a map omits timeLimit (seconds). Prefer per-map values below. */
+const DEFAULT_MATCH_SECONDS = 120;
+/** @deprecated alias — use mapTimeLimit() / map.timeLimit */
+const MATCH_SECONDS = DEFAULT_MATCH_SECONDS;
+
 const GRAVITY = 28;
 const PLAYER_RADIUS = 0.58;
 const PLAYER_HEIGHT = 1.65;
@@ -61,22 +66,24 @@ const WEAPONS = [
 
 const MAPS = [
   // sky/fog tuned for grounded arcade (Veck-like), not Harbor photoreal
-  { id: 'yard', nameZh: '訓練圍場', nameEn: 'Yard', fragLimit: 20,
+  // timeLimit (s): short arcade clocks so rounds always end; early win via fragLimit / boss still OK
+  // yard/alley/oasis ~2m · containers/dunes/platforms ~2.5m · coliseum boss ~3m
+  { id: 'yard', nameZh: '訓練圍場', nameEn: 'Yard', fragLimit: 20, timeLimit: 120,
   bossAlive: false, sky: 0x87b8e0, fog: 0xb0c8d8, fogNear: 28, fogFar: 82, botCount: 5, bossId: null, mode: 'ffa',
   hemiTop: 0xfff2e8, hemiGround: 0x4a5548, sun: 0xfff0d0, sunI: 1.15, hemiI: 0.72, fillI: 0.28 },
-  { id: 'containers', nameZh: '貨櫃峽谷', nameEn: 'Containers', fragLimit: 25, sky: 0x6aa0c8, fog: 0x8eb0c4, fogNear: 26, fogFar: 78, botCount: 6, bossId: 'Boss_ContainerTitan', mode: 'ffa',
+  { id: 'containers', nameZh: '貨櫃峽谷', nameEn: 'Containers', fragLimit: 25, timeLimit: 150, sky: 0x6aa0c8, fog: 0x8eb0c4, fogNear: 26, fogFar: 78, botCount: 6, bossId: 'Boss_ContainerTitan', mode: 'ffa',
   hemiTop: 0xe8f0ff, hemiGround: 0x3a4540, sun: 0xffe8c8, sunI: 1.2, hemiI: 0.68, fillI: 0.32 },
-  { id: 'oasis', nameZh: '綠洲平台', nameEn: 'Oasis', fragLimit: 20,
+  { id: 'oasis', nameZh: '綠洲平台', nameEn: 'Oasis', fragLimit: 20, timeLimit: 120,
   bossAlive: false, sky: 0xf0c878, fog: 0xe8d0a0, fogNear: 30, fogFar: 88, botCount: 5, bossId: null, mode: 'ffa',
   hemiTop: 0xffe8c0, hemiGround: 0x6a6040, sun: 0xffd890, sunI: 1.25, hemiI: 0.7, fillI: 0.22 },
-  { id: 'platforms', nameZh: '懸浮階環', nameEn: 'Platforms', fragLimit: 30, sky: 0x7a9ad0, fog: 0x9ab0d8, fogNear: 24, fogFar: 80, botCount: 6, bossId: 'Boss_RingArbiter', mode: 'ffa',
+  { id: 'platforms', nameZh: '懸浮階環', nameEn: 'Platforms', fragLimit: 30, timeLimit: 150, sky: 0x7a9ad0, fog: 0x9ab0d8, fogNear: 24, fogFar: 80, botCount: 6, bossId: 'Boss_RingArbiter', mode: 'ffa',
   hemiTop: 0xe0e8ff, hemiGround: 0x384858, sun: 0xf0f4ff, sunI: 1.05, hemiI: 0.75, fillI: 0.4 },
-  { id: 'neon-alley', nameZh: '霓虹巷戰', nameEn: 'Neon Alley', fragLimit: 20,
+  { id: 'neon-alley', nameZh: '霓虹巷戰', nameEn: 'Neon Alley', fragLimit: 20, timeLimit: 120,
   bossAlive: false, sky: 0x1a0c30, fog: 0x2a1450, fogNear: 18, fogFar: 70, botCount: 6, bossId: null, mode: 'ffa',
   hemiTop: 0x8060b0, hemiGround: 0x201028, sun: 0xff66cc, sunI: 0.55, hemiI: 0.55, fillI: 0.55 },
-  { id: 'dunes', nameZh: '沙丘前哨', nameEn: 'Dunes', fragLimit: 25, sky: 0xe0b868, fog: 0xd0b070, fogNear: 30, fogFar: 90, botCount: 6, bossId: 'Boss_DuneBeacon', mode: 'ffa',
+  { id: 'dunes', nameZh: '沙丘前哨', nameEn: 'Dunes', fragLimit: 25, timeLimit: 150, sky: 0xe0b868, fog: 0xd0b070, fogNear: 30, fogFar: 90, botCount: 6, bossId: 'Boss_DuneBeacon', mode: 'ffa',
   hemiTop: 0xffe0b0, hemiGround: 0x8a7040, sun: 0xffd080, sunI: 1.3, hemiI: 0.65, fillI: 0.2 },
-  { id: 'pulse-coliseum', nameZh: '脈衝競技場', nameEn: 'Pulse Coliseum', fragLimit: 15, sky: 0x141028, fog: 0x221838, fogNear: 20, fogFar: 72, botCount: 4, bossId: 'Boss_RingArbiter', mode: 'boss',
+  { id: 'pulse-coliseum', nameZh: '脈衝競技場', nameEn: 'Pulse Coliseum', fragLimit: 15, timeLimit: 180, sky: 0x141028, fog: 0x221838, fogNear: 20, fogFar: 72, botCount: 4, bossId: 'Boss_RingArbiter', mode: 'boss',
   hemiTop: 0xa080c0, hemiGround: 0x181020, sun: 0xff88cc, sunI: 0.7, hemiI: 0.6, fillI: 0.45 },
 ];
 
@@ -111,7 +118,7 @@ const PICKUP_DEFS = {
 };
 
 const MM_VER = 'mm8'; // mm8-crosshair reticle + keep mm7 hotbar query bust; vm-* / atlas paths unchanged
-const MM_EXPAND = 'expand-v1-weaponswitch'; // was expand-v1-realism; map/bot/pickup plates still resolve via same files
+const MM_EXPAND = 'expand-v1-timer'; // was expand-v1-weaponswitch; map/bot/pickup plates still resolve via same files
 const MM_SCENE = 'mm6-realism'; // keep b4c9b88 hit/FX sprites
 const PICKUP_GRAB_R = 3.5; // meters — soft tip: walk-into cubes were missing 1.16m radius
 const MM_URLS = {
@@ -698,7 +705,7 @@ const state = {
   weapon: 0, ammo: 30, reserve: 90,
   shootCd: 0, reloading: false, reloadT: 0,
   onGround: true, crouching: false, sliding: false, slideT: 0,
-  ads: false, invuln: 0, timeLeft: MATCH_SECONDS,
+  ads: false, invuln: 0, timeLeft: DEFAULT_MATCH_SECONDS,
   name: '你',
   mapIndex: 0,
   power: null, powerT: 0,
@@ -784,6 +791,14 @@ function flashDmg() {
   setTimeout(() => { dmgFlash.style.opacity = '0'; }, 120);
 }
 function currentMap() { return MAPS[state.mapIndex] || MAPS[0]; }
+function mapTimeLimit(map = currentMap()) {
+  const t = Number(map && map.timeLimit);
+  return Number.isFinite(t) && t > 0 ? t : DEFAULT_MATCH_SECONDS;
+}
+function resetMatchClock(map = currentMap()) {
+  state.timeLeft = mapTimeLimit(map);
+  markHud();
+}
 
 function syncBuffHud() {
   if (!buffHud) return;
@@ -823,9 +838,18 @@ function syncHud() {
   document.getElementById('deaths').textContent = String(state.deaths);
   document.getElementById('gunHud').textContent = WEAPONS[state.weapon].nameZh;
   syncWeaponStrip();
-  const m = Math.floor(state.timeLeft / 60);
-  const s = Math.floor(state.timeLeft % 60);
-  document.getElementById('time').textContent = `${m}:${String(s).padStart(2, '0')}`;
+  const tl = Math.max(0, state.timeLeft);
+  const m = Math.floor(tl / 60);
+  const s = Math.floor(tl % 60);
+  const timeEl = document.getElementById('time');
+  if (timeEl) {
+    timeEl.textContent = `${m}:${String(s).padStart(2, '0')}`;
+    const host = timeEl.closest('.t') || timeEl.parentElement;
+    if (host) {
+      host.classList.toggle('urgent', tl <= 30 && tl > 10);
+      host.classList.toggle('critical', tl <= 10);
+    }
+  }
   slideTag.classList.toggle('on', state.sliding);
   cross.classList.toggle('ads', state.ads);
   const map = currentMap();
@@ -1416,6 +1440,8 @@ function buildArena(mapIndex = 0) {
   const map = MAPS[mapIndex] || MAPS[0];
   state.mapIndex = mapIndex;
   state.fragLimit = map.fragLimit;
+  // every map load / KeyN remap / __loadMap resets the per-map countdown
+  resetMatchClock(map);
   applyMapAtmosphere(map);
   const builders = {
     yard: buildArenaYard,
@@ -2726,9 +2752,10 @@ function endMatch(won) {
   showPanel('panelEnd');
   document.getElementById('endTitle').textContent = won ? '勝利！' : '時間到';
   const map = currentMap();
+  const lim = mapTimeLimit(map);
   document.getElementById('endSub').textContent = won
     ? (map.mode === 'boss' ? `擊敗 ${boss?.nameZh || 'Boss'}` : `先達 ${state.fragLimit} 殺 · ${map.nameZh}`)
-    : `${map.nameZh} FFA 結束`;
+    : `${map.nameZh} · 時限 ${Math.round(lim / 60)}:${String(Math.round(lim % 60)).padStart(2, '0')} 結束`;
   const stats = document.getElementById('endStats');
   stats.innerHTML = `
     <div><b>${state.kills}</b><span>擊殺</span></div>
@@ -2785,7 +2812,7 @@ async function startMatch() {
   state.weapon = 0; loadWeaponBag(0);
   state.reloading = false; state.reloadT = 0; state.shootCd = 0;
   state.sliding = false; state.ads = false; state.recoilKick = 0; state.switchFlashT = 0;
-  state.timeLeft = MATCH_SECONDS; state.invuln = 1.2;
+  resetMatchClock(currentMap()); state.invuln = 1.2;
   state.power = null; state.powerT = 0; state.dmgMul = 1; state.speedMul = 1; state.ghost = false;
   yaw = 0; pitch = 0;
   if (camera) { camera.rotation.order = 'YXZ'; camera.rotation.set(0, 0, 0); }
@@ -3009,6 +3036,10 @@ document.addEventListener('pointerlockchange', () => {
 
 document.getElementById('btnStart').addEventListener('click', () => { ensureAudio(); loadSfxBuffers(); startMatch(); });
 document.getElementById('btnAgain').addEventListener('click', () => startMatch());
+document.getElementById('btnNext')?.addEventListener('click', () => {
+  selectMap((state.mapIndex + 1) % MAPS.length);
+  startMatch();
+});
 document.getElementById('btnLobby').addEventListener('click', () => { goLobby(); });
 document.querySelectorAll('[data-map]').forEach((el) => {
   el.addEventListener('click', () => selectMap(Number(el.getAttribute('data-map'))));
@@ -3037,6 +3068,8 @@ window.__dbg = () => ({
   botTags: bots.map((b) => b.tag),
   hasNewArchetype: bots.some((b) => b.tag >= 'E'),
   timeLeft: state.timeLeft,
+  timeLimit: mapTimeLimit(),
+  mapTimeLimits: MAPS.map((m) => ({ id: m.id, timeLimit: m.timeLimit })),
   pointerLocked,
   mapId: currentMap().id,
   mapIndex: state.mapIndex,
@@ -3104,7 +3137,13 @@ window.__loadMap = async (idOrIndex) => {
     botCount: bots.length,
     pickups: pickups.length,
     bossId: boss?.id || currentMap().bossId || null,
+    timeLeft: state.timeLeft,
+    timeLimit: mapTimeLimit(),
   };
+};
+window.__forceTimeUp = () => {
+  state.timeLeft = 0.01;
+  return { ok: true, timeLeft: state.timeLeft };
 };
 window.__forceWasdProbe = (secs = 0.6) => {
   const before = { x: state.x, z: state.z };
