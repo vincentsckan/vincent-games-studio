@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-HK">
+<head>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/><meta http-equiv="Pragma" content="no-cache"/><meta http-equiv="Expires" content="0"/>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
+<title>深空遺音 · Echoes of Void — Vincent Games Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:#020617;color:#fff;font-family:"Noto Sans TC",system-ui,sans-serif;overflow:hidden;touch-action:none;user-select:none}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+canvas{display:block;background:#020617}
+#hud{position:fixed;left:0;right:0;top:0;padding:calc(10px + env(safe-area-inset-top)) 16px 0;padding-right:160px;display:flex;justify-content:space-between;gap:12px;pointer-events:none;z-index:2;font-weight:700;text-shadow:0 2px 8px #000}
+#hud .l{color:#c4b5fd}#hud .r{color:#6366f1;text-align:right}
+#hud small{display:block;font-family:Syne,sans-serif;font-size:11px;opacity:.75;letter-spacing:.06em}
+#log{position:fixed;left:50%;bottom:calc(28% + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:2;pointer-events:none;background:rgba(2,6,23,.88);border:1px solid #6366f166;color:#c4b5fd;padding:12px 16px;border-radius:12px;font-size:13px;font-weight:600;max-width:min(92vw,440px);text-align:left;opacity:0;transition:opacity .25s;line-height:1.5}
+#log.show{opacity:1}
+#overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(2,6,23,.9);z-index:3;overflow-y:auto;padding:24px}
+#overlay.hidden{display:none}
+.card{max-width:440px;width:100%;background:linear-gradient(160deg,#1e3a5f,#020617);border:1px solid #6366f166;border-radius:20px;padding:28px 24px;text-align:center;box-shadow:0 0 48px #6366f133;max-height:min(92vh,900px);overflow-y:auto}
+.card h1{font-family:Syne,sans-serif;font-size:1.85rem;font-weight:800;color:#c4b5fd}
+.card .sub{margin-top:6px;color:#6366f1;font-size:13px;letter-spacing:.06em}
+.card p{margin-top:14px;color:#cbd5e1;font-size:14px;line-height:1.55}
+.card .stats{margin-top:14px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.card .stats div{background:#fff1;border-radius:12px;padding:10px 14px;min-width:96px}
+.card .stats b{display:block;font-size:1.25rem;color:#c4b5fd}
+.card .stats span{font-size:11px;opacity:.7}
+.btns{margin-top:18px;display:flex;flex-direction:column;gap:10px}
+button.play,button.choice{min-height:48px;padding:0 22px;border:0;border-radius:999px;background:linear-gradient(90deg,#1e3a5f,#6366f1);color:#e0e7ff;font-weight:900;font-size:15px;cursor:pointer;font-family:inherit}
+button.choice{background:#020617;border:1px solid #6366f188;color:#c4b5fd}
+button.choice.alt{border-color:#c4b5fd55;color:#94a3b8}
+#touch{position:fixed;left:0;right:0;bottom:0;height:26%;display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:1fr 1fr;z-index:2;pointer-events:none}
+#touch.play{pointer-events:auto}
+#touch button{background:transparent;border:0;opacity:0}
+#tU{grid-column:2}#tL{grid-column:1;grid-row:2}#tA{grid-column:2;grid-row:2}#tR{grid-column:3;grid-row:2}
+#vg-back-root{position:fixed;inset:0;z-index:2147483647;pointer-events:none}
+#vg-back-root a.vg-back-btn{pointer-events:auto;position:fixed;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:12px 18px;border-radius:14px;font:800 16px/1.2 "Noto Sans TC",system-ui,sans-serif;text-decoration:none;border:2px solid #c4b5fd;background:#020617;color:#c4b5fd;box-shadow:0 6px 28px rgba(0,0,0,.65)}
+#vg-back-tr{right:max(12px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));left:auto;bottom:auto;font-size:15px!important;min-height:44px;padding:10px 14px}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="c"></canvas></div>
+<div id="hud">
+  <div class="l"><small>LOGS · 日誌</small><span id="logs">0</span> / 4</div>
+  <div class="r"><small>DECK · 艙區</small><span id="deck">氣閘</span></div>
+</div>
+<div id="log"></div>
+<div id="overlay">
+  <div class="card">
+    <h1>深空遺音</h1>
+    <div class="sub">ECHOES OF VOID</div>
+    <p id="msg">你是遠距打撈員。研究艦「遺音號」在黑洞邊緣循環播放同一段錄音。<br/>走進艙房，讀日誌、聽殘響——沒有戰鬥，只有你帶回去的真相。<br/><br/>WASD / 方向鍵移動 · E / Space / 點按 互動</p>
+    <div class="stats" id="endStats" style="display:none">
+      <div><b id="statLogs">0</b><span>日誌</span></div>
+      <div><b id="statChoice">—</b><span>抉擇</span></div>
+    </div>
+    <div class="btns" id="mainBtns"><button class="play" id="startBtn" type="button">開始 START</button></div>
+    <div class="btns" id="choiceBtns" style="display:none"></div>
+  </div>
+</div>
+<div id="touch">
+  <button id="tU" type="button" aria-label="上"></button>
+  <button id="tL" type="button" aria-label="左"></button>
+  <button id="tA" type="button" aria-label="互動"></button>
+  <button id="tR" type="button" aria-label="右"></button>
+</div>
+<script>
+(() => {
+const canvas=document.getElementById('c'), ctx=canvas.getContext('2d');
+const VW=480, VH=720, TILE=40;
+let dpr=1, running=false, t0=0, elapsed=0, mode='play';
+const COL={bg:'#020617', mid:'#1e3a5f', ind:'#6366f1', accent:'#c4b5fd', wall:'#0f172a', floor:'#0b1224'};
+
+// Top-down ship map: 0 empty/void, 1 floor, 2 wall, 3 door
+const W=12, H=16;
+const map=[
+  [0,0,2,2,2,2,2,2,2,2,0,0],
+  [0,2,2,1,1,1,1,1,1,2,2,0],
+  [0,2,1,1,1,1,1,1,1,1,2,0],
+  [0,2,1,1,2,2,2,1,1,1,2,0],
+  [0,2,1,1,2,1,1,1,1,1,2,0],
+  [0,2,1,1,2,1,1,2,1,1,2,0],
+  [0,2,1,1,1,1,1,2,1,1,2,0],
+  [2,2,1,1,1,1,1,2,1,1,2,2],
+  [2,1,1,1,2,2,3,2,1,1,1,2],
+  [2,1,1,1,1,1,1,1,1,1,1,2],
+  [2,1,1,2,1,1,1,1,2,1,1,2],
+  [2,1,1,2,1,1,1,1,2,1,1,2],
+  [2,1,1,1,1,1,1,1,1,1,1,2],
+  [2,2,1,1,1,3,1,1,1,1,2,2],
+  [0,2,2,1,1,1,1,1,1,2,2,0],
+  [0,0,2,2,2,2,2,2,2,2,0,0],
+];
+
+const rooms=[
+  {id:'airlock', name:'氣閘', x:2,y:13,w:8,h:2},
+  {id:'corridor', name:'主走廊', x:1,y:8,w:10,h:5},
+  {id:'bridge', name:'艦橋', x:2,y:1,w:8,h:4},
+  {id:'lab', name:'實驗室', x:4,y:4,w:3,h:3},
+  {id:'quarters', name:'船員艙', x:7,y:4,w:3,h:3},
+];
+
+let logs=[
+  {x:3.5,y:13.5, got:false, title:'氣閘錄音', text:'「……遺音號呼叫打撈單位。若你聽見——不要開核心艙。重複：不要開——」訊號中斷。', room:'airlock'},
+  {x:2.5,y:10.5, got:false, title:'走廊日誌 #47', text:'船員林：黑洞潮汐把時間拉長。阿晴說她在艦橋看見「還沒發生的自己」。', room:'corridor'},
+  {x:5.5,y:5.5, got:false, title:'實驗筆記', text:'樣本 V-7 開始回放我們的聲音，但內容超前七十二小時。有人把真相錄進了虛空。', room:'lab'},
+  {x:8.5,y:5.5, got:false, title:'私人終端', text:'阿晴：如果有人找到這段——把錄音帶走，別帶走我們。船可以沉，記憶不行。', room:'quarters'},
+];
+
+let interactives=[
+  {x:6.5,y:2.5, id:'console', label:'主控台', need:2,
+    body:'主控台仍在循環那段錄音。核心艙門鎖著。你要帶什麼回去？'},
+];
+
+let player={x:6,y:14, px:0, py:0}, keys={}, logCount=0, choices=[], promptT=0, pending=null;
+const DECK_NAMES={airlock:'氣閘',corridor:'主走廊',bridge:'艦橋',lab:'實驗室',quarters:'船員艙'};
+
+function resize(){
+  dpr=Math.min(devicePixelRatio||1,2);
+  const s=Math.min(innerWidth/VW,innerHeight/VH);
+  canvas.width=Math.floor(VW*dpr); canvas.height=Math.floor(VH*dpr);
+  canvas.style.width=(VW*s)+'px'; canvas.style.height=(VH*s)+'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+addEventListener('resize',resize); resize();
+
+function tileAt(tx,ty){
+  const x=tx|0, y=ty|0;
+  if(y<0||y>=H||x<0||x>=W) return 0;
+  return map[y][x];
+}
+function blocked(nx,ny){
+  const r=0.28;
+  const samples=[[nx-r,ny-r],[nx+r,ny-r],[nx-r,ny+r],[nx+r,ny+r],[nx,ny]];
+  for(const [x,y] of samples){
+    const t=tileAt(x,y);
+    if(t!==1 && t!==3) return true;
+  }
+  return false;
+}
+function currentDeck(){
+  for(const r of rooms){
+    if(player.x>=r.x && player.x<r.x+r.w && player.y>=r.y && player.y<r.y+r.h) return r.name;
+  }
+  return '虛空邊緣';
+}
+
+function showLog(t){
+  const el=document.getElementById('log');
+  el.innerHTML=t; el.classList.add('show'); promptT=5;
+}
+function hideLog(){ document.getElementById('log').classList.remove('show'); }
+
+function reset(){
+  player={x:6,y:14}; logCount=0; choices=[]; elapsed=0; mode='play'; pending=null;
+  logs.forEach(l=>l.got=false);
+  document.getElementById('logs').textContent='0';
+  document.getElementById('deck').textContent='氣閘';
+  document.getElementById('endStats').style.display='none';
+  document.getElementById('choiceBtns').style.display='none';
+  document.getElementById('mainBtns').style.display='flex';
+  hideLog();
+}
+
+const keyDown=e=>{
+  keys[e.code]=true;
+  if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyW','KeyA','KeyS','KeyD','KeyE'].includes(e.code)) e.preventDefault();
+  if(!running && mode==='play' && (e.code==='Space'||e.code==='Enter')) start();
+  if(running && mode==='play' && (e.code==='Space'||e.code==='KeyE')) tryInteract();
+};
+const keyUp=e=>{ keys[e.code]=false; };
+addEventListener('keydown',keyDown); addEventListener('keyup',keyUp);
+
+const touchMap={tU:['ArrowUp','KeyW'], tL:['ArrowLeft','KeyA'], tR:['ArrowRight','KeyD'], tA:['Space']};
+['tU','tL','tA','tR'].forEach(id=>{
+  const el=document.getElementById(id);
+  const down=e=>{
+    e.preventDefault();
+    touchMap[id].forEach(k=>keys[k]=true);
+    if(id==='tA' && running) tryInteract();
+  };
+  const up=()=>touchMap[id].forEach(k=>keys[k]=false);
+  el.addEventListener('touchstart',down,{passive:false});
+  el.addEventListener('touchend',up);
+  el.addEventListener('mousedown',down);
+  el.addEventListener('mouseup',up);
+});
+
+function tryInteract(){
+  if(!running || mode!=='play') return;
+  for(const L of logs){
+    if(L.got) continue;
+    if(Math.hypot(player.x-L.x, player.y-L.y)<0.85){
+      L.got=true; logCount++;
+      document.getElementById('logs').textContent=logCount;
+      showLog(`<b>${L.title}</b><br/>${L.text}`);
+      return;
+    }
+  }
+  for(const it of interactives){
+    if(Math.hypot(player.x-it.x, player.y-it.y)<1.0){
+      if(logCount<it.need){
+        showLog(`主控台鎖著。還需要更多日誌（${logCount}/${it.need}）。`);
+        return;
+      }
+      openChoice({
+        title:it.label,
+        body:it.body + `<br/><br/>你已讀 ${logCount} 份日誌。`,
+        options:[
+          {label:'帶走完整錄音（公開真相）', kind:'end', end:'truth'},
+          {label:'只帶走船員名字（保護隱私）', kind:'end', end:'names'},
+          {label:'關閉循環，讓船沉寂', kind:'end', end:'silence'},
+        ]
+      });
+      return;
+    }
+  }
+}
+
+function openChoice(ch){
+  pending=ch; mode='choice'; running=false;
+  document.getElementById('touch').classList.remove('play');
+  document.getElementById('msg').innerHTML=`<b>${ch.title}</b><br/>${ch.body}`;
+  document.getElementById('mainBtns').style.display='none';
+  const box=document.getElementById('choiceBtns');
+  box.style.display='flex'; box.innerHTML='';
+  ch.options.forEach((opt,i)=>{
+    const b=document.createElement('button');
+    b.type='button'; b.className='choice'+(i?' alt':'');
+    b.textContent=opt.label;
+    b.onclick=()=>resolveChoice(opt);
+    box.appendChild(b);
+  });
+  document.getElementById('overlay').classList.remove('hidden');
+}
+
+function resolveChoice(opt){
+  if(opt.kind==='end') finish(opt.end);
+}
+
+function finish(kind){
+  mode='end'; running=false; choices.push(kind);
+  document.getElementById('touch').classList.remove('play');
+  document.getElementById('choiceBtns').style.display='none';
+  document.getElementById('mainBtns').style.display='flex';
+  let title='結局', body='', label='';
+  if(kind==='truth'){
+    title='帶回遺音'; label='真相';
+    body= logCount>=4
+      ? '你帶走完整循環錄音。地球會聽見七十二小時的真相——包括他們選擇留下的那句：船可以沉，記憶不行。'
+      : '錄音不完整，但足以證明虛空會說話。打撈報告會改寫一本教科書。';
+  } else if(kind==='names'){
+    title='只留名字'; label='私隱';
+    body='你抹去實驗細節，只上傳船員名冊與最後座標。有人會罵你，也有家人會謝謝你。';
+  } else {
+    title='沉寂'; label='靜默';
+    body='你關閉循環。遺音號變成真正的墳場。黑洞邊緣，終於安靜——像他們希望的那樣。';
+  }
+  document.getElementById('msg').innerHTML=`<b>${title}</b><br/>${body}<br/><br/><span style="opacity:.75;font-size:12px">Echoes of Void · Demo ending</span>`;
+  document.getElementById('endStats').style.display='flex';
+  document.getElementById('statLogs').textContent=logCount;
+  document.getElementById('statChoice').textContent=label;
+  document.getElementById('startBtn').textContent='再玩 AGAIN';
+  document.getElementById('overlay').classList.remove('hidden');
+}
+
+function start(){
+  reset(); running=true; mode='play';
+  document.getElementById('overlay').classList.add('hidden');
+  document.getElementById('touch').classList.add('play');
+  document.getElementById('startBtn').textContent='再玩 AGAIN';
+  t0=performance.now();
+  requestAnimationFrame(loop);
+}
+document.getElementById('startBtn').onclick=start;
+
+function loop(now){
+  if(!running) return;
+  const dt=Math.min(0.033,(now-t0)/1000); t0=now;
+  update(dt); draw();
+  requestAnimationFrame(loop);
+}
+
+function update(dt){
+  elapsed+=dt;
+  if(promptT>0){ promptT-=dt; if(promptT<=0) hideLog(); }
+  let dx=0, dy=0;
+  if(keys.ArrowLeft||keys.KeyA) dx-=1;
+  if(keys.ArrowRight||keys.KeyD) dx+=1;
+  if(keys.ArrowUp||keys.KeyW) dy-=1;
+  if(keys.ArrowDown||keys.KeyS) dy+=1;
+  if(dx||dy){
+    const len=Math.hypot(dx,dy)||1;
+    const sp=2.6*dt;
+    const nx=player.x + dx/len*sp;
+    const ny=player.y + dy/len*sp;
+    if(!blocked(nx,player.y)) player.x=nx;
+    if(!blocked(player.x,ny)) player.y=ny;
+  }
+  document.getElementById('deck').textContent=currentDeck();
+
+  // proximity hints
+  if(promptT<=0){
+    let hint='';
+    for(const L of logs){ if(!L.got && Math.hypot(player.x-L.x,player.y-L.y)<1.1){ hint='E / 點按：讀取日誌'; break; } }
+    if(!hint) for(const it of interactives){ if(Math.hypot(player.x-it.x,player.y-it.y)<1.2){ hint='E / 點按：使用主控台'; break; } }
+    if(hint){ const el=document.getElementById('log'); el.textContent=hint; el.classList.add('show'); }
+    else hideLog();
+  }
+}
+
+function draw(){
+  ctx.fillStyle=COL.bg; ctx.fillRect(0,0,VW,VH);
+  // stars
+  ctx.fillStyle='#94a3b8';
+  for(let i=0;i<40;i++){
+    const sx=(i*97+elapsed*3)%VW, sy=(i*53)%VH;
+    ctx.globalAlpha=0.2+0.5*((i*13)%7)/7;
+    ctx.fillRect(sx,sy,2,2);
+  }
+  ctx.globalAlpha=1;
+
+  const ox=(VW-W*TILE)/2, oy=40;
+  // tiles
+  for(let y=0;y<H;y++) for(let x=0;x<W;x++){
+    const t=map[y][x];
+    if(t===0) continue;
+    const px=ox+x*TILE, py=oy+y*TILE;
+    if(t===2){ ctx.fillStyle=COL.wall; ctx.fillRect(px,py,TILE,TILE); ctx.fillStyle='#1e293b'; ctx.fillRect(px+2,py+2,TILE-4,TILE-4); }
+    else if(t===3){ ctx.fillStyle='#312e81'; ctx.fillRect(px,py,TILE,TILE); ctx.fillStyle=COL.ind; ctx.fillRect(px+8,py+TILE/2-3,TILE-16,6); }
+    else {
+      ctx.fillStyle=COL.floor; ctx.fillRect(px,py,TILE,TILE);
+      ctx.strokeStyle='rgba(99,102,241,0.12)'; ctx.strokeRect(px+0.5,py+0.5,TILE-1,TILE-1);
+    }
+  }
+
+  // logs
+  for(const L of logs){
+    if(L.got) continue;
+    const px=ox+L.x*TILE, py=oy+L.y*TILE;
+    ctx.fillStyle=COL.accent;
+    ctx.globalAlpha=0.7+0.3*Math.sin(elapsed*4);
+    ctx.beginPath(); ctx.arc(px,py,6,0,Math.PI*2); ctx.fill();
+    ctx.globalAlpha=1;
+    ctx.strokeStyle=COL.ind; ctx.stroke();
+  }
+  // console
+  for(const it of interactives){
+    const px=ox+it.x*TILE, py=oy+it.y*TILE;
+    ctx.fillStyle=COL.mid;
+    ctx.fillRect(px-12,py-10,24,20);
+    ctx.fillStyle=logCount>=it.need?COL.accent:COL.ind;
+    ctx.fillRect(px-8,py-6,16,8);
+    ctx.fillStyle=COL.accent; ctx.font='700 10px "Noto Sans TC",sans-serif'; ctx.textAlign='center';
+    ctx.fillText('主控', px, py-14);
+  }
+
+  // player (top-down)
+  const ppx=ox+player.x*TILE, ppy=oy+player.y*TILE;
+  const glow=ctx.createRadialGradient(ppx,ppy,2,ppx,ppy,28);
+  glow.addColorStop(0,'rgba(196,181,253,0.35)');
+  glow.addColorStop(1,'rgba(196,181,253,0)');
+  ctx.fillStyle=glow; ctx.beginPath(); ctx.arc(ppx,ppy,28,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#e0e7ff';
+  ctx.beginPath(); ctx.arc(ppx,ppy,8,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle=COL.ind;
+  ctx.beginPath(); ctx.arc(ppx,ppy-3,3,0,Math.PI*2); ctx.fill();
+
+  // vignette
+  const vg=ctx.createRadialGradient(VW/2,VH/2,80,VW/2,VH/2,420);
+  vg.addColorStop(0,'rgba(2,6,23,0)');
+  vg.addColorStop(1,'rgba(2,6,23,0.65)');
+  ctx.fillStyle=vg; ctx.fillRect(0,0,VW,VH);
+
+  // scanlines soft
+  ctx.fillStyle='rgba(99,102,241,0.03)';
+  for(let y=0;y<VH;y+=4) ctx.fillRect(0,y,VW,1);
+}
+
+reset(); draw();
+})();
+</script>
+<div id="vg-back-root" aria-label="catalog"><a id="vg-back-tr" class="vg-back-btn" href="https://vincentsckan.github.io/vincent-games-studio/games/echoes-of-void/" title="← 返回深空遺音">← 返回目錄</a></div>
+<script>
+(function(){
+  var HREF='https://vincentsckan.github.io/vincent-games-studio/games/echoes-of-void/', LABEL='← 返回目錄';
+  var scheduled=null, locking=false;
+  function ensureFixed(){
+    var root=document.getElementById('vg-back-root');
+    if(!root){
+      root=document.createElement('div');
+      root.id='vg-back-root';
+      root.setAttribute('aria-label','catalog');
+      document.body.appendChild(root);
+    }
+    var bl=document.getElementById('vg-back-bl');
+    if(bl && bl.parentNode) bl.parentNode.removeChild(bl);
+    document.querySelectorAll('a.vg-catalog, a[data-vg-catalog]').forEach(function(a){
+      if(a.parentNode) a.parentNode.removeChild(a);
+    });
+    var tr=document.getElementById('vg-back-tr');
+    if(!tr){
+      tr=document.createElement('a');
+      tr.id='vg-back-tr';
+      tr.className='vg-back-btn';
+      root.appendChild(tr);
+    } else if(tr.parentNode!==root){
+      root.appendChild(tr);
+    }
+    root.style.cssText='position:fixed;inset:0;z-index:2147483647;pointer-events:none;display:block;visibility:visible;opacity:1';
+    tr.href=HREF; tr.title=LABEL; tr.textContent=LABEL;
+    tr.className='vg-back-btn';
+    tr.style.cssText='pointer-events:auto;position:fixed;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:12px 18px;border-radius:14px;font:800 16px/1.2 "Noto Sans TC",system-ui,sans-serif;text-decoration:none;letter-spacing:.02em;visibility:visible;opacity:1;z-index:2147483647;right:max(12px, env(safe-area-inset-right));top:max(12px, env(safe-area-inset-top));left:auto;bottom:auto;border:2px solid #c4b5fd;background:#020617;color:#c4b5fd;box-shadow:0 6px 28px rgba(0,0,0,.65)';
+    if(root.parentNode!==document.body) document.body.appendChild(root);
+    else if(document.body.lastElementChild!==root) document.body.appendChild(root);
+  }
+  function ensure(){
+    if(locking) return;
+    locking=true;
+    try{ ensureFixed(); }catch(e){}
+    locking=false;
+  }
+  function schedule(){
+    if(scheduled) return;
+    scheduled=setTimeout(function(){ scheduled=null; ensure(); }, 80);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',ensure);
+  else ensure();
+  setTimeout(ensure,0);
+  setTimeout(ensure,500);
+  setInterval(ensure,3000);
+  try{
+    new MutationObserver(schedule).observe(document.documentElement,{childList:true,subtree:true});
+  }catch(e){}
+})();
+</script>
+</body>
+</html>
