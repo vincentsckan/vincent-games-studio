@@ -19,6 +19,7 @@ const DEMO_SLUGS = [
   'neon-chase',
   'rooftop-cat',
   'tea-rush',
+  'mist-harbor-lights',
 ] as const
 
 export type DemoSlug = (typeof DEMO_SLUGS)[number]

@@ -366,10 +366,7 @@ export const games: Game[] = [
       pattern: 'harbor',
     },
     links: {
-      play: '#play-demo',
-      download: '#download',
-      itch: 'https://itch.io',
-      steam: 'https://store.steampowered.com',
+      play: '/vincent-games-studio/demos/mist-harbor-lights/',
     },
   },
   {
