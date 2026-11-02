@@ -166,16 +166,16 @@ try {
     };
   });
   check('instant switch < 50ms for 0→1→0', switchGate.ms < 50, JSON.stringify(switchGate));
-  check('MM_EXPAND weaponswitch', switchGate.expand === 'expand-v1-weaponswitch', JSON.stringify(switchGate));
-  check('MM_VER mm7 hotbar', switchGate.ver === 'mm7', JSON.stringify(switchGate));
+  check('MM_EXPAND timer', switchGate.expand === 'expand-v1-timer', JSON.stringify(switchGate));
+  check('MM_VER mm8 crosshair', switchGate.ver === 'mm8', JSON.stringify(switchGate));
   check('MM_SCENE mm6-realism preserved', switchGate.scene === 'mm6-realism', JSON.stringify(switchGate));
   check('weapon strip HUD', switchGate.strip === true, JSON.stringify(switchGate));
   const hudIcons = await page.evaluate(() => {
     const imgs = [...document.querySelectorAll('#weapStrip .ws-ico')].map((img) => img.getAttribute('src') || '');
     const sel = !!document.querySelector('#weapStrip .ws.on .ws-sel');
-    return { count: imgs.length, allMm7: imgs.every((u) => /ui-weapon-.*mm7/.test(u)), sel };
+    return { count: imgs.length, allMm8: imgs.every((u) => /ui-weapon-.*(?:mm8|mm7)/.test(u)), sel };
   });
-  check('mm7 weapon icons in strip', hudIcons.count === 5 && hudIcons.allMm7, JSON.stringify(hudIcons));
+  check('mm8 weapon icons in strip', hudIcons.count === 5 && hudIcons.allMm8, JSON.stringify(hudIcons));
   check('selected slot frame on', hudIcons.sel === true, JSON.stringify(hudIcons));
 
   check('weapon bags hook', switchGate.hasBags === true, JSON.stringify(switchGate));
@@ -207,6 +207,14 @@ try {
 
   const switched = await page.evaluate(async () => window.__loadMap('containers'));
   check('switch map containers', !!(switched && switched.ok && switched.mapId === 'containers'), JSON.stringify(switched));
+  check('map change resets timer to containers timeLimit', !!(switched && Math.abs((switched.timeLeft || 0) - (switched.timeLimit || 0)) < 1.5 && switched.timeLimit === 150), JSON.stringify(switched));
+  const limits = await page.evaluate(() => {
+    const d = window.__dbg();
+    const by = Object.fromEntries((d.mapTimeLimits || []).map((x) => [x.id, x.timeLimit]));
+    return { by, timeLeft: d.timeLeft, timeLimit: d.timeLimit, hasHost: !!document.getElementById('timeHost'), timeTxt: document.getElementById('time')?.textContent };
+  });
+  check('per-map timeLimits set', limits.by.yard === 120 && limits.by['neon-alley'] === 120 && limits.by.oasis === 120 && limits.by.containers === 150 && limits.by.dunes === 150 && limits.by.platforms === 150 && limits.by['pulse-coliseum'] === 180, JSON.stringify(limits.by));
+  check('countdown HUD visible', limits.hasHost && /\d+:\d{2}/.test(limits.timeTxt || ''), JSON.stringify(limits));
   const afterMap = await page.evaluate(() => window.__dbg());
   check('containers bots spawned', afterMap.botCount >= 4, String(afterMap.botCount));
   check('new archetype E+ present', afterMap.hasNewArchetype === true, JSON.stringify(afterMap.botTags));
@@ -241,6 +249,31 @@ try {
     return { enableSfx: d.enableSfx, sfxReady: d.sfxReady, keys: d.sfxBuffers };
   });
   check('SFX enabled flag', sfx.enableSfx === true, JSON.stringify(sfx));
+
+  // —— expand-v1-timer: force time-up → end card 「時間到」 ——
+  await page.evaluate(async () => window.__loadMap('yard'));
+  await page.evaluate(() => window.__forceTimeUp());
+  await page.waitForFunction(() => {
+    const d = window.__dbg();
+    return d.matchOver === true && !d.running;
+  }, { timeout: 4000 });
+  const timeUp = await page.evaluate(() => {
+    const title = document.getElementById('endTitle')?.textContent || '';
+    const panel = document.getElementById('panelEnd');
+    const overlayHidden = document.getElementById('overlay')?.classList.contains('hidden');
+    const d = window.__dbg();
+    return {
+      title,
+      panelOn: panel?.classList.contains('on'),
+      overlayHidden,
+      matchOver: d.matchOver,
+      hasNext: !!document.getElementById('btnNext'),
+      hasAgain: !!document.getElementById('btnAgain'),
+      hasLobby: !!document.getElementById('btnLobby'),
+    };
+  });
+  check('time-up end card', timeUp.matchOver && timeUp.panelOn && timeUp.title.includes('時間到') && timeUp.overlayHidden === false, JSON.stringify(timeUp));
+  check('end card retry/next/lobby', timeUp.hasAgain && timeUp.hasNext && timeUp.hasLobby, JSON.stringify(timeUp));
 
   // Exit via back link exists (don't navigate away mid-test)
   check('can exit via catalog link', backHref === '/vincent-games-studio/games');
