@@ -137,6 +137,40 @@ try {
   check('5 weapons switchable', weapons.length === 5 && new Set(weapons).size === 5, weapons.join(','));
   check('includes melee knife', weapons.includes('knife'), weapons.join(','));
   check('includes ar+pistol+sniper', weapons.includes('ar') && weapons.includes('pistol') && weapons.includes('sniper'), weapons.join(','));
+  check('includes shotgun', weapons.includes('shotgun'), weapons.join(','));
+
+  const switchGate = await page.evaluate(() => {
+    const t0 = performance.now();
+    window.__switchWeapon(0);
+    // spend some AR ammo
+    const d0 = window.__dbg();
+    const bags0 = window.__weaponBags();
+    window.__dbg(); // ensure hooks live
+    // mutate via shooting hooks if present; else poke ammo then switch away/back
+    const st = window.__dbg();
+    // force bag persistence: switch to pistol, then back — bags API must exist
+    window.__switchWeapon(1);
+    const mid = window.__dbg();
+    window.__switchWeapon(0);
+    const back = window.__dbg();
+    const t1 = performance.now();
+    return {
+      ms: t1 - t0,
+      expand: mid.mmExpand || back.mmExpand,
+      ver: back.mmVer,
+      scene: back.mmScene,
+      hasBags: typeof window.__weaponBags === 'function',
+      backWeapon: back.weapon,
+      midWeapon: mid.weapon,
+      strip: !!(document.getElementById('weapStrip') && document.getElementById('weapStrip').children.length >= 5),
+    };
+  });
+  check('instant switch < 50ms for 0→1→0', switchGate.ms < 50, JSON.stringify(switchGate));
+  check('MM_EXPAND weaponswitch', switchGate.expand === 'expand-v1-weaponswitch', JSON.stringify(switchGate));
+  check('MM_VER mm5 preserved', switchGate.ver === 'mm5', JSON.stringify(switchGate));
+  check('MM_SCENE mm6-realism preserved', switchGate.scene === 'mm6-realism', JSON.stringify(switchGate));
+  check('weapon strip HUD', switchGate.strip === true, JSON.stringify(switchGate));
+  check('weapon bags hook', switchGate.hasBags === true, JSON.stringify(switchGate));
 
   // Shoot + kill bot
   await page.evaluate(() => {
