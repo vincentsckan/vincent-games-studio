@@ -6,6 +6,7 @@
  * Bots A–J · Boss×3 · Pickups · SFX · hit-blood · death-tip · scene-VQ · perf · FENCE_R sky-clear
  * mm6-realism: hit spark/blood spray sprites · kill bot-fall + ground decal · expand-v1-realism maps
  * expand-v1-weaponswitch: instant 1–5 / wheel / Q firearm switch · per-slot ammo bags · HUD strip · recoil kick
+ * mm7-weapon-switch: HUD hotbar icons + slot-selected frame (ui-weapon-*); vm-* FP plates unchanged
  */
 import * as THREE from 'three';
 
@@ -108,15 +109,24 @@ const PICKUP_DEFS = {
   overheal: { id: 'overheal', nameZh: '過載心', kind: 'overheal', amount: 150, color: 0xff4466, respawn: 120 },
 };
 
-const MM_VER = 'mm5'; // keep mm5 so shared atlases/viewmodels stay cache-stable
+const MM_VER = 'mm7'; // mm7-weapon-switch hotbar/highlight; vm-* / atlas paths unchanged (query bust only)
 const MM_EXPAND = 'expand-v1-weaponswitch'; // was expand-v1-realism; map/bot/pickup plates still resolve via same files
-const MM_SCENE = 'mm6-realism';
+const MM_SCENE = 'mm6-realism'; // keep b4c9b88 hit/FX sprites
 const PICKUP_GRAB_R = 3.5; // meters — soft tip: walk-into cubes were missing 1.16m radius
 const MM_URLS = {
   armsAtlas: [`./refs/atlas/fp-arms-atlas.png?v=${MM_VER}`, `./refs/atlas/fp-arms-atlas.jpg?v=${MM_VER}`],
   weaponsAtlas: [`./refs/atlas/weapons-view-atlas.png?v=${MM_VER}`, `./refs/atlas/weapons-view-atlas.jpg?v=${MM_VER}`],
   fpCombined: [`./refs/fp/fp-viewmodel-rifle.png?v=${MM_VER}`, `./refs/atlas/fp-viewmodel-rifle.png?v=${MM_VER}`],
   uiCrosshair: [`./refs/ui/ui-crosshair.png?v=${MM_VER}`],
+  uiWeaponIcons: {
+    ar: `./refs/ui/ui-weapon-ar.png?v=${MM_VER}`,
+    pistol: `./refs/ui/ui-weapon-pistol.png?v=${MM_VER}`,
+    sniper: `./refs/ui/ui-weapon-sniper.png?v=${MM_VER}`,
+    shotgun: `./refs/ui/ui-weapon-shotgun.png?v=${MM_VER}`,
+    knife: `./refs/ui/ui-weapon-knife.png?v=${MM_VER}`,
+  },
+  uiWeaponHotbar: `./refs/ui/ui-weapons-hotbar.png?v=${MM_VER}`,
+  uiWeaponSlotSelected: `./refs/ui/ui-weapon-slot-selected.png?v=${MM_VER}`,
   weapons: {
     ar: [`./refs/atlas/vm-rifle.png?v=${MM_VER}`],
     pistol: [`./refs/atlas/vm-pistol.png?v=${MM_VER}`],
@@ -810,13 +820,24 @@ function syncHud() {
 
 function syncWeaponStrip() {
   if (!weapStrip) return;
+  const selUrl = MM_URLS.uiWeaponSlotSelected;
   const bits = WEAPONS.map((w, i) => {
     const bag = weaponBags[i] || { ammo: w.mag, reserve: w.reserve };
     const ammoTxt = w.melee ? '—' : String(i === state.weapon ? state.ammo : bag.ammo);
     const on = i === state.weapon ? ' on' : '';
-    return `<button type="button" class="ws${on}" data-w="${i}" tabindex="-1"><b>${i + 1}</b><span>${w.nameZh}</span><i>${ammoTxt}</i></button>`;
+    const ico = MM_URLS.uiWeaponIcons[w.id] || '';
+    const sel = i === state.weapon
+      ? `<span class="ws-sel" style="background-image:url('${selUrl}')" aria-hidden="true"></span>`
+      : `<span class="ws-sel" aria-hidden="true"></span>`;
+    return `<button type="button" class="ws${on}" data-w="${i}" title="${w.nameZh}" tabindex="-1">`
+      + `<img class="ws-ico" src="${ico}" alt="" width="56" height="56" draggable="false"/>`
+      + sel
+      + `<b>${i + 1}</b>`
+      + `<i>${ammoTxt}</i>`
+      + `</button>`;
   });
   weapStrip.innerHTML = bits.join('');
+  // ui-weapons-hotbar.png kept in pack for optional strip BG; per-slot icons + selected frame are primary.
 }
 
 function boxSolid(x, y, z, w, h, d) {

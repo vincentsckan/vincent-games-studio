@@ -82,12 +82,14 @@ button.ghost{margin-top:10px;background:transparent;border:1px solid #7ef0ff66;c
 #bossHud .bb{height:10px;border-radius:999px;background:#0008;border:1px solid #ff6bcb88;overflow:hidden}
 #bossHud .bb i{display:block;height:100%;background:linear-gradient(90deg,#ff6bcb,#ffe66d);width:100%}
 #buffHud{position:absolute;left:50%;bottom:calc(72px + env(safe-area-inset-bottom));transform:translateX(-50%);font-weight:800;font-size:13px;color:#7ef0ff;text-shadow:0 2px 8px #000;opacity:0;pointer-events:none}
-#weapStrip{position:absolute;left:50%;bottom:calc(14px + env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;gap:6px;pointer-events:none;z-index:5}
-#weapStrip .ws{appearance:none;border:1px solid #7ef0ff44;background:#0c0820cc;color:#c8b8d8;border-radius:10px;padding:6px 8px;min-width:64px;font:800 11px/1.15 "Noto Sans TC",system-ui,sans-serif;text-align:center;box-shadow:0 2px 10px #0008}
-#weapStrip .ws b{display:block;color:#ffe66d;font-size:12px;margin-bottom:2px}
-#weapStrip .ws span{display:block;white-space:nowrap}
-#weapStrip .ws i{display:block;font-style:normal;opacity:.75;margin-top:2px;color:#7ef0ff}
-#weapStrip .ws.on{border-color:#ff6bcb;color:#fff;box-shadow:0 0 14px #ff6bcb55;background:#1a1030ee}
+#weapStrip{position:absolute;left:50%;bottom:calc(10px + env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;gap:8px;pointer-events:none;z-index:5;padding:6px 8px;border-radius:14px;background-color:#0c0820aa;background-size:0 0;background-repeat:no-repeat}
+#weapStrip .ws{appearance:none;position:relative;border:1px solid #7ef0ff33;background:#12081ecc;color:#c8b8d8;border-radius:12px;padding:4px 4px 2px;width:64px;height:72px;font:800 11px/1.1 "Noto Sans TC",system-ui,sans-serif;text-align:center;box-shadow:0 2px 10px #0008;overflow:hidden}
+#weapStrip .ws-ico{display:block;width:48px;height:48px;margin:2px auto 0;object-fit:contain;image-rendering:auto;pointer-events:none}
+#weapStrip .ws-sel{position:absolute;inset:0;background-size:100% 100%;background-repeat:no-repeat;background-position:center;pointer-events:none;opacity:0}
+#weapStrip .ws.on .ws-sel{opacity:1}
+#weapStrip .ws b{position:absolute;left:5px;top:3px;color:#ffe66d;font-size:11px;text-shadow:0 1px 4px #000}
+#weapStrip .ws i{display:block;font-style:normal;opacity:.9;margin-top:0;color:#7ef0ff;font-size:10px;text-shadow:0 1px 4px #000}
+#weapStrip .ws.on{border-color:#ff6bcb;color:#fff;box-shadow:0 0 16px #ff6bcb66}
 #levelHud{display:block;font-size:12px;color:#ffe66d;margin-top:2px}
 #flashOverlay{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:8;transition:opacity .05s}
 .mapGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:14px;text-align:left}
@@ -174,6 +176,6 @@ button.ghost{margin-top:10px;background:transparent;border:1px solid #7ef0ff66;c
 <div id="vg-back-root" aria-hidden="false">
   <a id="vg-back-tr" class="vg-back-btn" href="/vincent-games-studio/games">← 返回目錄</a>
 </div>
-<script type="module" src="./game.js?v=fc8071b"></script>
+<script type="module" src="./game.js?v=7f93dcc"></script>
 </body>
 </html>
