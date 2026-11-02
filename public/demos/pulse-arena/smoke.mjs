@@ -167,9 +167,17 @@ try {
   });
   check('instant switch < 50ms for 0→1→0', switchGate.ms < 50, JSON.stringify(switchGate));
   check('MM_EXPAND weaponswitch', switchGate.expand === 'expand-v1-weaponswitch', JSON.stringify(switchGate));
-  check('MM_VER mm5 preserved', switchGate.ver === 'mm5', JSON.stringify(switchGate));
+  check('MM_VER mm7 hotbar', switchGate.ver === 'mm7', JSON.stringify(switchGate));
   check('MM_SCENE mm6-realism preserved', switchGate.scene === 'mm6-realism', JSON.stringify(switchGate));
   check('weapon strip HUD', switchGate.strip === true, JSON.stringify(switchGate));
+  const hudIcons = await page.evaluate(() => {
+    const imgs = [...document.querySelectorAll('#weapStrip .ws-ico')].map((img) => img.getAttribute('src') || '');
+    const sel = !!document.querySelector('#weapStrip .ws.on .ws-sel');
+    return { count: imgs.length, allMm7: imgs.every((u) => /ui-weapon-.*mm7/.test(u)), sel };
+  });
+  check('mm7 weapon icons in strip', hudIcons.count === 5 && hudIcons.allMm7, JSON.stringify(hudIcons));
+  check('selected slot frame on', hudIcons.sel === true, JSON.stringify(hudIcons));
+
   check('weapon bags hook', switchGate.hasBags === true, JSON.stringify(switchGate));
 
   // Shoot + kill bot
