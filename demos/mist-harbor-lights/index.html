@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-HK">
+<head>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/><meta http-equiv="Pragma" content="no-cache"/><meta http-equiv="Expires" content="0"/>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
+<title>霧港燈影 · Mist Harbor Lights — Vincent Games Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:#0a1628;color:#fff;font-family:"Noto Sans TC",system-ui,sans-serif;overflow:hidden;touch-action:none;user-select:none}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+canvas{display:block;background:#0a1628}
+#hud{position:fixed;left:0;right:0;top:0;padding:calc(10px + env(safe-area-inset-top)) 16px 0;padding-left:16px;padding-right:160px;display:flex;justify-content:space-between;gap:12px;pointer-events:none;z-index:2;font-weight:700;text-shadow:0 2px 8px #000}
+#hud .l{color:#0d9488}#hud .r{color:#f0c14a;text-align:right}
+#hud small{display:block;font-family:Syne,sans-serif;font-size:11px;opacity:.75;letter-spacing:.06em}
+#prompt{position:fixed;left:50%;bottom:calc(28% + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:2;pointer-events:none;background:rgba(10,22,40,.82);border:1px solid #0d948866;color:#f0c14a;padding:10px 16px;border-radius:12px;font-size:13px;font-weight:700;max-width:min(90vw,420px);text-align:center;opacity:0;transition:opacity .2s}
+#prompt.show{opacity:1}
+#overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(6,12,24,.86);z-index:3;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:24px}
+#overlay.hidden{display:none}
+.card{max-width:440px;width:100%;background:linear-gradient(160deg,#1a3a5c,#0a1628);border:1px solid #0d948866;border-radius:20px;padding:28px 24px;text-align:center;box-shadow:0 0 48px #0d948833;max-height:min(92vh,900px);overflow-y:auto}
+.card h1{font-family:Syne,sans-serif;font-size:1.85rem;font-weight:800;color:#f0c14a}
+.card .sub{margin-top:6px;color:#0d9488;font-size:13px;letter-spacing:.06em}
+.card p{margin-top:14px;color:#c8d8e8;font-size:14px;line-height:1.55}
+.card .stats{margin-top:14px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.card .stats div{background:#fff1;border-radius:12px;padding:10px 14px;min-width:96px}
+.card .stats b{display:block;font-size:1.25rem;color:#f0c14a}
+.card .stats span{font-size:11px;opacity:.7}
+.btns{margin-top:18px;display:flex;flex-direction:column;gap:10px;align-items:stretch}
+button.play,button.choice{min-height:48px;padding:0 22px;border:0;border-radius:999px;background:linear-gradient(90deg,#0d9488,#f0c14a);color:#0a1628;font-weight:900;font-size:15px;cursor:pointer;font-family:inherit}
+button.choice{background:linear-gradient(90deg,#1a3a5c,#0d9488);color:#f0c14a;border:1px solid #f0c14a55}
+button.choice.alt{background:#0a1628;border:1px solid #0d948888;color:#c8d8e8}
+#touch{position:fixed;left:0;right:0;bottom:0;height:26%;display:flex;z-index:2;pointer-events:none}
+#touch.play{pointer-events:auto}
+#touch button{flex:1;background:transparent;border:0;opacity:0}
+#vg-back-root{position:fixed;left:0;right:0;bottom:0;top:0;z-index:2147483647;pointer-events:none}
+#vg-back-root a.vg-back-btn{pointer-events:auto;position:fixed;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;min-width:48px;padding:12px 18px;border-radius:14px;font:800 16px/1.2 "Noto Sans TC",system-ui,sans-serif;text-decoration:none;letter-spacing:.02em;border:2px solid #f0c14a;background:#0a1628;color:#f0c14a;box-shadow:0 6px 28px rgba(0,0,0,.65),0 0 0 1px rgba(255,255,255,.08);-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+#vg-back-root a.vg-back-btn:active{transform:scale(.97)}
+#vg-back-tr{right:max(12px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));left:auto;bottom:auto;font-size:15px!important;min-height:44px;padding:10px 14px;opacity:.95}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="c"></canvas></div>
+<div id="hud">
+  <div class="l"><small>WICKS · 燈芯</small><span id="wicks">0</span> / <span id="wicksNeed">3</span></div>
+  <div class="r"><small>SCRAPS · 殘簡</small><span id="scraps">0</span> · <span id="saved">0</span> 人得救</div>
+</div>
+<div id="prompt"></div>
+<div id="overlay">
+  <div class="card">
+    <h1>霧港燈影</h1>
+    <div class="sub">MIST HARBOR LIGHTS</div>
+    <p id="msg">你醒來時，碼頭只剩一盞搖晃的燈。港口被濃霧吞沒，居民變成剪影。<br/>收集燈芯、解讀殘簡，點亮燈籠，決定誰能被帶回光裡。<br/><br/>← → / A D 移動 · Space / ↑ / 點按互動或輕跳<br/>沒有戰鬥——只有選擇與安靜的後果。</p>
+    <div class="stats" id="endStats" style="display:none">
+      <div><b id="statWicks">0</b><span>燈芯</span></div>
+      <div><b id="statScraps">0</b><span>殘簡</span></div>
+      <div><b id="statSaved">0</b><span>得救</span></div>
+    </div>
+    <div class="btns" id="mainBtns">
+      <button class="play" id="startBtn" type="button">開始 START</button>
+    </div>
+    <div class="btns" id="choiceBtns" style="display:none"></div>
+  </div>
+</div>
+<div id="touch"><button id="tL" type="button" aria-label="左"></button><button id="tJ" type="button" aria-label="互動"></button><button id="tR" type="button" aria-label="右"></button></div>
+<script>
+(() => {
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const VW = 480, VH = 720;
+const WORLD_W = 3200;
+let dpr=1, running=false, t0=0, elapsed=0, jumpHeld=0;
+let mode='play'; // play | choice | end
+let pendingChoice=null;
+
+const COL = {
+  bg:'#0a1628', mid:'#1a3a5c', teal:'#0d9488', accent:'#f0c14a',
+  fog:'rgba(26,58,92,0.35)', sil:'#061018', water:'#0c2038'
+};
+
+function resize(){
+  dpr=Math.min(devicePixelRatio||1,2);
+  const s=Math.min(innerWidth/VW, innerHeight/VH);
+  canvas.width=Math.floor(VW*dpr); canvas.height=Math.floor(VH*dpr);
+  canvas.style.width=(VW*s)+'px'; canvas.style.height=(VH*s)+'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+addEventListener('resize',resize); resize();
+
+// Ground platforms / walkable floors
+const floors = [
+  {x:0,y:620,w:WORLD_W,h:120},
+];
+// Raised docks / crates
+const plats = [
+  {x:280,y:560,w:90,h:18},
+  {x:520,y:520,w:110,h:18},
+  {x:780,y:560,w:80,h:18},
+  {x:1100,y:500,w:120,h:18},
+  {x:1450,y:540,w:100,h:18},
+  {x:1780,y:500,w:130,h:18},
+  {x:2150,y:540,w:90,h:18},
+  {x:2500,y:480,w:140,h:18},
+  {x:2850,y:520,w:160,h:22},
+];
+
+// Collectibles
+let wicks=[], scraps=[], lanterns=[], npcs=[], doors=[];
+
+function seedWorld(){
+  wicks = [
+    {x:340,y:530,got:false,id:'w1'},
+    {x:860,y:530,got:false,id:'w2'},
+    {x:1520,y:510,got:false,id:'w3'},
+    {x:2220,y:510,got:false,id:'w4'},
+    {x:2580,y:450,got:false,id:'w5'},
+  ];
+  scraps = [
+    {x:160,y:590,got:false,id:'s1', text:'殘簡：霧來自碼頭倉庫——有人熄滅了燈芯。'},
+    {x:600,y:490,got:false,id:'s2', text:'殘簡：渡船佬說，三盞燈就能開航。'},
+    {x:1200,y:470,got:false,id:'s3', text:'殘簡：小孩等在魚檔前，怕黑。'},
+    {x:1900,y:470,got:false,id:'s4', text:'殘簡：阿婆守著舊燈塔，燈芯已盡。'},
+    {x:2700,y:590,got:false,id:'s5', text:'殘簡：回家的路，從來都係選擇。'},
+  ];
+  lanterns = [
+    {x:480,y:590, lit:false, need:1, id:'L1', label:'碼頭燈籠'},
+    {x:980,y:590, lit:false, need:1, id:'L2', label:'巷口燈籠'},
+    {x:1680,y:590, lit:false, need:1, id:'L3', label:'魚檔燈籠'},
+    {x:2400,y:590, lit:false, need:1, id:'L4', label:'燈塔底'},
+  ];
+  npcs = [
+    {x:720,y:590, id:'ferry', name:'渡船佬', saved:false, cost:1,
+      ask:'渡船佬：「畀一條燈芯，我載你哋過霧。」',
+      savedMsg:'渡船佬點起船燈，霧裏出現一條水路。'},
+    {x:1320,y:590, id:'kid', name:'魚檔細路', saved:false, cost:1,
+      ask:'細路：「我搵唔到媽咪……可唔可以點盞燈？」',
+      savedMsg:'細路握著光，朝巷口跑去。'},
+    {x:2050,y:590, id:'granny', name:'燈塔阿婆', saved:false, cost:1,
+      ask:'阿婆：「塔頂需要燈芯。你願意留下一條嗎？」',
+      savedMsg:'阿婆點起塔燈，遠方剪影開始回家。'},
+  ];
+  doors = [
+    {x:2920,y:470, id:'home', label:'回家的門', open:false}
+  ];
+}
+
+let player, camX=0, keys={}, particles=[], promptText='', promptT=0;
+let wickCount=0, scrapCount=0, savedCount=0, ending=null;
+let loreLog=[];
+
+function reset(){
+  seedWorld();
+  player={x:80,y:580,vx:0,vy:0,w:22,h:36,onGround:false,facing:1,lantern:1};
+  camX=0; elapsed=0; jumpHeld=0; particles=[];
+  wickCount=0; scrapCount=0; savedCount=0; ending=null; loreLog=[];
+  mode='play'; pendingChoice=null;
+  document.getElementById('wicks').textContent='0';
+  document.getElementById('scraps').textContent='0';
+  document.getElementById('saved').textContent='0';
+  document.getElementById('endStats').style.display='none';
+  document.getElementById('choiceBtns').style.display='none';
+  document.getElementById('mainBtns').style.display='flex';
+  hidePrompt();
+}
+
+const keyDown = e => {
+  keys[e.code]=true;
+  if(['Space','ArrowUp','ArrowLeft','ArrowRight','KeyW','KeyA','KeyD','KeyE'].includes(e.code)) e.preventDefault();
+  if(!running && mode==='play' && (e.code==='Space'||e.code==='Enter')) start();
+  if(running && (e.code==='Space'||e.code==='ArrowUp'||e.code==='KeyW'||e.code==='KeyE')) tryInteract();
+};
+const keyUp = e => { keys[e.code]=false; if(e.code==='Space'||e.code==='ArrowUp'||e.code==='KeyW') jumpHeld=0; };
+addEventListener('keydown',keyDown); addEventListener('keyup',keyUp);
+
+['tL','tJ','tR'].forEach(id=>{
+  const el=document.getElementById(id);
+  const down=e=>{
+    e.preventDefault();
+    if(id==='tL')keys.KeyA=true;
+    if(id==='tR')keys.KeyD=true;
+    if(id==='tJ'){ keys.Space=true; if(running) tryInteract(); }
+  };
+  const up=()=>{
+    if(id==='tL')keys.KeyA=false;
+    if(id==='tR')keys.KeyD=false;
+    if(id==='tJ'){keys.Space=false; jumpHeld=0;}
+  };
+  el.addEventListener('touchstart',down,{passive:false});
+  el.addEventListener('touchend',up);
+  el.addEventListener('mousedown',down);
+  el.addEventListener('mouseup',up);
+});
+
+function showPrompt(t){ promptText=t; promptT=2.5; const p=document.getElementById('prompt'); p.textContent=t; p.classList.add('show'); }
+function hidePrompt(){ document.getElementById('prompt').classList.remove('show'); promptText=''; }
+
+function near(a,b,r){ return Math.abs((a.x+a.w/2)-(b.x))<r && Math.abs(a.y-b.y)<70; }
+
+function tryInteract(){
+  if(!running || mode!=='play') return;
+  // scraps
+  for(const s of scraps){
+    if(!s.got && Math.abs(player.x-s.x)<40 && Math.abs(player.y-s.y)<50){
+      s.got=true; scrapCount++; loreLog.push(s.text);
+      document.getElementById('scraps').textContent=scrapCount;
+      showPrompt(s.text);
+      burst(s.x,s.y,COL.teal);
+      return;
+    }
+  }
+  // wicks
+  for(const w of wicks){
+    if(!w.got && Math.abs(player.x-w.x)<40 && Math.abs(player.y-w.y)<50){
+      w.got=true; wickCount++;
+      document.getElementById('wicks').textContent=wickCount;
+      showPrompt('拾起燈芯 · Wick +1');
+      burst(w.x,w.y,COL.accent);
+      return;
+    }
+  }
+  // lanterns
+  for(const L of lanterns){
+    if(!L.lit && Math.abs(player.x-L.x)<48 && Math.abs(player.y-L.y)<60){
+      if(wickCount>=L.need){
+        openChoice({
+          title: L.label,
+          body: `點亮「${L.label}」要用 ${L.need} 條燈芯。你仲有 ${wickCount} 條。`,
+          options: [
+            {label:`點亮（-${L.need} 燈芯）`, kind:'lit', lantern:L},
+            {label:'先留住燈芯', kind:'cancel'}
+          ]
+        });
+      } else {
+        showPrompt(`需要 ${L.need} 燈芯（你有 ${wickCount}）`);
+      }
+      return;
+    }
+  }
+  // npcs
+  for(const n of npcs){
+    if(!n.saved && Math.abs(player.x-n.x)<50 && Math.abs(player.y-n.y)<60){
+      openChoice({
+        title: n.name,
+        body: n.ask + `\n（消耗 ${n.cost} 燈芯 · 你有 ${wickCount}）`,
+        options: [
+          {label: wickCount>=n.cost ? `畀燈芯 · 救${n.name}` : '燈芯唔夠…', kind: wickCount>=n.cost ? 'save' : 'cancel', npc:n},
+          {label:'我再諗諗', kind:'cancel'}
+        ]
+      });
+      return;
+    }
+  }
+  // home door
+  for(const d of doors){
+    if(Math.abs(player.x-d.x)<55 && Math.abs(player.y-d.y)<70){
+      const litN = lanterns.filter(L=>L.lit).length;
+      openChoice({
+        title:'回家的門',
+        body:`霧港燈影已點 ${litN}/4，救咗 ${savedCount} 人，殘簡 ${scrapCount}。你想點樣離開？`,
+        options: [
+          {label:'帶著所有光回家', kind:'end', end:'light'},
+          {label:'把最後燈芯留下給港口', kind:'end', end:'leave'},
+          {label:'獨自走進濃霧', kind:'end', end:'fog'},
+        ]
+      });
+      return;
+    }
+  }
+  // soft jump if grounded and interact didn't hit
+  if(player.onGround && jumpHeld===0){
+    player.vy=-320; player.onGround=false; jumpHeld=1;
+  }
+}
+
+function openChoice(ch){
+  pendingChoice=ch; mode='choice'; running=false;
+  document.getElementById('touch').classList.remove('play');
+  document.getElementById('msg').innerHTML = `<b>${ch.title}</b><br/>${ch.body.replace(/\n/g,'<br/>')}`;
+  document.getElementById('mainBtns').style.display='none';
+  const box=document.getElementById('choiceBtns');
+  box.style.display='flex'; box.innerHTML='';
+  ch.options.forEach((opt,i)=>{
+    const b=document.createElement('button');
+    b.type='button';
+    b.className='choice'+(i?' alt':'');
+    b.textContent=opt.label;
+    b.onclick=()=>resolveChoice(opt);
+    box.appendChild(b);
+  });
+  document.getElementById('overlay').classList.remove('hidden');
+}
+
+function resolveChoice(opt){
+  document.getElementById('choiceBtns').style.display='none';
+  document.getElementById('mainBtns').style.display='flex';
+  if(opt.kind==='cancel'){
+    resumePlay();
+    return;
+  }
+  if(opt.kind==='lit'){
+    const L=opt.lantern;
+    if(wickCount>=L.need){
+      wickCount-=L.need; L.lit=true;
+      document.getElementById('wicks').textContent=wickCount;
+      showPrompt(`點亮了${L.label}`);
+      burst(L.x,L.y-30,COL.accent);
+    }
+    resumePlay();
+    return;
+  }
+  if(opt.kind==='save'){
+    const n=opt.npc;
+    if(wickCount>=n.cost){
+      wickCount-=n.cost; n.saved=true; savedCount++;
+      document.getElementById('wicks').textContent=wickCount;
+      document.getElementById('saved').textContent=savedCount;
+      showPrompt(n.savedMsg);
+      burst(n.x,n.y-20,COL.teal);
+    }
+    resumePlay();
+    return;
+  }
+  if(opt.kind==='end'){
+    finish(opt.end);
+  }
+}
+
+function resumePlay(){
+  mode='play'; running=true; pendingChoice=null;
+  document.getElementById('overlay').classList.add('hidden');
+  document.getElementById('touch').classList.add('play');
+  t0=performance.now();
+  requestAnimationFrame(loop);
+}
+
+function finish(kind){
+  mode='end'; running=false; ending=kind;
+  document.getElementById('touch').classList.remove('play');
+  const litN=lanterns.filter(L=>L.lit).length;
+  let title='結局', body='';
+  if(kind==='light'){
+    title='燈影歸航';
+    body = savedCount>=2 && litN>=2
+      ? '你帶著足夠的光回家。霧慢慢散開，剪影一個個恢復輪廓。港口記得你。'
+      : '你回家了，但港口仍有角落未點亮。至少，你守住了自己的燈。';
+  } else if(kind==='leave'){
+    title='把光留下';
+    body = '你把最後燈芯放在門檻。自己走進夜色，港口的燈卻一夜未熄。有人說，那晚霧薄了一寸。';
+  } else {
+    title='霧中獨行';
+    body = scrapCount>=3
+      ? '你讀過殘簡，仍選擇走進濃霧。故事未完——但你知道門在哪。'
+      : '濃霧吞沒腳步。或許下次，你会留下更多光。';
+  }
+  document.getElementById('msg').innerHTML =
+    `<b>${title}</b><br/>${body}<br/><br/><span style="opacity:.75;font-size:12px">Mist Harbor Lights · Demo ending</span>`;
+  document.getElementById('endStats').style.display='flex';
+  document.getElementById('statWicks').textContent=wickCount;
+  document.getElementById('statScraps').textContent=scrapCount;
+  document.getElementById('statSaved').textContent=savedCount;
+  document.getElementById('startBtn').textContent='再玩 AGAIN';
+  document.getElementById('overlay').classList.remove('hidden');
+}
+
+function start(){
+  reset(); running=true; mode='play';
+  document.getElementById('overlay').classList.add('hidden');
+  document.getElementById('touch').classList.add('play');
+  document.getElementById('startBtn').textContent='再玩 AGAIN';
+  document.getElementById('msg').innerHTML='你醒來時，碼頭只剩一盞搖晃的燈。港口被濃霧吞沒，居民變成剪影。<br/>收集燈芯、解讀殘簡，點亮燈籠，決定誰能被帶回光裡。';
+  t0=performance.now();
+  requestAnimationFrame(loop);
+}
+document.getElementById('startBtn').onclick=start;
+
+function burst(x,y,col){
+  for(let i=0;i<12;i++){
+    particles.push({x,y,vx:(Math.random()-0.5)*120,vy:-40-Math.random()*80,life:.6+Math.random()*.4,col});
+  }
+}
+
+function aabb(ax,ay,aw,ah,bx,by,bw,bh){
+  return ax<bx+bw && ax+aw>bx && ay<by+bh && ay+ah>by;
+}
+
+function loop(now){
+  if(!running) return;
+  const dt=Math.min(0.033,(now-t0)/1000); t0=now;
+  update(dt); draw();
+  requestAnimationFrame(loop);
+}
+
+function update(dt){
+  elapsed+=dt;
+  if(promptT>0){ promptT-=dt; if(promptT<=0) hidePrompt(); }
+
+  const left=keys.ArrowLeft||keys.KeyA;
+  const right=keys.ArrowRight||keys.KeyD;
+  const jump=keys.Space||keys.ArrowUp||keys.KeyW;
+
+  const accel=1400, maxV=170, friction=12;
+  if(left){ player.vx-=accel*dt; player.facing=-1; }
+  if(right){ player.vx+=accel*dt; player.facing=1; }
+  if(!left&&!right) player.vx*=Math.max(0,1-friction*dt);
+  player.vx=Math.max(-maxV,Math.min(maxV,player.vx));
+
+  if(jump && player.onGround && jumpHeld===0){
+    player.vy=-340; player.onGround=false; jumpHeld=1;
+  }
+  if(!jump) jumpHeld=0;
+
+  player.vy+=980*dt;
+  player.x+=player.vx*dt;
+  player.y+=player.vy*dt;
+
+  player.onGround=false;
+  const solids=[...floors,...plats];
+  for(const p of solids){
+    if(aabb(player.x,player.y,player.w,player.h,p.x,p.y,p.w,p.h)){
+      // resolve from top if falling
+      const prevY=player.y-player.vy*dt;
+      if(player.vy>=0 && prevY+player.h<=p.y+6){
+        player.y=p.y-player.h; player.vy=0; player.onGround=true;
+      } else if(player.vx>0 && player.x+player.w>p.x && player.x<p.x){
+        player.x=p.x-player.w; player.vx=0;
+      } else if(player.vx<0 && player.x<p.x+p.w && player.x+player.w>p.x+p.w){
+        player.x=p.x+p.w; player.vx=0;
+      } else if(player.vy<0){
+        player.y=p.y+p.h; player.vy=0;
+      }
+    }
+  }
+  if(player.x<10) player.x=10;
+  if(player.x>WORLD_W-40) player.x=WORLD_W-40;
+  if(player.y>800){ player.x=80; player.y=580; player.vx=0; player.vy=0; showPrompt('潮水把你送回碼頭…'); }
+
+  // auto-hint nearest interactable
+  let hint='';
+  for(const s of scraps){ if(!s.got && Math.abs(player.x-s.x)<55){ hint='空白鍵／點按：讀殘簡'; break; } }
+  if(!hint) for(const w of wicks){ if(!w.got && Math.abs(player.x-w.x)<55){ hint='空白鍵／點按：拾燈芯'; break; } }
+  if(!hint) for(const L of lanterns){ if(!L.lit && Math.abs(player.x-L.x)<55){ hint='空白鍵／點按：點燈'; break; } }
+  if(!hint) for(const n of npcs){ if(!n.saved && Math.abs(player.x-n.x)<55){ hint=`空白鍵／點按：同${n.name}傾`; break; } }
+  if(!hint) for(const d of doors){ if(Math.abs(player.x-d.x)<60){ hint='空白鍵／點按：回家的門（結局選擇）'; break; } }
+  if(hint && !promptText) { const p=document.getElementById('prompt'); p.textContent=hint; p.classList.add('show'); }
+  else if(!hint && !promptText) hidePrompt();
+
+  camX=Math.max(0,Math.min(WORLD_W-VW, player.x-VW*0.35));
+
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];
+    p.life-=dt; p.x+=p.vx*dt; p.y+=p.vy*dt; p.vy+=40*dt;
+    if(p.life<=0) particles.splice(i,1);
+  }
+}
+
+function draw(){
+  // sky
+  const g=ctx.createLinearGradient(0,0,0,VH);
+  g.addColorStop(0,'#06101c'); g.addColorStop(0.55,COL.mid); g.addColorStop(1,COL.bg);
+  ctx.fillStyle=g; ctx.fillRect(0,0,VW,VH);
+
+  // distant silhouettes (parallax)
+  ctx.save();
+  ctx.translate(-camX*0.25,0);
+  ctx.fillStyle='#071420';
+  for(let i=0;i<18;i++){
+    const bx=i*220+40, h=80+((i*37)%90);
+    ctx.fillRect(bx,520-h,70+((i*13)%40),h+120);
+  }
+  // crane
+  ctx.strokeStyle='#0a1a2a'; ctx.lineWidth=4;
+  ctx.beginPath(); ctx.moveTo(900,520); ctx.lineTo(900,300); ctx.lineTo(1040,340); ctx.stroke();
+  ctx.restore();
+
+  // fog bands
+  ctx.fillStyle=COL.fog;
+  for(let i=0;i<4;i++){
+    const fx=((elapsed*20+i*180)-camX*0.4)% (VW+200)-100;
+    ctx.beginPath();
+    ctx.ellipse(fx, 480+i*28, 160, 28, 0, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  ctx.save();
+  ctx.translate(-camX,0);
+
+  // water
+  ctx.fillStyle=COL.water;
+  ctx.fillRect(0,610,WORLD_W,140);
+  ctx.strokeStyle='rgba(13,148,136,0.25)';
+  ctx.lineWidth=2;
+  for(let x=0;x<WORLD_W;x+=40){
+    const y=618+Math.sin(elapsed*2+x*0.02)*3;
+    ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x+28,y); ctx.stroke();
+  }
+
+  // pier / ground
+  ctx.fillStyle='#0c1828';
+  ctx.fillRect(0,620,WORLD_W,100);
+  ctx.fillStyle='#122438';
+  for(let x=0;x<WORLD_W;x+=48) ctx.fillRect(x,620,24,8);
+
+  // platforms
+  for(const p of plats){
+    ctx.fillStyle='#132a42';
+    ctx.fillRect(p.x,p.y,p.w,p.h);
+    ctx.fillStyle=COL.teal;
+    ctx.globalAlpha=0.35; ctx.fillRect(p.x,p.y,p.w,3); ctx.globalAlpha=1;
+  }
+
+  // buildings silhouettes
+  drawBuilding(200,420,100,200);
+  drawBuilding(900,380,120,240);
+  drawBuilding(1600,400,90,220);
+  drawBuilding(2300,360,130,260);
+  // lighthouse
+  ctx.fillStyle=COL.sil;
+  ctx.fillRect(2388,280,24,340);
+  ctx.beginPath(); ctx.moveTo(2375,280); ctx.lineTo(2425,280); ctx.lineTo(2412,250); ctx.lineTo(2388,250); ctx.closePath(); ctx.fill();
+
+  // lanterns
+  for(const L of lanterns){
+    ctx.fillStyle='#0a1520';
+    ctx.fillRect(L.x-3,L.y-48,6,48);
+    ctx.beginPath();
+    ctx.ellipse(L.x,L.y-58,12,16,0,0,Math.PI*2);
+    if(L.lit){
+      ctx.fillStyle=COL.accent;
+      ctx.fill();
+      const rg=ctx.createRadialGradient(L.x,L.y-58,2,L.x,L.y-58,70);
+      rg.addColorStop(0,'rgba(240,193,74,0.45)');
+      rg.addColorStop(1,'rgba(240,193,74,0)');
+      ctx.fillStyle=rg; ctx.beginPath(); ctx.arc(L.x,L.y-58,70,0,Math.PI*2); ctx.fill();
+    } else {
+      ctx.fillStyle='#1a2a38'; ctx.fill();
+      ctx.strokeStyle='#0d948866'; ctx.stroke();
+    }
+  }
+
+  // scraps
+  for(const s of scraps){
+    if(s.got) continue;
+    ctx.fillStyle=COL.teal;
+    ctx.globalAlpha=0.85+Math.sin(elapsed*4)*0.15;
+    ctx.fillRect(s.x-8,s.y-6,16,12);
+    ctx.globalAlpha=1;
+    ctx.strokeStyle='#f0c14a88'; ctx.strokeRect(s.x-8,s.y-6,16,12);
+  }
+  // wicks
+  for(const w of wicks){
+    if(w.got) continue;
+    ctx.save();
+    ctx.translate(w.x, w.y+Math.sin(elapsed*3+w.x)*3);
+    ctx.fillStyle=COL.accent;
+    ctx.beginPath(); ctx.arc(0,0,7,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#fff8'; ctx.fillRect(-1,-10,2,8);
+    ctx.restore();
+  }
+
+  // npcs silhouettes
+  for(const n of npcs){
+    drawNpc(n.x, n.y, n.saved);
+    ctx.fillStyle=n.saved?COL.accent:COL.teal;
+    ctx.font='700 11px "Noto Sans TC",sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText(n.name, n.x, n.y-52);
+  }
+
+  // home door
+  for(const d of doors){
+    ctx.fillStyle='#0d1a28';
+    ctx.fillRect(d.x-18,d.y-70,36,70);
+    ctx.strokeStyle=COL.accent; ctx.lineWidth=2; ctx.strokeRect(d.x-18,d.y-70,36,70);
+    ctx.fillStyle=COL.accent; ctx.beginPath(); ctx.arc(d.x+10,d.y-35,3,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle=COL.teal; ctx.font='700 11px "Noto Sans TC",sans-serif'; ctx.textAlign='center';
+    ctx.fillText('回家', d.x, d.y-78);
+  }
+
+  // player
+  drawPlayer(player);
+
+  // particles
+  for(const p of particles){
+    ctx.globalAlpha=Math.max(0,p.life);
+    ctx.fillStyle=p.col;
+    ctx.fillRect(p.x,p.y,3,3);
+    ctx.globalAlpha=1;
+  }
+
+  ctx.restore();
+
+  // vignette fog overlay
+  const vg=ctx.createRadialGradient(VW/2,VH*0.55,80,VW/2,VH/2,420);
+  vg.addColorStop(0,'rgba(10,22,40,0)');
+  vg.addColorStop(1,'rgba(6,12,24,0.55)');
+  ctx.fillStyle=vg; ctx.fillRect(0,0,VW,VH);
+
+  // player lantern glow in screen space
+  const px=player.x-camX+player.w/2, py=player.y+8;
+  const lg=ctx.createRadialGradient(px,py,4,px,py,90);
+  lg.addColorStop(0,'rgba(240,193,74,0.35)');
+  lg.addColorStop(1,'rgba(240,193,74,0)');
+  ctx.fillStyle=lg; ctx.beginPath(); ctx.arc(px,py,90,0,Math.PI*2); ctx.fill();
+}
+
+function drawBuilding(x,y,w,h){
+  ctx.fillStyle=COL.sil;
+  ctx.fillRect(x,y,w,h);
+  ctx.fillStyle='rgba(13,148,136,0.15)';
+  for(let row=0;row<4;row++) for(let col=0;col<2;col++){
+    if(((row+col+x)|0)%3===0) ctx.fillRect(x+16+col*36, y+24+row*40, 14, 18);
+  }
+}
+
+function drawNpc(x,y,saved){
+  ctx.fillStyle=saved?'#1a3a5c':COL.sil;
+  ctx.beginPath();
+  ctx.ellipse(x,y-28,10,12,0,0,Math.PI*2); ctx.fill();
+  ctx.fillRect(x-9,y-18,18,28);
+  if(saved){
+    ctx.fillStyle=COL.accent;
+    ctx.globalAlpha=0.5;
+    ctx.beginPath(); ctx.arc(x,y-40,16,0,Math.PI*2); ctx.fill();
+    ctx.globalAlpha=1;
+  }
+}
+
+function drawPlayer(p){
+  ctx.save();
+  ctx.translate(p.x+p.w/2, p.y+p.h);
+  ctx.scale(p.facing,1);
+  // body silhouette
+  ctx.fillStyle='#0a2030';
+  ctx.fillRect(-8,-32,16,28);
+  ctx.beginPath(); ctx.arc(0,-38,8,0,Math.PI*2); ctx.fill();
+  // lantern in hand
+  ctx.strokeStyle=COL.accent; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(8,-22); ctx.lineTo(14,-14); ctx.stroke();
+  ctx.fillStyle=COL.accent;
+  ctx.beginPath(); ctx.ellipse(14,-10,6,8,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='rgba(255,255,220,0.7)';
+  ctx.beginPath(); ctx.arc(14,-10,3,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+
+reset(); draw();
+})();
+</script>
+<div id="vg-back-root" aria-label="catalog"><a id="vg-back-tr" class="vg-back-btn" href="https://vincentsckan.github.io/vincent-games-studio/games/mist-harbor-lights/" title="← 返回霧港燈影">← 返回目錄</a></div>
+<script>
+(function(){
+  var HREF='https://vincentsckan.github.io/vincent-games-studio/games/mist-harbor-lights/', LABEL='← 返回目錄';
+  var scheduled=null, locking=false;
+  function ensureFixed(){
+    var root=document.getElementById('vg-back-root');
+    if(!root){
+      root=document.createElement('div');
+      root.id='vg-back-root';
+      root.setAttribute('aria-label','catalog');
+      document.body.appendChild(root);
+    }
+    var bl=document.getElementById('vg-back-bl');
+    if(bl && bl.parentNode) bl.parentNode.removeChild(bl);
+    document.querySelectorAll('a.vg-catalog, a[data-vg-catalog]').forEach(function(a){
+      if(a.parentNode) a.parentNode.removeChild(a);
+    });
+    var tr=document.getElementById('vg-back-tr');
+    if(!tr){
+      tr=document.createElement('a');
+      tr.id='vg-back-tr';
+      tr.className='vg-back-btn';
+      root.appendChild(tr);
+    } else if(tr.parentNode!==root){
+      root.appendChild(tr);
+    }
+    root.style.cssText='position:fixed;inset:0;z-index:2147483647;pointer-events:none;display:block;visibility:visible;opacity:1';
+    tr.href=HREF; tr.title=LABEL; tr.textContent=LABEL;
+    tr.className='vg-back-btn';
+    tr.style.cssText='pointer-events:auto;position:fixed;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:12px 18px;border-radius:14px;font:800 16px/1.2 "Noto Sans TC",system-ui,sans-serif;text-decoration:none;letter-spacing:.02em;visibility:visible;opacity:1;z-index:2147483647;right:max(12px, env(safe-area-inset-right));top:max(12px, env(safe-area-inset-top));left:auto;bottom:auto;border:2px solid #f0c14a;background:#0a1628;color:#f0c14a;box-shadow:0 6px 28px rgba(0,0,0,.65)';
+    if(root.parentNode!==document.body) document.body.appendChild(root);
+    else if(document.body.lastElementChild!==root) document.body.appendChild(root);
+  }
+  function ensure(){
+    if(locking) return;
+    locking=true;
+    try{ ensureFixed(); }catch(e){}
+    locking=false;
+  }
+  function schedule(){
+    if(scheduled) return;
+    scheduled=setTimeout(function(){ scheduled=null; ensure(); }, 80);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',ensure);
+  else ensure();
+  setTimeout(ensure,0);
+  setTimeout(ensure,500);
+  setInterval(ensure,3000);
+  try{
+    new MutationObserver(schedule).observe(document.documentElement,{childList:true,subtree:true});
+  }catch(e){}
+})();
+</script>
+</body>
+</html>
