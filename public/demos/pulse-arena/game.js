@@ -5,6 +5,7 @@
  * Maps: yard|containers|oasis|platforms|neon-alley|dunes|pulse-coliseum
  * Bots A–J · Boss×3 · Pickups · SFX · hit-blood · death-tip · scene-VQ · perf · FENCE_R sky-clear
  * mm6-realism: hit spark/blood spray sprites · kill bot-fall + ground decal · expand-v1-realism maps
+ * expand-v1-weaponswitch: instant 1–5 / wheel / Q firearm switch · per-slot ammo bags · HUD strip · recoil kick
  */
 import * as THREE from 'three';
 
@@ -22,6 +23,7 @@ const bossHud = document.getElementById('bossHud');
 const buffHud = document.getElementById('buffHud');
 const levelHud = document.getElementById('levelHud');
 const flashOverlay = document.getElementById('flashOverlay');
+const weapStrip = document.getElementById('weapStrip');
 
 const ENABLE_BOSSES = true;
 const ENABLE_PICKUPS = true;
@@ -48,11 +50,11 @@ const CULL_DIST = 52;
 const AUDIO_POOL_CAP = 10;
 
 const WEAPONS = [
-  { id: 'ar', nameZh: '脈衝步槍', nameEn: 'Pulse Rifle', damage: 22, firerate: 9.5, spread: 0.022, mag: 30, reserve: 90, reload: 1.45, pellets: 1, adsSpread: 0.006, adsFov: 58 },
-  { id: 'pistol', nameZh: '脈衝手槍', nameEn: 'Pulse Pistol', damage: 34, firerate: 3.6, spread: 0.012, mag: 12, reserve: 48, reload: 1.2, pellets: 1, adsSpread: 0.004, adsFov: 55 },
-  { id: 'sniper', nameZh: '脈衝狙擊', nameEn: 'Pulse Sniper', damage: 92, firerate: 1.05, spread: 0.003, mag: 5, reserve: 25, reload: 2.1, pellets: 1, adsSpread: 0.0002, adsFov: 32 },
-  { id: 'shotgun', nameZh: '方塊散彈', nameEn: 'Block Shotgun', damage: 16, firerate: 1.25, spread: 0.09, mag: 6, reserve: 24, reload: 2.2, pellets: 7, adsSpread: 0.05, adsFov: 60 },
-  { id: 'knife', nameZh: '脈衝短刃', nameEn: 'Pulse Blade', damage: 55, firerate: 1 / 0.5, spread: 0, mag: 1, reserve: 99, reload: 0.05, pellets: 1, melee: true, range: 2.6, cone: 0.72, adsFov: 70 },
+  { id: 'ar', nameZh: '脈衝步槍', nameEn: 'Pulse Rifle', damage: 22, firerate: 9.5, spread: 0.022, mag: 30, reserve: 90, reload: 1.45, pellets: 1, adsSpread: 0.006, adsFov: 58, recoil: 0.018 },
+  { id: 'pistol', nameZh: '脈衝手槍', nameEn: 'Pulse Pistol', damage: 34, firerate: 3.6, spread: 0.012, mag: 12, reserve: 48, reload: 1.2, pellets: 1, adsSpread: 0.004, adsFov: 55, recoil: 0.028 },
+  { id: 'sniper', nameZh: '脈衝狙擊', nameEn: 'Pulse Sniper', damage: 92, firerate: 1.05, spread: 0.003, mag: 5, reserve: 25, reload: 2.1, pellets: 1, adsSpread: 0.0002, adsFov: 32, recoil: 0.075 },
+  { id: 'shotgun', nameZh: '方塊散彈', nameEn: 'Block Shotgun', damage: 16, firerate: 1.25, spread: 0.09, mag: 6, reserve: 24, reload: 2.2, pellets: 7, adsSpread: 0.05, adsFov: 60, recoil: 0.055 },
+  { id: 'knife', nameZh: '脈衝短刃', nameEn: 'Pulse Blade', damage: 55, firerate: 1 / 0.5, spread: 0, mag: 1, reserve: 99, reload: 0.05, pellets: 1, melee: true, range: 2.6, cone: 0.72, adsFov: 70, recoil: 0.01 },
 ];
 
 const MAPS = [
@@ -107,7 +109,7 @@ const PICKUP_DEFS = {
 };
 
 const MM_VER = 'mm5'; // keep mm5 so shared atlases/viewmodels stay cache-stable
-const MM_EXPAND = 'expand-v1-realism';
+const MM_EXPAND = 'expand-v1-weaponswitch'; // was expand-v1-realism; map/bot/pickup plates still resolve via same files
 const MM_SCENE = 'mm6-realism';
 const PICKUP_GRAB_R = 3.5; // meters — soft tip: walk-into cubes were missing 1.16m radius
 const MM_URLS = {
@@ -677,7 +679,12 @@ const state = {
   dmgMul: 1, speedMul: 1, ghost: false,
   fragLimit: 20,
   bossAlive: false,
+  switchFlashT: 0,
+  recoilKick: 0,
 };
+
+/** Per-slot mag/reserve so 1–5 / wheel / Q is a true instant loadout swap. */
+let weaponBags = WEAPONS.map((w) => ({ ammo: w.melee ? 1 : w.mag, reserve: w.reserve }));
 
 let scene, camera, renderer, clock;
 let solidBoxes = [];
@@ -789,6 +796,7 @@ function syncHud() {
   document.getElementById('kills').textContent = String(state.kills);
   document.getElementById('deaths').textContent = String(state.deaths);
   document.getElementById('gunHud').textContent = WEAPONS[state.weapon].nameZh;
+  syncWeaponStrip();
   const m = Math.floor(state.timeLeft / 60);
   const s = Math.floor(state.timeLeft % 60);
   document.getElementById('time').textContent = `${m}:${String(s).padStart(2, '0')}`;
@@ -798,6 +806,17 @@ function syncHud() {
   if (levelHud) levelHud.textContent = `${map.nameZh} · ${map.nameEn}`;
   syncBuffHud();
   syncBossHud();
+}
+
+function syncWeaponStrip() {
+  if (!weapStrip) return;
+  const bits = WEAPONS.map((w, i) => {
+    const bag = weaponBags[i] || { ammo: w.mag, reserve: w.reserve };
+    const ammoTxt = w.melee ? '—' : String(i === state.weapon ? state.ammo : bag.ammo);
+    const on = i === state.weapon ? ' on' : '';
+    return `<button type="button" class="ws${on}" data-w="${i}" tabindex="-1"><b>${i + 1}</b><span>${w.nameZh}</span><i>${ammoTxt}</i></button>`;
+  });
+  weapStrip.innerHTML = bits.join('');
 }
 
 function boxSolid(x, y, z, w, h, d) {
@@ -1969,7 +1988,10 @@ function grabPickup(p) {
     SFX.pickup_armor();
   } else if (p.kind === 'ammo') {
     const w = WEAPONS[state.weapon];
-    if (!w.melee) state.reserve += w.mag;
+    if (!w.melee) {
+      state.reserve += w.mag;
+      saveWeaponBag();
+    }
     SFX.pickup_ammo();
   } else if (p.kind === 'power') {
     applyPower(p.power, p.duration || 10);
@@ -2153,7 +2175,7 @@ function damageBot(bot, dmg, fromPlayer, isWeak = false) {
 function applyStreakBonus() {
   if (state.streak === 3) {
     const w = WEAPONS[state.weapon];
-    if (!w.melee) state.reserve += w.mag;
+    if (!w.melee) { state.reserve += w.mag; saveWeaponBag(); }
     feedKill('連殺×3 彈藥補給');
     SFX.pickup_ammo();
   } else if (state.streak === 5) {
@@ -2268,22 +2290,62 @@ function respawnPlayer() {
   state.invuln = 1.4;
   state.sliding = false;
   SFX.slideStop();
-  const w = WEAPONS[state.weapon];
-  state.ammo = w.mag;
-  state.reserve = w.reserve;
+  resetWeaponBags();
+  loadWeaponBag(state.weapon);
   state.reloading = false;
+  state.reloadT = 0;
+  state.shootCd = 0;
   syncHud();
 }
 
-function switchWeapon(idx) {
-  if (idx < 0 || idx >= WEAPONS.length) return;
-  state.weapon = idx;
+function resetWeaponBags() {
+  weaponBags = WEAPONS.map((w) => ({ ammo: w.melee ? 1 : w.mag, reserve: w.reserve }));
+}
+
+function saveWeaponBag() {
+  const i = state.weapon;
+  if (i < 0 || i >= WEAPONS.length) return;
+  weaponBags[i] = { ammo: state.ammo, reserve: state.reserve };
+}
+
+function loadWeaponBag(idx) {
   const w = WEAPONS[idx];
-  state.ammo = w.melee ? 1 : w.mag;
-  state.reserve = w.reserve;
+  const bag = weaponBags[idx] || { ammo: w.melee ? 1 : w.mag, reserve: w.reserve };
+  state.ammo = w.melee ? 1 : bag.ammo;
+  state.reserve = bag.reserve;
+}
+
+/** Instant firearm/melee switch — no blocking swap anim; tiny flash only. */
+function switchWeapon(idx, opts = {}) {
+  if (idx < 0 || idx >= WEAPONS.length) return false;
+  if (idx === state.weapon && !opts.force) return false;
+  saveWeaponBag();
+  state.weapon = idx;
+  loadWeaponBag(idx);
   state.reloading = false;
+  state.reloadT = 0;
+  // Drop prior RoF gate so sniper→AR is fire-ready immediately (instant switch gate).
+  state.shootCd = 0;
+  state.switchFlashT = 0.06;
+  state.recoilKick = Math.min(state.recoilKick, 0.02);
+  if (flashOverlay) {
+    flashOverlay.style.background = '#7ef0ff';
+    flashOverlay.style.opacity = '0.18';
+    setTimeout(() => {
+      if (flashOverlay) {
+        flashOverlay.style.opacity = '0';
+        flashOverlay.style.background = '#fff';
+      }
+    }, 45);
+  }
   rebuildGunMesh();
   syncHud();
+  return true;
+}
+
+function cycleWeapon(dir) {
+  const n = WEAPONS.length;
+  switchWeapon((state.weapon + dir + n) % n);
 }
 
 function startReload() {
@@ -2320,6 +2382,9 @@ function tryShoot(dt) {
   if (!w.melee) { state.ammo -= 1; markHud(); syncHud(); }
   state.shootCd = 1 / w.firerate;
   SFX.shoot();
+  const kick = (w.recoil || 0.02) * (state.ads ? 0.55 : 1);
+  state.recoilKick = Math.min(0.14, state.recoilKick + kick);
+  pitch = Math.max(-1.4, Math.min(1.4, pitch + kick * 0.65));
   if (muzzleFlash && !w.melee) {
     muzzleFlash.visible = true;
     setTimeout(() => { if (muzzleFlash) muzzleFlash.visible = false; }, 35);
@@ -2679,8 +2744,10 @@ async function startMatch() {
   running = true;
   state.kills = 0; state.deaths = 0; state.streak = 0;
   state.hp = 100; state.armor = 0;
-  state.weapon = 0; state.ammo = WEAPONS[0].mag; state.reserve = WEAPONS[0].reserve;
-  state.reloading = false; state.sliding = false; state.ads = false;
+  resetWeaponBags();
+  state.weapon = 0; loadWeaponBag(0);
+  state.reloading = false; state.reloadT = 0; state.shootCd = 0;
+  state.sliding = false; state.ads = false; state.recoilKick = 0; state.switchFlashT = 0;
   state.timeLeft = MATCH_SECONDS; state.invuln = 1.2;
   state.power = null; state.powerT = 0; state.dmgMul = 1; state.speedMul = 1; state.ghost = false;
   yaw = 0; pitch = 0;
@@ -2756,11 +2823,15 @@ function updateCamera(dt) {
   if (armsRoot) {
     const moving = Math.hypot(state.vx, state.vz) > 1 && state.onGround;
     const t = performance.now() * 0.01;
-    armsRoot.position.y = -0.02 + (moving ? Math.sin(t) * 0.012 : 0);
-    armsRoot.position.x = state.ads ? -0.06 : 0;
-    armsRoot.position.z = state.ads ? 0.06 : 0;
+    state.recoilKick = Math.max(0, state.recoilKick - dt * 1.8);
+    const kick = state.recoilKick;
+    const flashLift = state.switchFlashT > 0 ? 0.04 : 0;
+    armsRoot.position.y = -0.02 + (moving ? Math.sin(t) * 0.012 : 0) + kick * 0.35 + flashLift;
+    armsRoot.position.x = (state.ads ? -0.06 : 0) + kick * 0.08;
+    armsRoot.position.z = (state.ads ? 0.06 : 0) - kick * 0.25;
     armsRoot.visible = true;
   }
+  if (state.switchFlashT > 0) state.switchFlashT = Math.max(0, state.switchFlashT - dt);
 }
 
 function drawTraces(dt) {
@@ -2836,11 +2907,15 @@ window.addEventListener('keydown', (e) => {
     if (running) { scoreboard.classList.add('on'); updateScoreboard(); }
   }
   if (e.code === 'KeyR' && running) startReload();
-  if (e.code === 'Digit1') switchWeapon(0);
-  if (e.code === 'Digit2') switchWeapon(1);
-  if (e.code === 'Digit3') switchWeapon(2);
-  if (e.code === 'Digit4') switchWeapon(3);
-  if (e.code === 'Digit5') switchWeapon(4);
+  if (running) {
+    if (e.code === 'Digit1' || e.code === 'Numpad1') switchWeapon(0);
+    if (e.code === 'Digit2' || e.code === 'Numpad2') switchWeapon(1);
+    if (e.code === 'Digit3' || e.code === 'Numpad3') switchWeapon(2);
+    if (e.code === 'Digit4' || e.code === 'Numpad4') switchWeapon(3);
+    if (e.code === 'Digit5' || e.code === 'Numpad5') switchWeapon(4);
+    // Q cycles loadout (no collide with slide/sprint/reload binds)
+    if (e.code === 'KeyQ') { e.preventDefault(); cycleWeapon(1); }
+  }
   if (e.code === 'KeyN') {
     // cycle map: mid-match remaps in place; end/lobby starts the next map
     selectMap((state.mapIndex + 1) % MAPS.length);
@@ -2888,7 +2963,7 @@ window.addEventListener('wheel', (e) => {
   if (!running) return;
   e.preventDefault();
   const dir = e.deltaY > 0 ? 1 : -1;
-  switchWeapon((state.weapon + dir + WEAPONS.length) % WEAPONS.length);
+  cycleWeapon(dir);
 }, { passive: false });
 
 document.addEventListener('pointerlockchange', () => {
@@ -2917,6 +2992,8 @@ window.__dbg = () => ({
   hp: state.hp, armor: state.armor, kills: state.kills, deaths: state.deaths, streak: state.streak,
   weapon: WEAPONS[state.weapon].id, weaponIndex: state.weapon,
   ammo: state.ammo, reserve: state.reserve,
+  weaponBags: weaponBags.map((b) => ({ ...b })),
+  switchFlashT: state.switchFlashT, recoilKick: state.recoilKick,
   sliding: state.sliding, onGround: state.onGround, ads: state.ads,
   botsAlive: bots.filter((b) => b.alive).length,
   botCount: bots.length,
@@ -2964,7 +3041,9 @@ window.__setMouse = (btn, down) => {
   if (btn === 2) keys.Mouse2 = !!down;
 };
 window.__forceLook = (y, p) => { yaw = y; pitch = p ?? pitch; };
-window.__switchWeapon = (i) => switchWeapon(i);
+window.__switchWeapon = (i) => switchWeapon(i, { force: true });
+window.__cycleWeapon = (dir) => cycleWeapon(dir || 1);
+window.__weaponBags = () => weaponBags.map((b) => ({ ...b }));
 window.__startMatch = () => startMatch();
 window.__selectMap = (i) => { selectMap(i); };
 window.__loadMap = async (idOrIndex) => {
