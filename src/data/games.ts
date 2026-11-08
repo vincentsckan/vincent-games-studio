@@ -64,6 +64,56 @@ The studio's aim is simple: make players stop—and hit "play again."`,
 export const games: Game[] = [
 
   {
+    id: 'cardforge-pulse',
+    slug: 'cardforge-pulse',
+    titleZh: '牌鍛脈搏',
+    titleEn: 'Cardforge Pulse',
+    taglineZh: '在心跳之間鍛造牌面',
+    taglineEn: 'Forge cards between heartbeats.',
+    dimension: '2D',
+    status: 'demo',
+    year: 2026,
+    genres: ['卡牌', 'Roguelite', '策略'],
+    hookZh:
+      '地下脈搏鍛造所只在心跳之間敞開。你係鍛徒，用節拍打牌、讀敵人意圖，一路奪回主脈核。',
+    hookEn:
+      'The Pulse Forge opens only between heartbeats. Read enemy intents, spend beats on cards, and reclaim the master pulse core.',
+    gameplayZh:
+      '短局 Roguelite 組牌：每回合 3 節拍、抽 5 張，打赢拿新牌，五節路線通關或斷拍重鍛。',
+    gameplayEn:
+      'Short-run deckbuilder: 3 beats per turn, draw five, pick rewards, clear five nodes—or miss a beat and forge again.',
+    features: [
+      {
+        titleZh: '節拍戰鬥',
+        titleEn: 'Beat combat',
+        bodyZh: '節拍、格擋、脈壓——全繁中 HUD，敵人顯示意圖。',
+        bodyEn: 'Beats, block, pulse pressure—intent-driven zh-HK combat HUD.',
+      },
+      {
+        titleZh: '今晚鍛道',
+        titleEn: 'Tonight\'s forge route',
+        bodyZh: '五節地圖：雜拍戰、司爐休息、強節點、斷拍者。',
+        bodyEn: 'Five-node route: battles, Furnace Auntie rest, elite, Beatbreaker.',
+      },
+      {
+        titleZh: '瀏覽器即玩',
+        titleEn: 'Instant browser play',
+        bodyZh: '單頁試玩切片，無需安裝。',
+        bodyEn: 'Single-page vertical slice—no install.',
+      },
+    ],
+    palette: {
+      from: '#0B0E14',
+      via: '#2A2F3A',
+      to: '#FF4D2E',
+      accent: '#00E5FF',
+      pattern: 'fault',
+    },
+    links: {
+      play: '/vincent-games-studio/demos/cardforge-pulse/',
+    },
+  },
+  {
     id: 'pulse-arena',
     slug: 'pulse-arena',
     titleZh: '脈衝槍戰',
