@@ -1,0 +1,26 @@
+{
+  "name": "Cardforge Pulse / 牌鍛脈搏",
+  "theme": "A 脈搏鍛造所 / Pulse Forge",
+  "version": "mm-slice-v1",
+  "date": "2026-11-08",
+  "colors": {
+    "deep_bg": "#0B0E14",
+    "metal": "#2A2F3A",
+    "pulse_cyan": "#00E5FF",
+    "forge_hot": "#FF4D2E",
+    "energy_gold": "#FFC857",
+    "guard_teal": "#2EE6A6",
+    "danger_pink": "#FF2E63",
+    "text_light": "#E8EEF7"
+  },
+  "usage": {
+    "deep_bg": "battle / map background",
+    "metal": "UI panels, common frame base",
+    "pulse_cyan": "uncommon / intent defend / energy accents",
+    "forge_hot": "rare frame / attack intent",
+    "energy_gold": "energy pips / buff intent",
+    "guard_teal": "block / defend feedback",
+    "danger_pink": "HP critical / danger",
+    "text_light": "primary UI text"
+  }
+}
