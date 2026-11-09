@@ -64,6 +64,57 @@ The studio's aim is simple: make players stop—and hit "play again."`,
 export const games: Game[] = [
 
   {
+    id: 'rift-arena',
+    slug: 'rift-arena',
+    titleZh: '裂空擂台',
+    titleEn: 'Rift Arena',
+    taglineZh: '三人同技，裂空一戰。',
+    taglineEn: 'Three kits. One rift. First to five.',
+    dimension: '2D',
+    status: 'demo',
+    year: 2026,
+    genres: ['競技', '技能', '2D'],
+    hookZh:
+      '裂隙擂台只得一方平地。破鋒、弦鳴、定潮以純冷卻技能對決——先奪五殺者勝，落敗者短暫重生再戰。',
+    hookEn:
+      'A single symmetric rift arena. Pòfēng, Xiánmíng, and Dìngcháo duel on cooldowns alone—first to five kills wins, with brief respawns between falls.',
+    gameplayZh:
+      '俯視 1v1 技能決鬥：WASD 移動、滑鼠瞄準、LMB 普攻、Q/E 技能、R 絕招。對手為同英雄池 AI。',
+    gameplayEn:
+      'Top-down 1v1 skill duel: WASD, mouse aim, LMB basic, Q/E skills, R ultimate. Bot uses the same three-hero roster.',
+    features: [
+      {
+        titleZh: '三名英雄',
+        titleEn: 'Three heroes',
+        bodyZh: '破鋒近戰、弦鳴遠程、定潮控制——手感分明。',
+        bodyEn: 'Melee, ranged, and CC kits with distinct cadence.',
+      },
+      {
+        titleZh: '先五殺',
+        titleEn: 'First to five',
+        bodyZh: '陣亡後短暫重生，計分直至一方達五殺。',
+        bodyEn: 'Short respawn loop until one side reaches five kills.',
+      },
+      {
+        titleZh: '對稱擂台',
+        titleEn: 'Symmetric arena',
+        bodyZh: '單張競技場地圖與稀疏掩體，無兵線與塔。',
+        bodyEn: 'One arena map with sparse cover—no lanes or towers.',
+      },
+    ],
+    coverImage: 'covers/rift-arena.jpg',
+    palette: {
+      from: '#0a1628',
+      via: '#1e3a5f',
+      to: '#14b8a6',
+      accent: '#f472b6',
+      pattern: 'void',
+    },
+    links: {
+      play: '/vincent-games-studio/demos/rift-arena/',
+    },
+  },
+  {
     id: 'pulse-arena',
     slug: 'pulse-arena',
     titleZh: '脈衝槍戰',
