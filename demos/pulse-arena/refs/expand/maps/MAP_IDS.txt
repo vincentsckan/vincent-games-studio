@@ -1,8 +1,0 @@
-# pulse-arena expand-v1 mapId slugs (brief-aligned)
-yard            # baseline keep (no new plate)
-containers      # expand-map-containers.jpg (reuse mb-arena-containers)
-oasis           # expand-map-oasis.jpg (reuse mb-arena-oasis)
-platforms       # expand-map-platforms.jpg (reuse mb-arena-platforms)
-neon-alley      # expand-map-neon-alley.jpg (NEW)
-dunes           # expand-map-dunes.jpg (NEW)
-pulse-coliseum  # expand-map-pulse-coliseum.jpg (NEW)
