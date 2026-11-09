@@ -1,4 +1,5 @@
 import { ARENA_BG, getCached, heroBust, heroFull, TITLE_MOOD } from './assets'
+import { fighterDrawSize } from './fighterSprite'
 import { COVER_RECTS } from './arena'
 import { HEROES, HERO_ORDER } from './heroes'
 import { clamp, dist, lerp } from './math'
@@ -83,20 +84,18 @@ function drawFighter(
 ): void {
   if (!f.alive) return
   const p = worldToScreen(cam, f.x, f.y, cw, ch)
-  const full = getCached(heroFull(f.hero, f.team))
+  const spriteKey = heroFull(f.hero, f.team)
+  const full = getCached(spriteKey)
   const r = 38 * cam.scale
   ctx.save()
   ctx.translate(p.x, p.y)
-  if (full) {
-    const aspect = full.naturalWidth / full.naturalHeight
-    const h = r * 2.2
-    const w = h * aspect * 0.45
+  if (full?.naturalWidth && full.naturalHeight) {
+    const { w, h } = fighterDrawSize(full.naturalWidth, full.naturalHeight, cam.scale)
     ctx.globalAlpha = now < f.shieldUntil ? 0.85 : 1
-    if (f.team === 2) ctx.filter = 'none'
-    ctx.drawImage(full, -w / 2, -h * 0.95, w, h)
-    ctx.filter = 'none'
+    ctx.drawImage(full, -w / 2, -h, w, h)
     ctx.globalAlpha = 1
   } else {
+    console.warn('[rift-arena] missing in-arena sprite', spriteKey, f.hero, 'team', f.team)
     ctx.fillStyle = f.team === 1 ? '#2dd4bf' : '#e879f9'
     ctx.beginPath()
     ctx.arc(0, 0, r * 0.7, 0, Math.PI * 2)
