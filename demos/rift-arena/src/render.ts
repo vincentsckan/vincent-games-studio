@@ -1,4 +1,4 @@
-import { isAuthorTestMeleeMirror } from './authorTest'
+import { isAuthorTestCoverPassive } from './authorTest'
 import { ARENA_BG, getCached, heroBust, heroFull, TITLE_MOOD } from './assets'
 import { fighterDrawSize } from './fighterSprite'
 import { COVER_RECTS } from './arena'
@@ -40,13 +40,19 @@ export function screenToWorld(
 
 export function computeCamera(cw: number, ch: number, focus?: Fighter): Camera {
   const fitScale = Math.min(cw / ARENA_W, ch / ARENA_H) * 0.92
+  const fx = focus?.x ?? ARENA_W / 2
+  const fy = focus?.y ?? ARENA_H / 2
+
+  if (!isAuthorTestCoverPassive()) {
+    return { x: fx, y: fy, scale: fitScale }
+  }
+
   const followScale = Math.max(cw / ARENA_W, ch / ARENA_H) * 1.08
-  /** Harness melee mirror keeps legacy framing; default + cover use edge-clamping follow zoom. */
-  const scale = isAuthorTestMeleeMirror() ? fitScale : followScale
+  const scale = followScale
   const halfW = cw / (2 * scale)
   const halfH = ch / (2 * scale)
-  let x = focus?.x ?? ARENA_W / 2
-  let y = focus?.y ?? ARENA_H / 2
+  let x = fx
+  let y = fy
   if (halfW < ARENA_W / 2) {
     x = clamp(x, halfW, ARENA_W - halfW)
   } else {
