@@ -2,12 +2,31 @@ export type HeroId = 'pofeng' | 'xianming' | 'dingchao'
 
 export type GamePhase =
   | 'title'
+  | 'campaign'
   | 'heroSelect'
   | 'difficulty'
   | 'match'
   | 'result'
 
 export type Difficulty = 'normal' | 'hard'
+
+export type PlayMode = 'practice' | 'campaign'
+
+/** Campaign map ids. `practice` is the existing vertical-slice arena. */
+export type MapId =
+  | 'practice'
+  | 'M0'
+  | 'M1'
+  | 'M1C'
+  | 'M2'
+  | 'M3'
+  | 'M4'
+  | 'M5'
+  | 'S10'
+  | 'S20'
+
+/** Same-kit enemy bands from the accepted 20-stage plan. */
+export type EnemyTier = 'T0' | 'T0T1' | 'T1' | 'T1T2' | 'T2' | 'T2T3' | 'T3' | 'T3+'
 
 export interface Vec2 {
   x: number
@@ -60,6 +79,8 @@ export interface Fighter {
   isBot: boolean
   kills: number
   chargeR: number
+  /** Outgoing damage scale. Practice fighters stay at 1. */
+  damageMul: number
 }
 
 export interface Projectile {
@@ -91,6 +112,13 @@ export interface Zone {
 
 export interface MatchState {
   phase: GamePhase
+  mode: PlayMode
+  stageId: number | null
+  mapId: MapId
+  killsToWin: number
+  enemyTier: EnemyTier | null
+  /** Cleared campaign stage ids. Practice does not write this. */
+  campaignCleared: number[]
   playerHero: HeroId | null
   botHero: HeroId | null
   difficulty: Difficulty
