@@ -11,7 +11,12 @@ import {
   tickZones,
   tryBasicAttack,
 } from './combat'
-import { isAuthorTestMeleeMirror, resolveBotHeroForMatch } from './authorTest'
+import {
+  isAuthorTestCoverPassive,
+  isAuthorTestMeleeMirror,
+  resolveBotHeroForMatch,
+} from './authorTest'
+import { COVER_RECTS, SPAWN_P1 } from './arena'
 import { HEROES } from './heroes'
 import { moveWithCollision } from './arena'
 import type { InputState } from './input'
@@ -57,6 +62,15 @@ export function startMatch(state: MatchState, playerHero: HeroId, difficulty: Di
     const p2 = state.fighters[1]!
     p2.x = p1.x + HEROES.pofeng.range * 0.82
     p2.y = p1.y
+  }
+  if (isAuthorTestCoverPassive()) {
+    const r3 = COVER_RECTS[3]!
+    const p1 = state.fighters[0]!
+    const p2 = state.fighters[1]!
+    p1.x = r3.x - 55
+    p1.y = r3.y + r3.h * 0.55
+    p2.x = SPAWN_P1.x + 40
+    p2.y = SPAWN_P1.y + 100
   }
   state.phase = 'match'
   state.matchStartedAt = performance.now() / 1000
