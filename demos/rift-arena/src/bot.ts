@@ -1,3 +1,4 @@
+import { isAuthorTestMeleeDummy } from './authorTest'
 import { HEROES } from './heroes'
 import { castE, castQ, castR, tryBasicAttack } from './combat'
 import { dist } from './math'
@@ -11,6 +12,10 @@ export function tickBot(
   now: number,
 ): void {
   if (!bot.alive || !player.alive) return
+  if (isAuthorTestMeleeDummy() && bot.hero === 'pofeng' && player.hero === 'pofeng') {
+    bot.angle = Math.atan2(player.y - bot.y, player.x - bot.x)
+    return
+  }
   const def = HEROES[bot.hero]
   const range = def.range
   const d = dist(bot.x, bot.y, player.x, player.y)
@@ -41,6 +46,9 @@ export function tickBot(
 
 export function botMoveDir(bot: Fighter, player: Fighter, difficulty: Difficulty): { x: number; y: number } {
   if (!bot.alive || !player.alive) return { x: 0, y: 0 }
+  if (isAuthorTestMeleeDummy() && bot.hero === 'pofeng' && player.hero === 'pofeng') {
+    return { x: 0, y: 0 }
+  }
   const def = HEROES[bot.hero]
   const d = dist(bot.x, bot.y, player.x, player.y)
   let x = 0

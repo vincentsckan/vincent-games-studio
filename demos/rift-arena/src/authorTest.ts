@@ -15,6 +15,11 @@ export function isAuthorTestMeleeMirror(): boolean {
   return authorTestMeleeMirror
 }
 
+/** Mirror 破鋒 bot stands still (training dummy) for harness spacing. */
+export function isAuthorTestMeleeDummy(): boolean {
+  return authorTestMeleeMirror
+}
+
 /**
  * Picks the P2 hero for 自由對練. Default is unchanged randomBotHero.
  * With `?authorTest=melee`, 破鋒 players face a mirror 破鋒 bot for harness / author self-test only.
