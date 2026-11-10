@@ -1,8 +1,10 @@
+import { initAuthorTestFromUrl } from './authorTest'
 import { preloadAll } from './assets'
 import { Game } from './game'
 import { createInput } from './input'
 
 async function boot(): Promise<void> {
+  initAuthorTestFromUrl()
   const canvas = document.getElementById('game') as HTMLCanvasElement
   if (!canvas) throw new Error('canvas missing')
   const ctx = canvas.getContext('2d')

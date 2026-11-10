@@ -11,7 +11,8 @@ import {
   tickZones,
   tryBasicAttack,
 } from './combat'
-import { HEROES, randomBotHero } from './heroes'
+import { resolveBotHeroForMatch } from './authorTest'
+import { HEROES } from './heroes'
 import { moveWithCollision } from './arena'
 import type { InputState } from './input'
 import { consumeFrameInput, moveVector } from './input'
@@ -39,7 +40,7 @@ export function createMatchState(): MatchState {
 
 export function startMatch(state: MatchState, playerHero: HeroId, difficulty: Difficulty): void {
   state.playerHero = playerHero
-  state.botHero = randomBotHero(playerHero)
+  state.botHero = resolveBotHeroForMatch(playerHero)
   state.difficulty = difficulty
   state.p1Kills = 0
   state.p2Kills = 0
