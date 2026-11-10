@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import {
   _resetAuthorTestForTests,
   initAuthorTestFromUrl,
+  isAuthorTestCoverPassive,
   isAuthorTestMeleeMirror,
   resolveBotHeroForMatch,
 } from './authorTest'
@@ -20,8 +21,17 @@ describe('authorTest melee mirror', () => {
   it('?authorTest=melee mirrors 破鋒 only', () => {
     initAuthorTestFromUrl('?authorTest=melee')
     expect(isAuthorTestMeleeMirror()).toBe(true)
+    expect(isAuthorTestCoverPassive()).toBe(false)
     expect(resolveBotHeroForMatch('pofeng')).toBe('pofeng')
     const other = resolveBotHeroForMatch('xianming')
     expect(['pofeng', 'dingchao']).toContain(other)
+  })
+
+  it('?authorTest=cover keeps randomBotHero and passive bot flag only', () => {
+    initAuthorTestFromUrl('?authorTest=cover')
+    expect(isAuthorTestCoverPassive()).toBe(true)
+    expect(isAuthorTestMeleeMirror()).toBe(false)
+    const bot = resolveBotHeroForMatch('pofeng')
+    expect(bot).not.toBe('pofeng')
   })
 })
