@@ -1,4 +1,4 @@
-import { stageById, type StageDef } from './stages'
+import { STAGES, stageById, type StageDef } from './stages'
 
 export interface CampaignProgress {
   cleared: number[]
@@ -18,8 +18,20 @@ export function recordClear(progress: CampaignProgress, stageId: number): Campai
 export function isStageEnterable(stage: StageDef, progress: CampaignProgress): boolean {
   if (!stage.playable) return false
   if (progress.cleared.includes(stage.id)) return true
-  if (stage.id === 1) return true
-  return progress.cleared.includes(stage.id - 1)
+  for (const earlier of STAGES) {
+    if (earlier.id >= stage.id) break
+    if (earlier.playable && !progress.cleared.includes(earlier.id)) return false
+  }
+  return true
+}
+
+/** Next stage the player can enter after `afterId`. Skips stages that refuse to start. */
+export function nextEnterableStage(afterId: number, progress: CampaignProgress): StageDef | null {
+  for (const stage of STAGES) {
+    if (stage.id <= afterId) continue
+    if (isStageEnterable(stage, progress)) return stage
+  }
+  return null
 }
 
 export function loadProgress(): CampaignProgress {

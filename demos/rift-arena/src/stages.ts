@@ -5,7 +5,7 @@ import type { EnemyTier, HeroId, MapId } from './types'
  * 裂空擂台 v1 campaign data.
  * Names, win rules, hero gates, tiers, and batches follow the accepted 20-stage plan.
  * Stages 10 and 20 use the mm-stages-v1 layouts (S10 / S20), not the open practice arena.
- * Only stages 1–5 are enterable in this slice.
+ * Stage 13 stays closed: its timed win is data only. Stored modifiers are not applied.
  */
 export type EnemySpec = HeroId | 'mirror' | 'counter' | 'any'
 
@@ -106,7 +106,7 @@ export const STAGES: readonly StageDef[] = [
     enemy: 'dingchao',
     heroes: ALL,
     guidedHero: null,
-    playable: false,
+    playable: true,
     modifiers: [],
   },
   {
@@ -119,7 +119,7 @@ export const STAGES: readonly StageDef[] = [
     enemy: 'xianming',
     heroes: ALL,
     guidedHero: null,
-    playable: false,
+    playable: true,
     modifiers: [],
   },
   {
@@ -132,7 +132,7 @@ export const STAGES: readonly StageDef[] = [
     enemy: 'any',
     heroes: ALL,
     guidedHero: null,
-    playable: false,
+    playable: true,
     modifiers: [],
   },
   {
@@ -145,7 +145,7 @@ export const STAGES: readonly StageDef[] = [
     enemy: 'pofeng',
     heroes: ALL,
     guidedHero: null,
-    playable: false,
+    playable: true,
     modifiers: [],
   },
   {
@@ -158,7 +158,7 @@ export const STAGES: readonly StageDef[] = [
     enemy: 'any',
     heroes: ALL,
     guidedHero: null,
-    playable: false,
+    playable: true,
     modifiers: [],
   },
   {
@@ -171,7 +171,7 @@ export const STAGES: readonly StageDef[] = [
     enemy: 'any',
     heroes: ALL,
     guidedHero: null,
-    playable: false,
+    playable: true,
     modifiers: ['窄空窗'],
   },
   {
@@ -184,7 +184,7 @@ export const STAGES: readonly StageDef[] = [
     enemy: 'any',
     heroes: ALL,
     guidedHero: null,
-    playable: false,
+    playable: true,
     modifiers: [],
   },
   {
@@ -210,7 +210,7 @@ export const STAGES: readonly StageDef[] = [
     enemy: 'mirror',
     heroes: ALL,
     guidedHero: null,
-    playable: false,
+    playable: true,
     modifiers: ['鏡像'],
   },
   {
@@ -223,7 +223,7 @@ export const STAGES: readonly StageDef[] = [
     enemy: 'counter',
     heroes: ALL,
     guidedHero: null,
-    playable: false,
+    playable: true,
     modifiers: ['逆風相性'],
   },
   {
@@ -236,7 +236,7 @@ export const STAGES: readonly StageDef[] = [
     enemy: 'any',
     heroes: ALL,
     guidedHero: null,
-    playable: false,
+    playable: true,
     modifiers: ['裂隙侵蝕'],
   },
   {
@@ -249,7 +249,7 @@ export const STAGES: readonly StageDef[] = [
     enemy: 'any',
     heroes: ALL,
     guidedHero: null,
-    playable: false,
+    playable: true,
     modifiers: ['數值上調'],
   },
   {
@@ -262,7 +262,7 @@ export const STAGES: readonly StageDef[] = [
     enemy: 'any',
     heroes: ALL,
     guidedHero: null,
-    playable: false,
+    playable: true,
     modifiers: [],
   },
   {
@@ -275,7 +275,7 @@ export const STAGES: readonly StageDef[] = [
     enemy: 'any',
     heroes: ALL,
     guidedHero: null,
-    playable: false,
+    playable: true,
     modifiers: ['窄空窗', '短重生'],
   },
   {
@@ -288,7 +288,7 @@ export const STAGES: readonly StageDef[] = [
     enemy: 'any',
     heroes: ALL,
     guidedHero: null,
-    playable: false,
+    playable: true,
     modifiers: ['巔峰'],
   },
 ]

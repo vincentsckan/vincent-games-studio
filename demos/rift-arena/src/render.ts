@@ -1,7 +1,7 @@
 import { ARENA_BG, getCached, heroBust, heroFull, TITLE_MOOD } from './assets'
 import { fighterDrawSize } from './fighterSprite'
 import type { CoverRect } from './arena'
-import { isStageEnterable } from './campaign'
+import { isStageEnterable, nextEnterableStage } from './campaign'
 import { HEROES } from './heroes'
 import { coversFor } from './maps'
 import { clamp, dist, lerp } from './math'
@@ -403,18 +403,19 @@ export function drawOverlay(
     const stage = state.mode === 'campaign' && state.stageId ? stageById(state.stageId) : null
     const rule = stage ? winLabel(stage) : `先 ${state.killsToWin} 殺`
     ctx.fillText(`${state.p1Kills} — ${state.p2Kills} 殺 · ${rule}`, cw / 2, ch * 0.35)
-    if (stage && win && stage.id === 5) {
+    const nextStage =
+      win && stage ? nextEnterableStage(stage.id, { cleared: state.campaignCleared }) : null
+    if (stage && win && !nextStage) {
       ctx.fillStyle = '#94a3b8'
       ctx.font = '600 14px "Noto Sans TC"'
-      ctx.fillText('第 1–5 關已完成。後面批次尚未開放。', cw / 2, ch * 0.41)
+      ctx.fillText(stage.id === 20 ? '裂空擂台戰役完成。' : '下一關尚未開放。', cw / 2, ch * 0.41)
+    } else if (stage && win && nextStage && nextStage.id !== stage.id + 1) {
+      ctx.fillStyle = '#94a3b8'
+      ctx.font = '600 14px "Noto Sans TC"'
+      ctx.fillText(`第 ${stage.id + 1} 關尚未開放。下一關是第 ${nextStage.id} 關。`, cw / 2, ch * 0.41)
     }
     const btns: { act: NonNullable<MenuHit['action']>; label: string; y: number }[] = []
-    const nextId = stage ? stage.id + 1 : 0
-    const nextOk =
-      win &&
-      stage &&
-      nextId <= 20 &&
-      isStageEnterable(stageById(nextId), { cleared: state.campaignCleared })
+    const nextOk = Boolean(nextStage)
     if (nextOk) btns.push({ act: 'next', label: '下一關', y: ch * 0.46 })
     btns.push({ act: 'rematch', label: '再戰', y: nextOk ? ch * 0.56 : ch * 0.48 })
     if (state.mode === 'campaign') btns.push({ act: 'stages', label: '返回關卡', y: nextOk ? ch * 0.66 : ch * 0.58 })
@@ -446,7 +447,7 @@ function drawCampaign(
   ctx.fillText('裂空擂台 · 戰役', cw / 2, 42)
   ctx.font = '600 13px "Noto Sans TC"'
   ctx.fillStyle = '#94a3b8'
-  ctx.fillText('第 1–5 關可進入。第 6 關起尚未開放。', cw / 2, 68)
+  ctx.fillText('順序通關解鎖。第 13 關限時對決尚未開放。', cw / 2, 68)
 
   const cols = 5
   const gap = 10
@@ -479,7 +480,15 @@ function drawCampaign(
     ctx.fillText(`${stage.id} ${stage.name}`, x + cellW / 2, y + cellH * 0.38)
     ctx.font = '600 12px "Noto Sans TC"'
     ctx.fillStyle = '#94a3b8'
-    const status = !stage.playable ? '未開放' : cleared ? '已通關' : enterable ? '可進入' : '未解鎖'
+    const status = !stage.playable
+      ? stage.win.kind === 'time'
+        ? '限時未開放'
+        : '未開放'
+      : cleared
+        ? '已通關'
+        : enterable
+          ? '可進入'
+          : '未解鎖'
     ctx.fillText(`${winLabel(stage)} · ${status}`, x + cellW / 2, y + cellH * 0.68)
     if (over) hit = { stageId: stage.id }
   })

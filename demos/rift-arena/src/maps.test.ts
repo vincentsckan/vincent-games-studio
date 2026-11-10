@@ -87,7 +87,7 @@ function expectSymmetric(covers: readonly CoverRect[]): void {
   }
 }
 
-const PLAYABLE: MapId[] = ['M0', 'M1', 'S10', 'S20']
+const PLAYABLE: MapId[] = ['M0', 'M1', 'M1C', 'M2', 'M3', 'M4', 'M5', 'S10', 'S20']
 
 describe('campaign maps', () => {
   it('keeps the practice arena on the original cover', () => {
@@ -95,10 +95,15 @@ describe('campaign maps', () => {
   })
 
   it('refuses to fall back when a map has no collision', () => {
-    expect(() => coversFor('M2')).toThrow(/no collision/)
-    expect(() => coversFor('M3')).toThrow(/no collision/)
-    expect(MAPS.M4.implemented).toBe(false)
-    expect(MAPS.M5.implemented).toBe(false)
+    const map = MAPS.M3
+    const previous = map.implemented
+    map.implemented = false
+    try {
+      expect(() => coversFor('M3')).toThrow(/no collision/)
+    } finally {
+      map.implemented = previous
+    }
+    expect(coversFor('M3')).not.toBe(COVER_RECTS)
   })
 
   it('builds denser layouts from stage 1 through 20', () => {
@@ -149,5 +154,40 @@ describe('campaign maps', () => {
     expect(openRatio(s20)).toBeGreaterThan(0.55)
     expect(openRatio(s20)).toBeLessThan(openRatio(s10))
     expect(s20.some((r) => r.w >= 150)).toBe(true)
+  })
+
+  it('gives the remaining plan layouts their own collision', () => {
+    const m1 = coversFor('M1')
+    const m2 = coversFor('M2')
+    const m3 = coversFor('M3')
+    const m4 = coversFor('M4')
+    const m5 = coversFor('M5')
+    const m1c = coversFor('M1C')
+    const s10 = coversFor('S10')
+    for (const covers of [m2, m3, m4, m5, m1c]) {
+      expect(covers).not.toEqual(COVER_RECTS)
+      expect(covers).not.toEqual(s10)
+      expect(openRatio(covers)).toBeGreaterThan(0.55)
+    }
+    expect(m2.some((r) => r.w >= 180)).toBe(true)
+    expect(openCountAtX(m2, 200)).toBeLessThan(openCountAtX(m2, 410))
+    expect(lineHitsCover(SPAWN_P1.x, SPAWN_P1.y, SPAWN_P2.x, SPAWN_P2.y, m2)).toBe(false)
+    expect(openRatio(m3)).toBeGreaterThan(openRatio(m1))
+    expect(lineHitsCover(SPAWN_P1.x, SPAWN_P1.y, SPAWN_P2.x, SPAWN_P2.y, m3)).toBe(false)
+    expect(isStandable(700, 525, m3)).toBe(true)
+    expect(lineHitsCover(SPAWN_P1.x, SPAWN_P1.y, SPAWN_P2.x, SPAWN_P2.y, m4)).toBe(true)
+    expect(isStandable(700, 525, m4)).toBe(true)
+    expect(m4).not.toEqual(s10)
+    expect(isStandable(560, 380, m1)).toBe(true)
+    expect(isStandable(560, 380, m1c)).toBe(false)
+    expect(isStandable(700, 525, m1c)).toBe(true)
+    expect(m5.some((r) => r.kind === 'rift')).toBe(true)
+    expect(lineHitsCover(SPAWN_P1.x, SPAWN_P1.y, SPAWN_P2.x, SPAWN_P2.y, m5)).toBe(true)
+    expect(isStandable(700, 525, m5)).toBe(true)
+    expect(MAPS.M2.name).toBe('狹廊')
+    expect(MAPS.M3.name).toBe('開闊廣場')
+    expect(MAPS.M4.name).toBe('殘柱林')
+    expect(MAPS.M5.name).toBe('裂縫之心')
+    expect(MAPS.M1C.name).toBe('裂縫緣邊')
   })
 })

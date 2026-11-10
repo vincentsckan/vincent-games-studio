@@ -1,5 +1,5 @@
 import { botMoveDir, tickBot, TIER_TUNING } from './bot'
-import { loadProgress, recordClear, saveProgress, isStageEnterable } from './campaign'
+import { loadProgress, nextEnterableStage, recordClear, saveProgress, isStageEnterable } from './campaign'
 import {
   castE,
   castQ,
@@ -84,8 +84,9 @@ export function settleMatch(state: MatchState): boolean {
 export function startCampaignMatch(state: MatchState, playerHero: HeroId, stageId: number): void {
   const stage = stageById(stageId)
   if (!stage.playable || stage.win.kind !== 'kills') {
-    throw new Error(`裂空擂台 stage ${stageId} is not playable in this slice`)
+    throw new Error(`裂空擂台 stage ${stageId} is not playable`)
   }
+  coversFor(stage.mapId)
   if (!stage.heroes.includes(playerHero)) {
     throw new Error(`裂空擂台 stage ${stageId} does not allow ${playerHero}`)
   }
@@ -202,10 +203,8 @@ export class Game {
       return
     }
     if (hit.action === 'next' && state.mode === 'campaign' && state.stageId && state.winner === 1) {
-      const nextId = state.stageId + 1
-      if (nextId > 20) return
-      const next = stageById(nextId)
-      if (isStageEnterable(next, { cleared: state.campaignCleared })) {
+      const next = nextEnterableStage(state.stageId, { cleared: state.campaignCleared })
+      if (next) {
         state.stageId = next.id
         state.playerHero = null
         state.winner = null

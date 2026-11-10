@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { TIER_TUNING } from './bot'
-import { isStageEnterable, recordClear } from './campaign'
+import { isStageEnterable, nextEnterableStage, recordClear } from './campaign'
 import { syncWinner } from './combat'
 import { createMatchState, settleMatch, startCampaignMatch, startMatch } from './game'
-import { MAPS } from './maps'
+import { coversFor, MAPS } from './maps'
+import { COVER_RECTS } from './arena'
+import { RESPAWN_SEC } from './types'
+import { HEROES as HERO_DEFS } from './heroes'
 import { pickCampaignEnemy, stageById, STAGES, type StageDef } from './stages'
 import type { HeroId } from './types'
 
@@ -83,20 +86,27 @@ describe('20-stage framework', () => {
 })
 
 describe('playable stages 1–5', () => {
-  it('unlocks the next stage only after a clear, and keeps 6–20 closed', () => {
+  it('unlocks the next ready stage after a clear and skips the timed stage', () => {
     let progress = { cleared: [] as number[] }
     expect(isStageEnterable(stageById(1), progress)).toBe(true)
     expect(isStageEnterable(stageById(2), progress)).toBe(false)
     progress = recordClear(progress, 1)
-    expect(isStageEnterable(stageById(1), progress)).toBe(true)
     expect(isStageEnterable(stageById(2), progress)).toBe(true)
     expect(isStageEnterable(stageById(3), progress)).toBe(false)
     for (let id = 1; id <= 5; id++) progress = recordClear(progress, id)
-    expect(isStageEnterable(stageById(5), progress)).toBe(true)
-    expect(isStageEnterable(stageById(6), progress)).toBe(false)
-    expect(isStageEnterable(stageById(10), progress)).toBe(false)
-    expect(isStageEnterable(stageById(20), progress)).toBe(false)
-    expect(STAGES.filter((s) => s.playable).map((s) => s.id)).toEqual([1, 2, 3, 4, 5])
+    expect(isStageEnterable(stageById(6), progress)).toBe(true)
+    expect(isStageEnterable(stageById(7), progress)).toBe(false)
+    for (let id = 6; id <= 9; id++) progress = recordClear(progress, id)
+    expect(isStageEnterable(stageById(10), progress)).toBe(true)
+    expect(isStageEnterable(stageById(11), progress)).toBe(false)
+    for (let id = 10; id <= 12; id++) progress = recordClear(progress, id)
+    expect(isStageEnterable(stageById(13), progress)).toBe(false)
+    expect(isStageEnterable(stageById(14), progress)).toBe(true)
+    expect(nextEnterableStage(12, progress)?.id).toBe(14)
+    for (let id = 14; id <= 19; id++) progress = recordClear(progress, id)
+    expect(isStageEnterable(stageById(20), progress)).toBe(true)
+    expect(nextEnterableStage(20, progress)).toBeNull()
+    expect(STAGES.filter((s) => !s.playable).map((s) => s.id)).toEqual([13])
   })
 
   it('starts each of stages 1–5 with that stage’s win rule, hero, and map', () => {
@@ -119,8 +129,82 @@ describe('playable stages 1–5', () => {
     expect(state.killsToWin).toBe(5)
 
     expect(() => startCampaignMatch(state, 'pofeng', 4)).toThrow(/does not allow/)
-    expect(() => startCampaignMatch(state, 'pofeng', 6)).toThrow(/not playable/)
+    expect(() => startCampaignMatch(state, 'pofeng', 13)).toThrow(/not playable/)
     expect(() => startCampaignMatch(state, 'xianming', 1)).toThrow(/does not allow/)
+  })
+
+  it('starts stages 6–12 and 14–20 on their own maps and tiers', () => {
+    const state = createMatchState()
+    startCampaignMatch(state, 'pofeng', 6)
+    expect(state.mapId).toBe('M2')
+    expect(state.killsToWin).toBe(5)
+    expect(state.enemyTier).toBe('T1T2')
+    expect(state.botHero).toBe('dingchao')
+    expect(coversFor(state.mapId)).not.toBe(COVER_RECTS)
+
+    startCampaignMatch(state, 'xianming', 7)
+    expect(state.mapId).toBe('M3')
+    expect(state.enemyTier).toBe('T2')
+    expect(state.botHero).toBe('xianming')
+
+    startCampaignMatch(state, 'dingchao', 8)
+    expect(state.mapId).toBe('M4')
+    expect(state.enemyTier).toBe('T2')
+
+    startCampaignMatch(state, 'pofeng', 9)
+    expect(state.mapId).toBe('M1C')
+    expect(state.botHero).toBe('pofeng')
+    expect(state.enemyTier).toBe('T2')
+
+    startCampaignMatch(state, 'pofeng', 10)
+    expect(state.mapId).toBe('S10')
+    expect(state.killsToWin).toBe(5)
+    expect(state.enemyTier).toBe('T2T3')
+    expect(coversFor('S10')).not.toEqual(COVER_RECTS)
+    expect(state.fighters[1]!.maxHp).toBe(Math.round(HERO_DEFS[state.botHero!].maxHp * 1.1))
+    expect(state.fighters[1]!.damageMul).toBeGreaterThan(1)
+
+    startCampaignMatch(state, 'pofeng', 11)
+    expect(state.mapId).toBe('M2')
+    expect(state.enemyTier).toBe('T3')
+    expect(state.zones).toEqual([])
+
+    startCampaignMatch(state, 'dingchao', 12)
+    expect(state.mapId).toBe('M1')
+    expect(state.killsToWin).toBe(7)
+
+    startCampaignMatch(state, 'xianming', 14)
+    expect(state.botHero).toBe('xianming')
+    expect(state.mapId).toBe('M1')
+    expect(state.enemyTier).toBe('T3')
+
+    startCampaignMatch(state, 'pofeng', 15)
+    expect(state.botHero).toBe('dingchao')
+    expect(state.mapId).toBe('M3')
+
+    startCampaignMatch(state, 'pofeng', 16)
+    expect(state.mapId).toBe('M5')
+    expect(state.zones).toEqual([])
+
+    startCampaignMatch(state, 'pofeng', 18)
+    expect(state.mapId).toBe('M4')
+    expect(state.killsToWin).toBe(7)
+    expect(state.enemyTier).toBe('T3')
+
+    startCampaignMatch(state, 'pofeng', 19)
+    expect(state.mapId).toBe('M4')
+    expect(RESPAWN_SEC).toBe(2.2)
+    expect(state.zones).toEqual([])
+
+    startCampaignMatch(state, 'dingchao', 20)
+    expect(state.mapId).toBe('S20')
+    expect(state.killsToWin).toBe(7)
+    expect(state.enemyTier).toBe('T3+')
+    expect(coversFor('S20')).not.toEqual(COVER_RECTS)
+    expect(coversFor('S20')).not.toEqual(coversFor('practice'))
+    const bot = state.fighters[1]!
+    expect(bot.maxHp).toBeGreaterThan(460)
+    expect(bot.damageMul).toBeGreaterThan(1)
   })
 
   it('wins a teaching stage at 3 kills and still needs 5 in free practice', () => {
