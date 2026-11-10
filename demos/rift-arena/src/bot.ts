@@ -14,6 +14,7 @@ export function tickBot(
   if (!bot.alive || !player.alive) return
   if (isAuthorTestMeleeDummy() && bot.hero === 'pofeng' && player.hero === 'pofeng') {
     bot.angle = Math.atan2(player.y - bot.y, player.x - bot.x)
+    if (dist(bot.x, bot.y, player.x, player.y) > HEROES.pofeng.range * 0.9) return
     return
   }
   const def = HEROES[bot.hero]
@@ -46,11 +47,17 @@ export function tickBot(
 
 export function botMoveDir(bot: Fighter, player: Fighter, difficulty: Difficulty): { x: number; y: number } {
   if (!bot.alive || !player.alive) return { x: 0, y: 0 }
-  if (isAuthorTestMeleeDummy() && bot.hero === 'pofeng' && player.hero === 'pofeng') {
-    return { x: 0, y: 0 }
-  }
   const def = HEROES[bot.hero]
   const d = dist(bot.x, bot.y, player.x, player.y)
+  if (isAuthorTestMeleeDummy() && bot.hero === 'pofeng' && player.hero === 'pofeng') {
+    if (d > def.range * 0.85) {
+      const x = player.x - bot.x
+      const y = player.y - bot.y
+      const l = Math.hypot(x, y) || 1
+      return { x: x / l, y: y / l }
+    }
+    return { x: 0, y: 0 }
+  }
   let x = 0
   let y = 0
   const ideal = def.range * 0.75

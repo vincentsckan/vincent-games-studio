@@ -11,7 +11,7 @@ import {
   tickZones,
   tryBasicAttack,
 } from './combat'
-import { resolveBotHeroForMatch } from './authorTest'
+import { isAuthorTestMeleeMirror, resolveBotHeroForMatch } from './authorTest'
 import { HEROES } from './heroes'
 import { moveWithCollision } from './arena'
 import type { InputState } from './input'
@@ -52,6 +52,12 @@ export function startMatch(state: MatchState, playerHero: HeroId, difficulty: Di
     makeFighter('p1', playerHero, 1, false),
     makeFighter('p2', state.botHero, 2, true),
   ]
+  if (isAuthorTestMeleeMirror() && playerHero === 'pofeng' && state.botHero === 'pofeng') {
+    const p1 = state.fighters[0]!
+    const p2 = state.fighters[1]!
+    p2.x = p1.x + HEROES.pofeng.range * 0.82
+    p2.y = p1.y
+  }
   state.phase = 'match'
   state.matchStartedAt = performance.now() / 1000
 }
