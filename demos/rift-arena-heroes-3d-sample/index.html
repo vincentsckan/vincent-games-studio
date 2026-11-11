@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>裂空擂台 · 立體公仔樣本</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --cyan: #3ee7ff;
+      --magenta: #ff4d9a;
+      --ink: #e8e6f2;
+      --muted: #9a96ad;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: #07060d; overflow: hidden; }
+    body {
+      font-family: "WenQuanYi Micro Hei", "Noto Sans CJK TC", "Noto Sans TC", sans-serif;
+      color: var(--ink);
+    }
+    canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+    #hud, #panel, #caption {
+      position: absolute;
+      z-index: 2;
+      pointer-events: none;
+    }
+    #hud { top: 16px; left: 18px; }
+    h1 { margin: 0; font-size: 28px; letter-spacing: 0.12em; font-weight: 700; }
+    h1 span { color: var(--cyan); }
+    #hud p, #who { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+    #who { color: var(--ink); margin-top: 10px; font-size: 16px; }
+    #panel {
+      right: 16px;
+      bottom: 16px;
+      width: min(420px, calc(100% - 32px));
+      padding: 12px 14px;
+      background: rgba(8, 8, 14, 0.72);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      pointer-events: auto;
+    }
+    .row { display: flex; gap: 8px; margin-bottom: 8px; }
+    button {
+      flex: 1;
+      appearance: none;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: #14141c;
+      color: var(--ink);
+      border-radius: 8px;
+      padding: 8px 6px;
+      font: inherit;
+      cursor: pointer;
+    }
+    button[aria-pressed="true"] {
+      border-color: var(--cyan);
+      box-shadow: inset 0 0 0 1px var(--cyan);
+    }
+    button.side-p2[aria-pressed="true"] {
+      border-color: var(--magenta);
+      box-shadow: inset 0 0 0 1px var(--magenta);
+    }
+    .hint, .note { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.45; word-break: keep-all; }
+    .note { margin-top: 6px; }
+    #caption {
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      padding: 8px 14px;
+      background: rgba(8, 8, 14, 0.78);
+      border-radius: 999px;
+      font-size: 14px;
+      letter-spacing: 0.06em;
+    }
+    #caption[hidden] { display: none; }
+    #error {
+      position: absolute;
+      inset: 0;
+      display: none;
+      place-items: center;
+      padding: 24px;
+      text-align: center;
+      background: rgba(0, 0, 0, 0.72);
+      z-index: 3;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="view"></canvas>
+  <div id="hud">
+    <h1>裂空<span>擂</span>台</h1>
+    <p>立體公仔樣本 · 只限本地預覽</p>
+    <p id="who">破鋒 · P1</p>
+  </div>
+  <div id="panel">
+    <div class="row" id="heroes"></div>
+    <div class="row" id="sides"></div>
+    <p class="hint">WASD／方向鍵移動 · 拖曳滑鼠旋轉鏡頭 · 滾輪遠近 · 1／2／3 切英雄 · F 切換 P1／P2 · R 回到中央</p>
+    <p class="note">六個立體公仔可在競技場走動。這是驗收樣本，不是正式對戰，亦非公開部署。</p>
+  </div>
+  <div id="caption" hidden></div>
+  <div id="error"></div>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./vendor/three.module.js",
+      "three/addons/": "./vendor/addons/"
+    }
+  }
+  </script>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
