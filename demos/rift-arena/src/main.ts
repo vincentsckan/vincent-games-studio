@@ -29,6 +29,12 @@ async function boot(): Promise<void> {
   const input = createInput(canvas)
   const game = new Game(canvas, ctx, input)
 
+  ;(window as unknown as { __riftArenaState?: () => unknown }).__riftArenaState = () => ({
+    phase: game.state.phase,
+    playerHero: game.state.playerHero,
+    botHero: game.state.botHero,
+  })
+
   if (isAuthorTestCoverPassive()) {
     ;(window as unknown as { __riftHarness?: () => unknown }).__riftHarness = () => {
       const cw = canvas.width

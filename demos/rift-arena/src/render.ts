@@ -107,10 +107,26 @@ function drawFighter(
   const spriteKey = heroFull(f.hero, f.team)
   const full = getCached(spriteKey)
   const r = 38 * cam.scale
+  let spriteH = r * 2.2
+  if (full?.naturalWidth && full.naturalHeight) {
+    spriteH = fighterDrawSize(full.naturalWidth, full.naturalHeight, cam.scale).h
+  }
+  const barW = 56 * cam.scale
+  const barH = 5 * cam.scale
+  const bx = p.x - barW / 2
+  const by = p.y - spriteH - barH - 4 * cam.scale
+  ctx.fillStyle = '#0f172a'
+  ctx.fillRect(bx, by, barW, barH)
+  ctx.fillStyle = f.team === 1 ? '#14b8a6' : '#db2777'
+  ctx.fillRect(bx, by, barW * clamp(f.hp / f.maxHp, 0, 1), barH)
+
   ctx.save()
   ctx.translate(p.x, p.y)
+  ctx.imageSmoothingEnabled = true
+  ctx.imageSmoothingQuality = 'high'
   if (full?.naturalWidth && full.naturalHeight) {
     const { w, h } = fighterDrawSize(full.naturalWidth, full.naturalHeight, cam.scale)
+    spriteH = h
     ctx.globalAlpha = now < f.shieldUntil ? 0.85 : 1
     ctx.drawImage(full, -w / 2, -h, w, h)
     ctx.globalAlpha = 1
@@ -122,7 +138,7 @@ function drawFighter(
     ctx.fill()
   }
   ctx.strokeStyle = f.team === 1 ? '#5eead4' : '#f472b6'
-  ctx.lineWidth = 2
+  ctx.lineWidth = Math.max(1, 2 * cam.scale)
   ctx.beginPath()
   ctx.moveTo(0, 0)
   ctx.lineTo(Math.cos(f.angle) * r, Math.sin(f.angle) * r)
@@ -135,13 +151,6 @@ function drawFighter(
     ctx.stroke()
   }
   ctx.restore()
-  const barW = 56 * cam.scale
-  const bx = p.x - barW / 2
-  const by = p.y - r * 1.35
-  ctx.fillStyle = '#0f172a'
-  ctx.fillRect(bx, by, barW, 5 * cam.scale)
-  ctx.fillStyle = f.team === 1 ? '#14b8a6' : '#db2777'
-  ctx.fillRect(bx, by, barW * clamp(f.hp / f.maxHp, 0, 1), 5 * cam.scale)
 }
 
 function drawWorldFx(ctx: CanvasRenderingContext2D, cam: Camera, cw: number, ch: number, state: MatchState): void {

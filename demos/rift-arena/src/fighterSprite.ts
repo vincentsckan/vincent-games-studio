@@ -1,5 +1,5 @@
-/** Screen height of in-arena fighter sprite at camera scale 1 (top-down readable). */
-export const FIGHTER_SPRITE_HEIGHT_PX = 108
+/** Screen height of in-arena fighter sprite at camera scale 1 (864×1152 RGBA full-body). */
+export const FIGHTER_SPRITE_HEIGHT_PX = 112
 
 export function fighterDrawSize(
   naturalWidth: number,
