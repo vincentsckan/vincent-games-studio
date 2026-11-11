@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
-import { PLAYER_RADIUS, blocked, buildArena } from "./arena.js";
+import { PLAYER_RADIUS, blocked, prepareArena } from "./arena.js";
 
 const TITLE = "裂空擂台";
 if (TITLE.codePointAt(2) !== 0x64c2) {
@@ -69,17 +69,27 @@ const fill = new THREE.DirectionalLight(0xb9c6ff, 0.7);
 fill.position.set(5, 3.2, 4);
 scene.add(fill);
 
-const arena = buildArena();
-scene.add(arena.group);
+// Supplied glTF meshes face +X. A quarter turn about Y brings the chest to -Z,
+// which is the front shot and the idle facing.
+const FACE_YAW = Math.PI / 2;
+const TARGET_HEIGHT = {
+  "pofeng-p1": 1.32,
+  "pofeng-p2": 1.78,
+  "xianming-p1": 1.74,
+  "xianming-p2": 1.74,
+  "dingchao-p1": 1.8,
+  "dingchao-p2": 1.8,
+};
 
+let arena = null;
 const loader = new GLTFLoader();
 const figurines = new Map();
 let heroId = shotHero || "pofeng";
 let side = shotMode ? shotSide : "p1";
 let current = null;
 const body = {
-  x: arena.spawn.x,
-  z: arena.spawn.z,
+  x: 0,
+  z: 1.15,
   yaw: 0,
 };
 let camYaw = Math.PI * 0.82;
@@ -102,13 +112,19 @@ function fitMaterials(root) {
     node.receiveShadow = true;
     const materials = Array.isArray(node.material) ? node.material : [node.material];
     for (const material of materials) {
-      material.side = THREE.DoubleSide;
-      if (material.color) material.color.setRGB(1.0, 1.0, 1.0);
-      if ("roughness" in material) material.roughness = Math.max(material.roughness ?? 0.6, 0.48);
-      if ("metalness" in material) material.metalness = Math.min(material.metalness ?? 0.05, 0.2);
-      if ("envMapIntensity" in material) material.envMapIntensity = 0.55;
+      material.side = THREE.FrontSide;
+      if ("envMapIntensity" in material) material.envMapIntensity = 1;
     }
   });
+}
+
+function plantFigurine(root, key) {
+  root.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(root);
+  const height = Math.max(0.001, box.max.y - box.min.y);
+  const scale = (TARGET_HEIGHT[key] || 1.7) / height;
+  root.scale.setScalar(scale);
+  root.userData.foot = -box.min.y * scale;
 }
 
 async function loadFigurines() {
@@ -119,6 +135,7 @@ async function loadFigurines() {
       jobs.push(
         loader.loadAsync(`assets/models/${key}.glb`).then((gltf) => {
           fitMaterials(gltf.scene);
+          plantFigurine(gltf.scene, key);
           gltf.scene.visible = false;
           gltf.scene.traverse((node) => {
             node.frustumCulled = false;
@@ -174,6 +191,7 @@ function buildUi() {
 }
 
 function tryMove(nx, nz) {
+  if (!arena) return [body.x, body.z];
   if (!blocked(nx, nz, arena.circles, arena.boxes)) return [nx, nz];
   if (!blocked(nx, body.z, arena.circles, arena.boxes)) return [nx, body.z];
   if (!blocked(body.x, nz, arena.circles, arena.boxes)) return [body.x, nz];
@@ -197,7 +215,7 @@ function applyShotCamera() {
   };
   camYaw = table[shotAngle] ?? Math.PI;
   camPitch = shotAngle === "threeq" ? 0.34 : 0.22;
-  camDist = 3.2;
+  camDist = 4.05;
   body.x = 0;
   body.z = 0;
   body.yaw = 0;
@@ -216,8 +234,8 @@ function updateCamera() {
 
 function placeFigurine() {
   if (!current) return;
-  current.position.set(body.x, 0, body.z);
-  current.rotation.set(0, body.yaw, 0);
+  current.position.set(body.x, current.userData.foot || 0, body.z);
+  current.rotation.set(0, body.yaw + FACE_YAW, 0);
 }
 
 const clock = new THREE.Clock();
@@ -254,7 +272,11 @@ function frame() {
       const nx = body.x + (ix / length) * speed;
       const nz = body.z + (iz / length) * speed;
       [body.x, body.z] = tryMove(nx, nz);
-      const facing = Math.atan2(ix, -iz);
+      const mx = ix / length;
+      const mz = iz / length;
+      // Local +X is the chest. yaw is chosen so that rotation lands the chest
+      // on the movement vector.
+      const facing = Math.atan2(-mx, -mz);
       const delta = shortest(0, facing - body.yaw);
       body.yaw += delta * Math.min(1, dt * 10);
     }
@@ -262,7 +284,7 @@ function frame() {
   if (shotMode) applyShotCamera();
   placeFigurine();
   updateCamera();
-  arena.dust.rotation.y += dt * 0.02;
+  if (arena) arena.dust.rotation.y += dt * 0.02;
   renderer.render(scene, camera);
   if (shotMode && current) {
     readyFrames += 1;
@@ -283,7 +305,7 @@ window.addEventListener("keydown", (event) => {
   if (event.code === "Digit2") select("xianming", side);
   if (event.code === "Digit3") select("dingchao", side);
   if (event.code === "KeyF") select(heroId, side === "p1" ? "p2" : "p1");
-  if (event.code === "KeyR") {
+  if (event.code === "KeyR" && arena) {
     body.x = arena.spawn.x;
     body.z = arena.spawn.z;
   }
@@ -321,10 +343,17 @@ canvas.addEventListener(
 canvas.addEventListener("contextmenu", (event) => event.preventDefault());
 
 buildUi();
-loadFigurines()
-  .then(() => {
+Promise.all([prepareArena(), loadFigurines()])
+  .then(([built]) => {
+    arena = built;
+    scene.add(arena.group);
+    if (!shotMode) {
+      body.x = arena.spawn.x;
+      body.z = arena.spawn.z;
+    }
     select(heroId, side);
     if (shotMode) applyShotCamera();
+    window.__SAMPLE_READY = true;
     requestAnimationFrame(frame);
   })
   .catch((error) => {

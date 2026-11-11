@@ -11,28 +11,18 @@ python3 -m http.server 5174
 
 打開 `http://127.0.0.1:5174/`。請用本機伺服器，不要直接用 `file://`。
 
-- WASD 或方向鍵移動
+- WASD 或方向鍵移動，公仔面向前進方向
 - 拖曳滑鼠旋轉鏡頭，滾輪拉近拉遠
 - 1／2／3 切換破鋒、弦鳴、定潮
 - F 或按鈕切換 P1／P2
 - R 回到場地中央
 
-鏡頭是第三人稱，公仔有自己的朝向，不會永遠正面對着相機。
+鏡頭是第三人稱。預設看到的是胸腹與臉，不是背面。
 
-## 公仔怎麼來的
+## 這一版裡有什麼
 
-只用免費、本機工具：
+六個 `assets/models/*.glb` 是已縮到網頁尺寸的 PBR 公仔，帶 baseColor、法線與 ORM。樣本只負責擺放、把臉轉到正面、以及讓它們在場上走。不要再用舊的單色黏土網格蓋掉這些檔。
 
-- [TripoSR](https://github.com/VAST-AI-Research/TripoSR)（MIT，Stability AI / VAST 的研究模型）在 CPU 上從鎖定的全身切割圖重建網格。這不是 Tripo、Meshy、CSM 的付費 API，也沒有花任何費用。
-- Blender 只做軸向、輕微平滑、把腳底放到地面，再輸出 glTF。
-- 場景用 Three.js 幾何體搭出來（青／洋紅兩端、水晶、稀疏掩體、中央符文），沒有把 mm-arena-v2 概念圖貼成一張地面。
+場地按已鎖定的 mm-arena-v2 圖重做。地面用 `assets/arena/arena-topdown-v2.png` 的原像素，外圈氣氛用 `arena-mood-v2.png`。圖檔像素沒有改。水晶、柱與矮掩體是貼著圖上位置加的立體件，方便走動與碰撞。
 
-參考圖只讀、不改像素，也沒有當成場景裡的 2D 廣告牌。每個 GLB 都是有體積的網格：正面能認出服裝、髮型與武器，背面是同一套單張重建的另一面，輪廓跟正面不同，腳踩在場上。
-
-重跑（需要已安裝的 Blender 與本機 TripoSR，權重不會放進這個倉庫）：
-
-```bash
-REF_DIR=/path/to/readonly-sprites python3 tools/reconstruct_local.py assets/models
-```
-
-`REF_DIR` 裡要有六張未改過的透明全身圖：`pofeng-full-p1.png`、`pofeng-full-p2.png`、`xianming-full-p1.png`、`xianming-full-p2.png`、`dingchao-full-p1.png`、`dingchao-full-p2.png`。
+`tools/reconstruct_local.py` 是早期本機重建草稿，不能覆寫現在的六個 GLB。

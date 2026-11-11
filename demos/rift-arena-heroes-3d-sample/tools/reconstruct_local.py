@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Build the six 裂空擂台 figurine meshes with local, free tools only.
+"""Retired local clay reconstruction. Do not run this over assets/models.
+
+The shipped GLBs are the supplied PBR web meshes. This script writes the old
+vertex-color meshes and must not replace them.
+
+Build the six 裂空擂台 figurine meshes with local, free tools only.
 
 Reads the locked full-body cuts (does not modify them), runs TripoSR on CPU
 (MIT research model, not the paid Tripo / Meshy / CSM APIs), then cleans the
