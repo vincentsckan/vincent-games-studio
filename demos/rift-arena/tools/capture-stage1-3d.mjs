@@ -82,18 +82,20 @@ function trimLeadingBlack(src, dest) {
   let cut = 0
   for (let i = 0; i < frames; i += 1) {
     const start = i * frameBytes
-    let sum = 0
+    let bright = 0
     let n = 0
     for (let p = start; p < start + frameBytes; p += 12) {
-      sum += raw.stdout[p] * 0.2126 + raw.stdout[p + 1] * 0.7152 + raw.stdout[p + 2] * 0.0722
+      const luma = raw.stdout[p] * 0.2126 + raw.stdout[p + 1] * 0.7152 + raw.stdout[p + 2] * 0.0722
+      if (luma > 28) bright += 1
       n += 1
     }
-    if (sum / n > 8) {
+    // A lone back button on a black page is not content. The title banner is.
+    if (bright / n > 0.06) {
       cut = i
       break
     }
   }
-  const ss = Math.max(0, cut / fps - 0.12)
+  const ss = cut / fps
   console.log(`trim leading black: frame ${cut}/${frames}, ss=${ss.toFixed(3)}`)
   const encoded = spawnSync(
     'ffmpeg',

@@ -308,6 +308,11 @@ export class Stage1Preview {
     this.errorBox.textContent = message
   }
 
+  /** Menus stay on the flat backdrop. The 3D plate shows only in a match or the figurine walk. */
+  setGameBackdrop(matchVisible: boolean): void {
+    this.canvas.style.visibility = this.mode !== 'game' || matchVisible ? 'visible' : 'hidden'
+  }
+
   resize(width: number, height: number): void {
     this.renderer.setPixelRatio(1)
     this.renderer.setSize(width, height, false)

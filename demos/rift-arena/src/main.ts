@@ -108,11 +108,14 @@ async function boot(): Promise<void> {
     }
     if (preview.mode === 'figurines' || preview.mode === 'shot') {
       setExternalMatchScene(false)
+      preview.setGameBackdrop(false)
       preview.frame(dt)
       requestAnimationFrame(frame)
       return
     }
-    setExternalMatchScene(preview.ready && game.state.phase === 'match')
+    const matchVisible = preview.ready && game.state.phase === 'match'
+    preview.setGameBackdrop(matchVisible)
+    setExternalMatchScene(matchVisible)
     game.tick(dt)
     if (preview.ready && game.state.phase === 'match') {
       preview.presentMatch(game.state, canvas.width, canvas.height)
