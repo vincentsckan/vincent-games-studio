@@ -18,6 +18,7 @@ import { coversFor } from './maps'
 import { moveWithCollision } from './arena'
 import type { InputState } from './input'
 import { consumeFrameInput, moveVector } from './input'
+import { previewBus } from './previewBus'
 import { computeCamera, drawOverlay, renderMatch, screenToWorld, type MenuHit } from './render'
 import { pickCampaignEnemy, stageById } from './stages'
 import type { Difficulty, GamePhase, HeroId, MatchState } from './types'
@@ -160,6 +161,10 @@ export class Game {
 
   private handleMenu(hit: MenuHit): void {
     const { state } = this
+    if (hit.action === 'figurines' && state.phase === 'title') {
+      previewBus.request = 'figurines'
+      return
+    }
     if (hit.action === 'campaign' && state.phase === 'title') {
       state.phase = 'campaign'
       return

@@ -49,6 +49,13 @@ export function computeCamera(cw: number, ch: number, focus?: Fighter): Camera {
   }
 }
 
+/** When set, the match floor and fighters are drawn by the 3D preview. */
+let externalMatchScene = false
+
+export function setExternalMatchScene(on: boolean): void {
+  externalMatchScene = on
+}
+
 function drawArena(
   ctx: CanvasRenderingContext2D,
   cam: Camera,
@@ -177,6 +184,44 @@ function drawFighter(
   ctx.fillRect(bx, by, barW * clamp(f.hp / f.maxHp, 0, 1), 5 * cam.scale)
 }
 
+/** Feet marker and health only. The body is the GLB, not a sprite. */
+function drawFighterMarker(
+  ctx: CanvasRenderingContext2D,
+  cam: Camera,
+  cw: number,
+  ch: number,
+  f: Fighter,
+  now: number,
+): void {
+  if (!f.alive) return
+  const p = worldToScreen(cam, f.x, f.y, cw, ch)
+  const r = 38 * cam.scale
+  ctx.save()
+  ctx.translate(p.x, p.y)
+  ctx.strokeStyle = f.team === 1 ? '#5eead4' : '#f472b6'
+  ctx.lineWidth = 2
+  ctx.beginPath()
+  ctx.moveTo(0, 0)
+  ctx.lineTo(Math.cos(f.angle) * r, Math.sin(f.angle) * r)
+  ctx.stroke()
+  if (now < f.shieldUntil) {
+    ctx.strokeStyle = '#cbd5e1'
+    ctx.lineWidth = 3
+    ctx.beginPath()
+    ctx.arc(0, 0, r * 1.1, 0, Math.PI * 2)
+    ctx.stroke()
+  }
+  ctx.restore()
+  const lift = 108 * cam.scale
+  const barW = 56 * cam.scale
+  const bx = p.x - barW / 2
+  const by = p.y - lift
+  ctx.fillStyle = '#0f172a'
+  ctx.fillRect(bx, by, barW, 5 * cam.scale)
+  ctx.fillStyle = f.team === 1 ? '#14b8a6' : '#db2777'
+  ctx.fillRect(bx, by, barW * clamp(f.hp / f.maxHp, 0, 1), 5 * cam.scale)
+}
+
 function drawWorldFx(ctx: CanvasRenderingContext2D, cam: Camera, cw: number, ch: number, state: MatchState): void {
   for (const z of state.zones) {
     const p = worldToScreen(cam, z.x, z.y, cw, ch)
@@ -271,7 +316,17 @@ function drawCooldowns(ctx: CanvasRenderingContext2D, cw: number, ch: number, f:
 export interface MenuHit {
   hero?: HeroId
   stageId?: number
-  action?: 'practice' | 'campaign' | 'diffNormal' | 'diffHard' | 'rematch' | 'title' | 'back' | 'next' | 'stages'
+  action?:
+    | 'practice'
+    | 'campaign'
+    | 'figurines'
+    | 'diffNormal'
+    | 'diffHard'
+    | 'rematch'
+    | 'title'
+    | 'back'
+    | 'next'
+    | 'stages'
 }
 
 export function drawOverlay(
@@ -306,6 +361,9 @@ export function drawOverlay(
     }
     if (menuButton(ctx, hover, cw / 2 - 100, practiceY - 64, 200, 48, '戰役', '#115e59', '#0f766e')) {
       hit = { action: 'campaign' }
+    }
+    if (menuButton(ctx, hover, 24, 24, 168, 40, '立體公仔', '#1e1b4b', '#312e81')) {
+      hit = { action: 'figurines' }
     }
     return hit
   }
@@ -545,9 +603,14 @@ export function renderMatch(
   const player = state.fighters.find((f) => f.team === 1)
   const cam = computeCamera(cw, ch, player)
   ctx.clearRect(0, 0, cw, ch)
-  drawArena(ctx, cam, cw, ch, state.screenShake, coversFor(state.mapId), state.mapId)
+  if (!externalMatchScene) {
+    drawArena(ctx, cam, cw, ch, state.screenShake, coversFor(state.mapId), state.mapId)
+  }
   drawWorldFx(ctx, cam, cw, ch, state)
-  for (const f of state.fighters) drawFighter(ctx, cam, cw, ch, f, now)
+  for (const f of state.fighters) {
+    if (externalMatchScene) drawFighterMarker(ctx, cam, cw, ch, f, now)
+    else drawFighter(ctx, cam, cw, ch, f, now)
+  }
   drawHud(ctx, cw, state)
   if (player?.alive && state.playerHero) {
     drawCooldowns(ctx, cw, ch, player, HEROES[state.playerHero])

@@ -12,15 +12,31 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;background:#0a0e18;color:#fff;font-family:"Noto Sans TC",system-ui,sans-serif;overflow:hidden;touch-action:none;user-select:none}
-#wrap{position:fixed;inset:0}
-canvas{display:block;width:100%;height:100%;background:#0a0e18}
+html,body{height:100%;background:#07060f;color:#fff;font-family:"Noto Sans TC",system-ui,sans-serif;overflow:hidden;touch-action:none;user-select:none}
+#view3d{position:fixed;inset:0;z-index:0;display:block;width:100%;height:100%}
+#wrap{position:fixed;inset:0;z-index:1}
+canvas#game{display:block;width:100%;height:100%;background:transparent}
+#figurine-ui{display:none;position:fixed;inset:0;z-index:2;pointer-events:none;color:#e8e6f2;font-family:"Noto Sans TC",system-ui,sans-serif}
+#fig-hud{position:absolute;top:16px;left:18px}
+#fig-hud h1{margin:0;font-size:28px;letter-spacing:0.12em;font-weight:700}
+#fig-hud h1 span{color:#3ee7ff}
+#fig-hud p,#fig-who{margin:4px 0 0;color:#9a96ad;font-size:13px}
+#fig-who{color:#e8e6f2;margin-top:10px;font-size:16px}
+#fig-panel{position:absolute;right:16px;bottom:16px;width:min(420px,calc(100% - 32px));padding:12px 14px;background:rgba(8,8,14,0.72);border:1px solid rgba(255,255,255,0.08);border-radius:12px;pointer-events:auto}
+#fig-panel .row{display:flex;gap:8px;margin-bottom:8px}
+#fig-panel button{flex:1;appearance:none;border:1px solid rgba(255,255,255,0.14);background:#14141c;color:#e8e6f2;border-radius:8px;padding:8px 6px;font:inherit;cursor:pointer}
+#fig-panel button[aria-pressed="true"]{border-color:#3ee7ff;box-shadow:inset 0 0 0 1px #3ee7ff}
+#fig-panel button.side-p2[aria-pressed="true"]{border-color:#ff4d9a;box-shadow:inset 0 0 0 1px #ff4d9a}
+#fig-panel .hint{margin:0;color:#9a96ad;font-size:12px;line-height:1.45}
+#fig-caption{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);padding:8px 14px;background:rgba(8,8,14,0.78);border-radius:999px;font-size:14px;letter-spacing:0.06em}
+#fig-error{position:absolute;inset:0;display:none;place-items:center;padding:24px;text-align:center;background:rgba(0,0,0,0.72);pointer-events:auto}
 #vg-back-root{position:fixed;inset:0;z-index:2147483647;pointer-events:none}
 #vg-back-root a.vg-back-btn{pointer-events:auto;position:fixed;display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 14px;border-radius:14px;font:800 15px/1.2 "Noto Sans TC",system-ui,sans-serif;text-decoration:none;border:2px solid #5eead4;background:#0a0e18;color:#5eead4;box-shadow:0 6px 28px rgba(0,0,0,.65)}
 #vg-back-tr{right:max(12px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));left:auto;bottom:auto}
 </style>
 </head>
 <body>
+<canvas id="view3d"></canvas>
 <div id="wrap"><canvas id="game"></canvas></div>
 <div id="vg-back-root" aria-label="catalog">
   <a id="vg-back-tr" class="vg-back-btn" href="/vincent-games-studio/games" title="← 返回遊戲目錄">← 返回遊戲目錄</a>
