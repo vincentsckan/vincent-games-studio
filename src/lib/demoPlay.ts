@@ -15,6 +15,7 @@ export const BUILD_SHA: string =
 
 const DEMO_SLUGS = [
   'rift-arena',
+  'pixel-plays-diorama',
   'pulse-arena',
   'midnight-estate',
   'neon-chase',
