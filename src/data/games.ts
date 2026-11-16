@@ -117,7 +117,7 @@ export const games: Game[] = [
   {
     id: 'pixel-plays-diorama',
     slug: 'pixel-plays-diorama',
-    titleZh: '石橋迴響：零圖片等角像素遊戲集',
+    titleZh: '石橋迴響',
     titleEn: 'Pixel Plays Diorama',
     taglineZh: '阿遠的舊色士風，吹醒翡翠河谷。',
     taglineEn: 'A wandering saxophonist in a jade-valley bridge town.',
