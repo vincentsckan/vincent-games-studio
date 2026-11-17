@@ -98,15 +98,21 @@ export async function fetchPublishedGames(): Promise<Game[]> {
     return localGames.filter(isPublicGame).map(withBustedPlay)
   }
   // Merge Supabase + local: prefer local Pages play/cover when present
-  // (Storage-uploaded .html often serves as text/plain and shows source.)
+  // and ensure brand-new local games appear first in the catalog.
   const remote = (data as DbGame[]).map(dbGameToGame)
-  const bySlug = new Map(remote.map((g) => [g.slug, g]))
+  const remoteBySlug = new Map(remote.map((g) => [g.slug, g]))
+  const bySlug = new Map<string, Game>()
   for (const local of localGames) {
-    const remoteGame = bySlug.get(local.slug)
-    if (!remoteGame) {
+    if (!remoteBySlug.has(local.slug)) {
       bySlug.set(local.slug, local)
-      continue
     }
+  }
+  for (const rg of remote) {
+    bySlug.set(rg.slug, rg)
+  }
+  for (const local of localGames) {
+    const remoteGame = remoteBySlug.get(local.slug)
+    if (!remoteGame) continue
     bySlug.set(local.slug, {
       ...remoteGame,
       titleZh: remoteGame.titleZh || local.titleZh,

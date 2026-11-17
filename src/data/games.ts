@@ -62,7 +62,58 @@ The studio's aim is simple: make players stop—and hit "play again."`,
 }
 
 export const games: Game[] = [
-
+  {
+    id: 'neon-ark-1994',
+    slug: 'neon-ark-1994',
+    titleZh: '霓虹方舟：1994',
+    titleEn: 'NEON ARK: 1994',
+    taglineZh: '1994年東海人工島，微笑海豚與時間珊瑚的深海煉獄。',
+    taglineEn: 'A 1994 retro-futuristic marine dome overrun by temporal coral horrors.',
+    dimension: '3D',
+    status: 'demo',
+    year: 2026,
+    genres: ['生存恐怖', '箱庭解謎', '3D'],
+    hookZh:
+      '1994年，科技大亨維克多·斯旺打造的80年代海洋博覽館「太陽神穹頂」荒廢兩年後，自稱海事保險調查員的少女林薇拉獨自登島。在微笑的海豚吉祥物與合成波霓虹燈下，徘徊著來自西元2142年「淹沒世紀」的時空難民異變體——而薇拉左臂繃帶下的藍紫結晶，也藏著她「09號接觸者」的真實身分。',
+    hookEn:
+      'In 1994, investigator Vera Lin enters the abandoned Solaris Dome marine expo. Beneath 1980s neon mascots lurk mutated 2142 time-refugees—and the secret cure for the temporal coral crystallizing in Vera’s own arm.',
+    gameplayZh:
+      '致敬《Crow Country》之 32-Bit 微縮箱庭 3D 生存恐怖：WASD 移動（支援現代 360° 與經典坦克操作切換）、Q/C 旋轉等距視角、按住右鍵或空白鍵停步雷射瞄準（蓄力爆頭雙倍傷害）。內建顏色編碼智慧地圖、星象神諭機提示、密碼與管風琴解謎、四種武器與 S-Rank 通關評級。同時提供瀏覽器 WebGL 即玩版與 PC 原生 OpenGL 版下載。',
+    gameplayEn:
+      '32-bit isometric 3D survival horror inspired by Crow Country: rotatable diorama camera, stop-and-aim 3D laser sight, color-coded smart completion map, ASTRO-ORACLE hints, 6 puzzles, 4 weapons, and S-Rank grading.',
+    features: [
+      {
+        titleZh: '可旋轉 3D 箱庭與雷射瞄準',
+        titleEn: 'Rotatable 3D Diorama & Laser Sight',
+        bodyZh: '360° 自由旋轉微縮場景檢查死角；停步舉槍投射實體 3D 雷射線，收束準星擊發雙倍爆頭暴擊或引爆瓦斯桶。',
+        bodyEn: 'Pivot the isometric camera to inspect blind spots; plant your feet to project a 3D laser sight for focused critical shots.',
+      },
+      {
+        titleZh: '顏色編碼智慧地圖與占卜機',
+        titleEn: 'Smart Completion Map & Astro-Oracle',
+        bodyZh: '十個互通展區即時標示「已清空（亮青綠）」或「尚餘謎題物資（琥珀橘）」，搭配限用 10 次的星象神諭機提示。',
+        bodyEn: 'Color-coded rooms turn emerald when fully looted, paired with 10-token Astro-Oracle hint booths.',
+      },
+      {
+        titleZh: '雙重時空反轉與 S-Rank 評價',
+        titleEn: 'Dual Twists & S-Rank Grading',
+        bodyZh: '收集 12 份機密文獻與 8 個隱藏秘密，揭開 2142 難民與主角真實身分，挑戰終局 S+ 級評價。',
+        bodyEn: 'Uncover 12 lore memos and 8 secrets across two narrative twists, graded from C to S+ Rank.',
+      },
+    ],
+    coverImage: 'covers/neon-ark-1994.jpg',
+    palette: {
+      from: '#080b16',
+      via: '#1e293b',
+      to: '#ec4899',
+      accent: '#38bdf8',
+      pattern: 'void',
+    },
+    links: {
+      play: '/vincent-games-studio/demos/neon-ark-1994/',
+      download: '/vincent-games-studio/demos/neon-ark-1994/neon-ark-1994-pc-opengl.zip',
+    },
+  },
   {
     id: 'rift-arena',
     slug: 'rift-arena',
