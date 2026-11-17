@@ -115,6 +115,56 @@ export const games: Game[] = [
     },
   },
   {
+    id: 'pixel-plays-diorama',
+    slug: 'pixel-plays-diorama',
+    titleZh: '石橋迴響',
+    titleEn: 'Pixel Plays Diorama',
+    taglineZh: '阿遠的舊色士風，吹醒翡翠河谷。',
+    taglineEn: 'A wandering saxophonist in a jade-valley bridge town.',
+    dimension: '2D',
+    status: 'demo',
+    year: 2026,
+    genres: ['微遊戲', '像素', '等角'],
+    hookZh:
+      '翡翠河谷的石橋小鎮裡，居民的記憶隨風飄散。流浪色士風手阿遠背著一把 1928 年的古典色士風來到拱橋邊，用三個微縮章節把溫度喚回來。',
+    hookEn:
+      'In a jade-valley stone-bridge town, memories drift off on the wind. Wandering saxophonist Ah Yuen arrives with a 1928 classical saxophone and wakes the town through three miniature chapters.',
+    gameplayZh:
+      '同一個零圖片等角像素沙盤裡的三個小遊戲：古橋金笛共鳴、河畔飛躍試煉、暴風雨前收樂譜。按住畫布或空白鍵操作，R 重新開始。',
+    gameplayEn:
+      'Three mini-games share one isometric zero-image diorama: 古橋金笛共鳴、河畔飛躍試煉、暴風雨前收樂譜. Hold the canvas or Space; R restarts.',
+    features: [
+      {
+        titleZh: '零圖片等角沙盤',
+        titleEn: 'Zero-image isometric diorama',
+        bodyZh: '畫布軟體光柵與 Web Audio，沒有圖片或外部音檔。',
+        bodyEn: 'Canvas software rasterizer and Web Audio—no image or audio files.',
+      },
+      {
+        titleZh: '三章同一座橋',
+        titleEn: 'Three chapters, one bridge',
+        bodyZh: '古橋金笛共鳴、河畔飛躍試煉、暴風雨前收樂譜，場景共用。',
+        bodyEn: '古橋金笛共鳴、河畔飛躍試煉、暴風雨前收樂譜 share one town.',
+      },
+      {
+        titleZh: '按住即玩',
+        titleEn: 'Hold to play',
+        bodyZh: '按住畫布或空白鍵，放開完成動作；R 重新開始。',
+        bodyEn: 'Hold the canvas or Space, release to finish the move; R restarts.',
+      },
+    ],
+    palette: {
+      from: '#14261c',
+      via: '#3d6b4f',
+      to: '#c96a3b',
+      accent: '#e8c15a',
+      pattern: 'harbor',
+    },
+    links: {
+      play: '/vincent-games-studio/demos/pixel-plays-diorama/',
+    },
+  },
+  {
     id: 'pulse-arena',
     slug: 'pulse-arena',
     titleZh: '脈衝槍戰',

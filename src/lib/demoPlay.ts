@@ -15,6 +15,7 @@ export const BUILD_SHA: string =
 
 const DEMO_SLUGS = [
   'rift-arena',
+  'pixel-plays-diorama',
   'pulse-arena',
   'midnight-estate',
   'neon-chase',
@@ -32,34 +33,57 @@ export function isDemoSlug(slug: string): slug is DemoSlug {
   return (DEMO_SLUGS as readonly string[]).includes(slug)
 }
 
-/** Canonical Pages demo URL (no query). */
+/** Canonical Pages demo URL (no query). Non-browser fallback only. */
 export function pagesDemoUrl(slug: DemoSlug | string): string {
   return `${PAGES_ORIGIN}${SITE_BASE}/demos/${slug}/`
 }
 
 /**
- * Turn a play href into an absolute Pages URL with `?v=<sha>` so browsers
+ * Origin for a demo play link. In a browser this is the catalog page
+ * (`window.location`), so a preview host opens its own copy of the demo.
+ * Without `window` (tests, SSR) it stays the formal GitHub Pages origin.
+ * On vincentsckan.github.io the two are the same.
+ */
+export function playLinkOrigin(): string {
+  try {
+    const scope = globalThis as typeof globalThis & {
+      window?: { location?: { origin?: string } }
+      location?: { origin?: string }
+    }
+    const origin = scope.window?.location?.origin || scope.location?.origin
+    if (origin) return origin
+  } catch {
+    // location can throw in a locked-down or non-browser realm
+  }
+  return PAGES_ORIGIN
+}
+
+/**
+ * Turn a play href into an absolute demo URL with `?v=<sha>` so browsers
  * do not reuse a cached demo HTML that predates catalog-back controls.
- * Hash placeholders (`#play-demo`) are left unchanged.
+ * Known studio demos keep `/vincent-games-studio/demos/<slug>/` on the
+ * current origin. Hash placeholders (`#play-demo`) are left unchanged.
  */
 export function resolvePlayHref(play: string | undefined | null): string | undefined {
   if (!play) return undefined
   if (play.startsWith('#')) return play
 
+  const origin = playLinkOrigin()
   let absolute = play.trim()
   if (absolute.startsWith('/')) {
-    absolute = `${PAGES_ORIGIN}${absolute}`
+    absolute = `${origin}${absolute}`
   } else if (!/^https?:\/\//i.test(absolute)) {
-    absolute = pagesDemoUrl(absolute.replace(/\/+$/, ''))
+    absolute = `${origin}${SITE_BASE}/demos/${absolute.replace(/\/+$/, '')}/`
   }
 
   try {
     const u = new URL(absolute)
-    // Prefer our Pages demo host/path when the path clearly is a studio demo
+    // Known studio demos stay on the catalog origin, with a stable path.
     const m = u.pathname.match(/\/demos\/([a-z0-9-]+)\/?$/i)
     if (m && isDemoSlug(m[1])) {
-      u.protocol = 'https:'
-      u.host = 'vincentsckan.github.io'
+      const base = new URL(origin)
+      u.protocol = base.protocol
+      u.host = base.host
       u.pathname = `${SITE_BASE}/demos/${m[1]}/`
     }
     u.searchParams.set('v', BUILD_SHA)
