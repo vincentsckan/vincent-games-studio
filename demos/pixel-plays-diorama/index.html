@@ -1,0 +1,1608 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>石橋迴響：零圖片等角像素遊戲集 (Pixel Plays Diorama)</title>
+  <style>
+    :root {
+      --bg-paper: #ffffff;
+      --ink-main: #231f2e;
+      --ink-muted: #6e6782;
+      --ink-faint: #b3adc4;
+      --accent-warm: #c96a3b;
+      --accent-purple: #4a3c78;
+      --border-soft: #eae6f0;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    html, body {
+      width: 100%;
+      min-height: 100vh;
+      background-color: var(--bg-paper);
+      color: var(--ink-main);
+      font-family: "Inter", "Noto Serif TC", "PingFang HK", "Microsoft JhengHei", sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      overflow-x: hidden;
+    }
+
+    /* Top Minimal Header */
+    .top-bar {
+      width: 100%;
+      max-width: 960px;
+      padding: 16px 24px 8px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      z-index: 10;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .brand-title {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: var(--ink-main);
+    }
+
+    .brand-subtitle {
+      font-size: 12px;
+      color: var(--ink-muted);
+      font-family: monospace;
+    }
+
+    .scene-tabs {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: 1px solid var(--border-soft);
+      color: var(--ink-muted);
+      font-size: 12px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-weight: 500;
+    }
+
+    .tab-btn:hover {
+      border-color: var(--ink-muted);
+      color: var(--ink-main);
+    }
+
+    .tab-btn.active {
+      background: var(--ink-main);
+      color: #ffffff;
+      border-color: var(--ink-main);
+    }
+
+    .utility-btns {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .icon-btn {
+      background: transparent;
+      border: 1px solid var(--border-soft);
+      color: var(--ink-muted);
+      font-size: 12px;
+      padding: 6px 11px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .icon-btn:hover {
+      border-color: var(--ink-main);
+      color: var(--ink-main);
+    }
+
+    /* Center Stage: Floating Isometric Diorama on Pure White */
+    .stage-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      padding: 4px 16px;
+      position: relative;
+    }
+
+    .hud-strip {
+      width: 100%;
+      max-width: 720px;
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      padding: 0 8px 8px;
+      font-size: 13px;
+      color: var(--ink-muted);
+    }
+
+    .story-line {
+      font-size: 13px;
+      color: var(--ink-main);
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      transition: opacity 0.25s ease;
+    }
+
+    .score-cluster {
+      display: flex;
+      gap: 16px;
+      font-family: monospace;
+      font-size: 13px;
+      color: var(--ink-main);
+    }
+
+    .score-cluster span b {
+      color: var(--accent-warm);
+    }
+
+    .canvas-holder {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #ffffff;
+      cursor: pointer;
+      touch-action: none;
+    }
+
+    #dioramaCanvas {
+      width: 360px;
+      height: 280px;
+      image-rendering: -moz-crisp-edges;
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      background: #ffffff;
+      display: block;
+    }
+
+    /* Bottom Action Controls & Micro-Bar */
+    .bottom-bar {
+      width: 100%;
+      max-width: 960px;
+      padding: 8px 24px 18px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      z-index: 10;
+    }
+
+    .action-cluster {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .primary-action-btn {
+      background: var(--ink-main);
+      color: #ffffff;
+      border: none;
+      padding: 9px 20px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: 0.03em;
+      transition: transform 0.1s ease, background 0.15s ease;
+    }
+
+    .primary-action-btn:active,
+    .primary-action-btn.charging {
+      background: var(--accent-warm);
+      transform: scale(0.97);
+    }
+
+    .secondary-action-btn {
+      background: #f6f4f9;
+      color: var(--ink-main);
+      border: 1px solid var(--border-soft);
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .secondary-action-btn:hover {
+      border-color: var(--ink-muted);
+    }
+
+    .hint-text {
+      font-size: 12px;
+      color: var(--ink-muted);
+    }
+
+    .tech-badge {
+      font-family: monospace;
+      font-size: 11px;
+      color: var(--ink-faint);
+    }
+
+    /* Minimal Modal Overlay for Story & Visual Rules */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 50;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal-card {
+      background: #ffffff;
+      border: 1px solid var(--border-soft);
+      box-shadow: 0 20px 50px rgba(35, 31, 46, 0.08);
+      max-width: 580px;
+      width: 100%;
+      max-height: 85vh;
+      overflow-y: auto;
+      border-radius: 16px;
+      padding: 28px;
+      color: var(--ink-main);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-soft);
+    }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .close-btn {
+      background: transparent;
+      border: 1px solid var(--border-soft);
+      border-radius: 999px;
+      padding: 4px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      color: var(--ink-muted);
+    }
+
+    .close-btn:hover {
+      color: var(--ink-main);
+      border-color: var(--ink-main);
+    }
+
+    .modal-section {
+      margin-bottom: 18px;
+    }
+
+    .modal-section h4 {
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: var(--accent-purple);
+    }
+
+    .modal-section p,
+    .modal-section li {
+      font-size: 13px;
+      line-height: 1.65;
+      color: var(--ink-muted);
+    }
+
+    .modal-section ul {
+      padding-left: 18px;
+      margin-top: 6px;
+    }
+
+    .rule-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .rule-item {
+      background: #faf9fc;
+      border: 1px solid var(--border-soft);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 12px;
+    }
+
+    .rule-item b {
+      display: block;
+      color: var(--ink-main);
+      margin-bottom: 2px;
+    }
+
+    @media (max-width: 640px) {
+      .top-bar, .bottom-bar {
+        padding: 12px 16px;
+      }
+      .hud-strip {
+        flex-direction: column;
+        gap: 4px;
+        align-items: flex-start;
+      }
+      .rule-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation -->
+  <header class="top-bar">
+    <div class="brand-group">
+      <div class="brand-title">石橋迴響 · 零圖片像素微縮劇場</div>
+      <div class="brand-subtitle">360×280 · 0 Images · Software Z-Buffer</div>
+    </div>
+
+    <nav class="scene-tabs" aria-label="遊戲模式切換">
+      <button type="button" class="tab-btn active" id="tabScene0">Ⅰ. 古橋金笛共鳴</button>
+      <button type="button" class="tab-btn" id="tabScene1">Ⅱ. 河畔飛躍試煉</button>
+      <button type="button" class="tab-btn" id="tabScene2">Ⅲ. 暴風雨前收樂譜</button>
+    </nav>
+
+    <div class="utility-btns">
+      <button type="button" class="icon-btn" id="btnRules">故事與規則</button>
+      <button type="button" class="icon-btn" id="btnMute" aria-label="切換音效">音效：開</button>
+    </div>
+  </header>
+
+  <!-- Main Floating Diorama Stage -->
+  <main class="stage-wrap">
+    <div class="hud-strip">
+      <div class="story-line" id="storyBanner">「老橋石拱下，阿遠舉起舊色士風——按住蓄氣，把金色樂音吹進旅人心坎。」</div>
+      <div class="score-cluster">
+        <span>分數 <b id="valScore">0</b></span>
+        <span>最佳 <b id="valBest">0</b></span>
+        <span id="valSubStat">回合 1/5</span>
+      </div>
+    </div>
+
+    <div class="canvas-holder" id="canvasContainer" title="按住畫布或空白鍵進行操作">
+      <canvas id="dioramaCanvas" width="360" height="280"></canvas>
+    </div>
+  </main>
+
+  <!-- Bottom Action Controls -->
+  <footer class="bottom-bar">
+    <div class="action-cluster">
+      <button type="button" class="primary-action-btn" id="btnMainAction">按住蓄力 · 放開施放 (Space)</button>
+      <button type="button" class="secondary-action-btn" id="btnReset">重新開始 (R)</button>
+      <span class="hint-text" id="controlHint">操作：按住滑鼠／螢幕或空白鍵蓄力，瞄準綠區放開</span>
+    </div>
+    <div class="tech-badge" id="scaleReadout">360×280 px · 2x Nearest · 30° Ortho</div>
+  </footer>
+
+  <!-- Rules & Story Modal -->
+  <div class="modal-backdrop" id="rulesModal" role="dialog" aria-modal="true" aria-labelledby="modalTitleText">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title" id="modalTitleText">關於《石橋迴響》與 Pixel Plays 視覺規則</div>
+        <button type="button" class="close-btn" id="btnCloseModal">關閉</button>
+      </div>
+
+      <div class="modal-section">
+        <h4>故事背景：古橋與流浪樂師阿遠</h4>
+        <p>
+          在翡翠河谷的古老拱橋小鎮，居民的記憶隨風飄散。流浪旅人<strong>阿遠</strong>背著一把 1928 年的古典色士風來到石橋邊，透過三個微縮章節喚醒小鎮的溫度：
+        </p>
+        <ul>
+          <li><strong>第一章《古橋金笛共鳴》</strong>：站在石屋紅瓦下，按住蓄氣調整吹奏力道，考慮河谷陣風，將金色音符送往古橋上駐足的旅人，點亮他們的記憶。</li>
+          <li><strong>第二章《河畔飛躍試煉》</strong>：致敬 Stari Most 古橋跳水傳統！按住蹲下起跳，在空中按住縮身翻滾，入水前放開伸展身軀垂直入水，激起完美水花。</li>
+          <li><strong>第三章《暴風雨前收樂譜》</strong>：乌雲與狂風逼近屋頂，按住並放開將晾在繩上的手寫樂譜與衣物快速收回竹籃，避免被陣風吹落河谷。</li>
+        </ul>
+      </div>
+
+      <div class="modal-section">
+        <h4>零圖片軟體渲染引擎 (10 條視覺規格)</h4>
+        <div class="rule-grid">
+          <div class="rule-item"><b>1. 純白無框浮島</b>微縮場景漂浮於純白背景，邊緣以 Bayer 抖點自然消融。</div>
+          <div class="rule-item"><b>2. 360×280 整數倍放大</b>低解析度像素畫布，強制最近鄰整數倍縮放，絕無模糊邊緣。</div>
+          <div class="rule-item"><b>3. 固定 30° 正交鏡頭</b>不旋轉、不縮放，真實三維 (x,y,z) 座標投影與 Z-Buffer 深度緩衝。</div>
+          <div class="rule-item"><b>4. 4×4 Bayer 規律抖點</b>大面積地形與水面採用有序矩陣抖點，營造手工像素質感。</div>
+          <div class="rule-item"><b>5. 右傾長硬陰影</b>所有建築、樹木與人物皆向畫面右側投射一致的平行硬邊長影。</div>
+          <div class="rule-item"><b>6. 紫暗暖亮色階偏色</b>暗部往深紫偏移 (46,38,84)，亮部往暖陽黃偏移 (255,232,180)。</div>
+          <div class="rule-item"><b>7. 深度緩衝輪廓光</b>前景物體自動壓暗交界邊線，左上受光邊緣帶有暖色高光。</div>
+          <div class="rule-item"><b>8. 人物平整清楚＋8FPS 植物</b>人物採平整色塊加黑框；樹木與草叢以每秒 8 格整像素隨風擺動。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      "use strict";
+
+      /* =========================================================================
+       * 1. SOFTWARE RASTERISER CONSTANTS & HUE-SHIFTED PALETTES (360 x 280)
+       * ========================================================================= */
+      const W = 360;
+      const H = 280;
+      const SHADOW_X = 1.3;   // Long hard shadow cast to the right (+screen X)
+      const SHADOW_Y = 0.28;  // Slight downward slant
+
+      // Hue-shifted shadow & highlight anchors (Rule 6)
+      const COOL_DARK = [46, 38, 84];
+      const WARM_LIGHT = [255, 232, 180];
+
+      // 4x4 Ordered Bayer Dithering Matrix (0..15)
+      const BAYER4 = [
+        [ 0,  8,  2, 10],
+        [12,  4, 14,  6],
+        [ 3, 11,  1,  9],
+        [15,  7, 13,  5]
+      ];
+
+      // Material IDs
+      const MAT_BG       = 0;
+      const MAT_WATER    = 1;
+      const MAT_STONE    = 2;
+      const MAT_GRASS    = 3;
+      const MAT_ROOF     = 4;
+      const MAT_WOOD     = 5;
+      const MAT_FOLIAGE  = 6;
+      const MAT_GOLD     = 7;
+      const MAT_CHAR     = 8; // Flat crisp character material (no dithering)
+
+      // Base colors [R, G, B] for materials; engine generates 5-step hue-shifted ramp (indices 0..4)
+      const BASE_MATS = {
+        [MAT_WATER]:   [38, 108, 128],
+        [MAT_STONE]:   [176, 168, 158],
+        [MAT_GRASS]:   [92, 146, 82],
+        [MAT_ROOF]:    [186, 82, 62],
+        [MAT_WOOD]:    [132, 92, 64],
+        [MAT_FOLIAGE]: [66, 126, 72],
+        [MAT_GOLD]:    [242, 196, 68]
+      };
+
+      function mixRGB(a, b, t) {
+        return [
+          Math.round(a[0] + (b[0] - a[0]) * t),
+          Math.round(a[1] + (b[1] - a[1]) * t),
+          Math.round(a[2] + (b[2] - a[2]) * t)
+        ];
+      }
+
+      // Build 5-step hue-shifted ramp for each material: 0=deep shadow (cool purple), 4=warm sunlit
+      const RAMPS = {};
+      Object.keys(BASE_MATS).forEach(function(k) {
+        const base = BASE_MATS[k];
+        RAMPS[k] = [
+          mixRGB(base, COOL_DARK, 0.66),
+          mixRGB(base, COOL_DARK, 0.36),
+          base.slice(),
+          mixRGB(base, WARM_LIGHT, 0.32),
+          mixRGB(base, WARM_LIGHT, 0.64)
+        ];
+      });
+
+      /* =========================================================================
+       * 2. CANVAS & INTEGER SCALING SETUP
+       * ========================================================================= */
+      const canvas = document.getElementById("dioramaCanvas");
+      const ctx = canvas.getContext("2d", { alpha: false });
+      ctx.imageSmoothingEnabled = false;
+
+      const imgData = ctx.createImageData(W, H);
+      const fb = new Uint32Array(imgData.data.buffer);
+      const zbuf = new Float32Array(W * H);
+      const matbuf = new Uint8Array(W * H);
+      const objbuf = new Uint16Array(W * H);
+      const shadowMask = new Uint8Array(W * H);
+
+      // Static terrain pre-render buffers for fast 60fps composition
+      const staticFB = new Uint32Array(W * H);
+      const staticZ = new Float32Array(W * H);
+      const staticMat = new Uint8Array(W * H);
+      const staticObj = new Uint16Array(W * H);
+      let staticDirty = true;
+
+      const scaleReadout = document.getElementById("scaleReadout");
+
+      function packRGB(r, g, b) {
+        return (255 << 24) | ((b & 255) << 16) | ((g & 255) << 8) | (r & 255);
+      }
+
+      const WHITE_PACKED = packRGB(255, 255, 255);
+      const OUTLINE_DARK = packRGB(36, 28, 62);
+      const RIM_WARM     = packRGB(255, 240, 198);
+
+      function updateCanvasScale() {
+        const availW = Math.max(360, window.innerWidth - 32);
+        const availH = Math.max(280, window.innerHeight - 165);
+        let scale = Math.floor(Math.min(availW / W, availH / H));
+        if (scale < 1) scale = 1;
+        if (scale > 4) scale = 4;
+
+        // If screen is e.g. 540px wide, allow 1x integer or clean CSS fit on tiny mobile
+        if (window.innerWidth < 380) {
+          canvas.style.width = (window.innerWidth - 20) + "px";
+          canvas.style.height = Math.round((window.innerWidth - 20) * (H / W)) + "px";
+          scaleReadout.textContent = "360×280 px · Fit · 30° Ortho";
+        } else {
+          canvas.style.width = (W * scale) + "px";
+          canvas.style.height = (H * scale) + "px";
+          scaleReadout.textContent = "360×280 px · " + scale + "x Nearest · 30° Ortho";
+        }
+      }
+      window.addEventListener("resize", updateCanvasScale);
+      updateCanvasScale();
+
+      /* =========================================================================
+       * 3. 30° ORTHOGRAPHIC PROJECTION & BAYER DITHERING HELPERS
+       * ========================================================================= */
+      // World coordinates: x (right-front), y (left-front), z (up)
+      // Camera center on screen: (180, 162)
+      const CAM_X = 180;
+      const CAM_Y = 158;
+
+      function projectIso(wx, wy, wz) {
+        const sx = Math.round(CAM_X + (wx - wy) * 0.866025);
+        const sy = Math.round(CAM_Y + (wx + wy) * 0.5 - wz);
+        const depth = (wx + wy) * 0.7071 + wz * 0.35; // Larger depth = closer to camera
+        return { sx: sx, sy: sy, depth: depth };
+      }
+
+      // Sample a hue-shifted ramp with ordered Bayer 4x4 dithering (Rule 4 & Rule 8)
+      function sampleRampDithered(matId, lightVal, sx, sy) {
+        const ramp = RAMPS[matId];
+        if (!ramp) return WHITE_PACKED;
+        const clamped = Math.max(0, Math.min(3.999, lightVal));
+        const idx = Math.floor(clamped);
+        const frac = clamped - idx;
+        const bayerVal = (BAYER4[sy & 3][sx & 3] + 0.5) / 16.0;
+        const finalIdx = (frac > bayerVal && idx < 4) ? idx + 1 : idx;
+        const c = ramp[finalIdx];
+        return packRGB(c[0], c[1], c[2]);
+      }
+
+      function putPixelZ(sx, sy, depth, colorPacked, matId, objId) {
+        if (sx < 0 || sx >= W || sy < 0 || sy >= H) return;
+        const i = sy * W + sx;
+        if (depth >= zbuf[i]) {
+          zbuf[i] = depth;
+          fb[i] = colorPacked;
+          matbuf[i] = matId;
+          objbuf[i] = objId;
+        }
+      }
+
+      // Draw an isometric 3D axis-aligned box in world space [x0..x1, y0..y1, z0..z1]
+      // Also casts hard right-leaning shadow onto water/ground plane z=shadowPlaneZ
+      function drawIsoBox(x0, y0, z0, x1, y1, z1, matId, objId, castShadow) {
+        const step = 0.9;
+        // 1. Top face (z = z1): brightest (light ~ 3.4)
+        for (let wx = x0; wx <= x1; wx += step) {
+          for (let wy = y0; wy <= y1; wy += step) {
+            const p = projectIso(wx, wy, z1);
+            const col = sampleRampDithered(matId, 3.45, p.sx, p.sy);
+            putPixelZ(p.sx, p.sy, p.depth, col, matId, objId);
+          }
+        }
+        // 2. Right-facing front face (x = x1): medium-bright (light ~ 2.4)
+        for (let wy = y0; wy <= y1; wy += step) {
+          for (let wz = z0; wz <= z1; wz += step) {
+            const p = projectIso(x1, wy, wz);
+            const col = sampleRampDithered(matId, 2.35, p.sx, p.sy);
+            putPixelZ(p.sx, p.sy, p.depth + 0.1, col, matId, objId);
+          }
+        }
+        // 3. Left-facing front face (y = y1): shadowed cool side (light ~ 1.15)
+        for (let wx = x0; wx <= x1; wx += step) {
+          for (let wz = z0; wz <= z1; wz += step) {
+            const p = projectIso(wx, y1, wz);
+            const col = sampleRampDithered(matId, 1.15, p.sx, p.sy);
+            putPixelZ(p.sx, p.sy, p.depth + 0.1, col, matId, objId);
+          }
+        }
+
+        // 4. Cast long hard shadow to the right (+screen X) onto ground/water
+        if (castShadow) {
+          for (let wx = x0; wx <= x1; wx += 1.5) {
+            for (let wy = y0; wy <= y1; wy += 1.5) {
+              for (let wz = Math.max(0, z0); wz <= z1; wz += 1.5) {
+                const baseP = projectIso(wx, wy, 0);
+                const sx = Math.round(baseP.sx + wz * SHADOW_X);
+                const sy = Math.round(baseP.sy + wz * SHADOW_Y);
+                if (sx >= 0 && sx < W && sy >= 0 && sy < H) {
+                  shadowMask[sy * W + sx] = 1;
+                  if (sx + 1 < W) shadowMask[sy * W + sx + 1] = 1;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      /* =========================================================================
+       * 4. BUILD STATIC ISOMETRIC DIORAMA (Bridge, River, Stone House, Cliffs)
+       * ========================================================================= */
+      function buildStaticDiorama() {
+        for (let i = 0; i < W * H; i++) {
+          fb[i] = WHITE_PACKED;
+          zbuf[i] = -99999;
+          matbuf[i] = MAT_BG;
+          objbuf[i] = 0;
+          shadowMask[i] = 0;
+        }
+
+        // Diorama bounds: x in [-95..95], y in [-95..95]
+        // Ragged Bayer dithered edge dissolving into pure white background (Rule 1 & Rule 3)
+        const R_MAX = 96;
+        for (let wx = -R_MAX; wx <= R_MAX; wx += 0.85) {
+          for (let wy = -R_MAX; wy <= R_MAX; wy += 0.85) {
+            // Rounded diamond-circle island shape
+            const dist = Math.sqrt(wx * wx * 0.9 + wy * wy * 0.9);
+            const p0 = projectIso(wx, wy, 0);
+            if (p0.sx < 0 || p0.sx >= W || p0.sy < 0 || p0.sy >= H) continue;
+
+            const bayerEdge = (BAYER4[p0.sy & 3][p0.sx & 3] / 16.0) * 14.0;
+            if (dist > R_MAX - bayerEdge) continue;
+
+            // Determine terrain: River flows along Y-axis in middle X [-28..32]
+            const riverCurve = Math.sin(wy * 0.035) * 8;
+            const rx = wx - riverCurve;
+
+            if (rx > -30 && rx < 32) {
+              // River water bed at z = -4
+              const pw = projectIso(wx, wy, -4);
+              const edgeDist = Math.min(rx - (-30), 32 - rx);
+              let wLight = 2.1 + Math.sin(wy * 0.08 + wx * 0.05) * 0.45;
+              if (edgeDist < 4.5) wLight = 3.6; // White/warm foam along banks
+              const col = sampleRampDithered(MAT_WATER, wLight, pw.sx, pw.sy);
+              putPixelZ(pw.sx, pw.sy, pw.depth, col, MAT_WATER, 1);
+            } else {
+              // Left embankment (rx <= -30) or Right embankment (rx >= 32)
+              const isLeft = rx <= -30;
+              const bankH = isLeft ? 18 : 14;
+              // Draw rocky cliff wall down to water
+              for (let wz = -4; wz < bankH; wz += 1.0) {
+                const pc = projectIso(wx, wy, wz);
+                const rockLight = (wx > wy) ? 2.2 : 1.25;
+                const col = sampleRampDithered(MAT_STONE, rockLight, pc.sx, pc.sy);
+                putPixelZ(pc.sx, pc.sy, pc.depth, col, MAT_STONE, isLeft ? 2 : 3);
+              }
+              // Grassy top terrace
+              const pg = projectIso(wx, wy, bankH);
+              const gLight = 2.65 + Math.cos(wx * 0.06) * 0.35;
+              const gCol = sampleRampDithered(MAT_GRASS, gLight, pg.sx, pg.sy);
+              putPixelZ(pg.sx, pg.sy, pg.depth + 0.2, gCol, MAT_GRASS, isLeft ? 2 : 3);
+            }
+          }
+        }
+
+        // Stone Arched Bridge ("Stari Most" style) spanning across X from -46 to +48, Y in [-14..14]
+        for (let wx = -48; wx <= 50; wx += 0.85) {
+          const normX = wx / 50; // -1..1
+          const archBottomZ = Math.max(0, 26 * (1 - normX * normX));
+          const deckTopZ = 22 + 12 * (1 - normX * normX * 0.85);
+
+          for (let wy = -13; wy <= 13; wy += 0.85) {
+            // Bridge arch masonry body
+            for (let wz = archBottomZ; wz <= deckTopZ; wz += 1.0) {
+              // Leave hollow under the central arch
+              if (Math.abs(wx) < 28 && wz < archBottomZ + 2) continue;
+              const pb = projectIso(wx, wy, wz);
+              const isParapet = (wy <= -11 || wy >= 11);
+              const finalZ = isParapet ? deckTopZ + 4.5 : deckTopZ;
+              if (wz > finalZ) continue;
+
+              let sLight = (wy >= 11) ? 1.35 : (wx > 0 ? 2.3 : 2.85);
+              if (Math.abs(wz - deckTopZ) < 1.2 && !isParapet) sLight = 3.3; // Deck walkway
+              if (isParapet && wz > deckTopZ + 2) sLight = 3.6; // Parapet coping stone
+
+              const col = sampleRampDithered(MAT_STONE, sLight, pb.sx, pb.sy);
+              putPixelZ(pb.sx, pb.sy, pb.depth + 0.5, col, MAT_STONE, 10);
+            }
+
+            // Cast bridge shadow to the right onto river/bank
+            const baseP = projectIso(wx, wy, -4);
+            const shX = Math.round(baseP.sx + deckTopZ * SHADOW_X);
+            const shY = Math.round(baseP.sy + deckTopZ * SHADOW_Y);
+            if (shX >= 0 && shX < W && shY >= 0 && shY < H) {
+              shadowMask[shY * W + shX] = 1;
+              if (shX + 1 < W) shadowMask[shY * W + shX + 1] = 1;
+            }
+          }
+        }
+
+        // Left Bank Stone Cottage with Reddish-Brown Pitched Roof (matching Threads post image)
+        // House base: X in [-76..-44], Y in [-46..-16], Z from 18 to 44
+        drawIsoBox(-76, -46, 18, -44, -16, 44, MAT_STONE, 20, true);
+
+        // Dark doorway & window cutouts on front wall (x = -44)
+        for (let wy = -34; wy <= -27; wy += 0.8) {
+          for (let wz = 18; wz <= 30; wz += 0.8) {
+            const pd = projectIso(-43.6, wy, wz);
+            putPixelZ(pd.sx, pd.sy, pd.depth + 0.4, OUTLINE_DARK, MAT_STONE, 20);
+          }
+        }
+        // Warm lit window on left cottage
+        for (let wy = -42; wy <= -37; wy += 0.8) {
+          for (let wz = 30; wz <= 37; wz += 0.8) {
+            const pw = projectIso(-43.6, wy, wz);
+            putPixelZ(pw.sx, pw.sy, pw.depth + 0.4, packRGB(255, 224, 130), MAT_GOLD, 20);
+          }
+        }
+
+        // Pitched Roof on Left Stone Cottage: Z from 44 to 58
+        for (let wz = 44; wz <= 58; wz += 0.8) {
+          const shrink = (wz - 44) * 1.05;
+          for (let wx = -78 + shrink; wx <= -42 - shrink; wx += 0.85) {
+            for (let wy = -48 + shrink * 0.5; wy <= -14 - shrink * 0.5; wy += 0.85) {
+              const pr = projectIso(wx, wy, wz);
+              const rLight = (wx > -60) ? 2.45 : 3.45;
+              const col = sampleRampDithered(MAT_ROOF, rLight, pr.sx, pr.sy);
+              putPixelZ(pr.sx, pr.sy, pr.depth + 0.6, col, MAT_ROOF, 21);
+
+              // Roof shadow
+              const baseP = projectIso(wx, wy, 18);
+              const shX = Math.round(baseP.sx + (wz - 18) * SHADOW_X);
+              const shY = Math.round(baseP.sy + (wz - 18) * SHADOW_Y);
+              if (shX >= 0 && shX < W && shY >= 0 && shY < H) {
+                shadowMask[shY * W + shX] = 1;
+              }
+            }
+          }
+        }
+
+        // Right Bank Small Stone Watchtower / Pavilion
+        drawIsoBox(44, -40, 14, 68, -18, 34, MAT_STONE, 22, true);
+        drawIsoBox(42, -42, 34, 70, -16, 39, MAT_ROOF, 23, true);
+
+        // Apply long hard right-leaning shadows onto static scene (Rule 5 & Rule 6 cool purple shift)
+        for (let i = 0; i < W * H; i++) {
+          if (shadowMask[i] && matbuf[i] !== MAT_BG && objbuf[i] < 10) {
+            const c = fb[i];
+            const r = c & 255;
+            const g = (c >> 8) & 255;
+            const b = (c >> 16) & 255;
+            const darkened = mixRGB([r, g, b], COOL_DARK, 0.45);
+            fb[i] = packRGB(darkened[0], darkened[1], darkened[2]);
+          }
+        }
+
+        // Depth-buffer edge darkening & top-left warm rim highlight (Rule 7)
+        const copyFB = new Uint32Array(fb);
+        for (let sy = 2; sy < H - 2; sy++) {
+          for (let sx = 2; sx < W - 2; sx++) {
+            const i = sy * W + sx;
+            if (matbuf[i] === MAT_BG) continue;
+            const zc = zbuf[i];
+            const oc = objbuf[i];
+            // If foreground object is distinctly closer than right/bottom neighbor -> dark contour edge
+            if ((objbuf[i + 1] !== oc && zc - zbuf[i + 1] > 4.5) ||
+                (objbuf[i + W] !== oc && zc - zbuf[i + W] > 4.5)) {
+              copyFB[i] = OUTLINE_DARK;
+            } else if ((objbuf[i - 1] !== oc && zc - zbuf[i - 1] > 5.0) &&
+                       (objbuf[i - W] !== oc && zc - zbuf[i - W] > 5.0)) {
+              // Top-left warm rim light
+              const r = Math.min(255, (copyFB[i] & 255) + 28);
+              const g = Math.min(255, ((copyFB[i] >> 8) & 255) + 22);
+              const b = Math.min(255, ((copyFB[i] >> 16) & 255) + 8);
+              copyFB[i] = packRGB(r, g, b);
+            }
+          }
+        }
+
+        staticFB.set(copyFB);
+        staticZ.set(zbuf);
+        staticMat.set(matbuf);
+        staticObj.set(objbuf);
+        staticDirty = false;
+      }
+
+      /* =========================================================================
+       * 5. DYNAMIC FOLIAGE (8 FPS WHOLE-PIXEL SWAY) & CRISP CHARACTERS (Rule 9, 10)
+       * ========================================================================= */
+      const TREES = [
+        { x: -68, y: 22, z: 18, r: 12 },
+        { x: -46, y: 42, z: 18, r: 10 },
+        { x: -80, y: -2, z: 18, r: 9 },
+        { x: 56,  y: 26, z: 14, r: 11 },
+        { x: 72,  y: 4,  z: 14, r: 9 }
+      ];
+
+      const GRASS_TUFTS = [
+        { x: -55, y: 12, z: 18 }, { x: -40, y: 28, z: 18 },
+        { x: -64, y: 46, z: 18 }, { x: 48,  y: 16, z: 14 },
+        { x: 62,  y: 38, z: 14 }, { x: 44,  y: -8, z: 14 }
+      ];
+
+      function drawFoliage8FPS(tick8, windDir) {
+        const swayPx = Math.round(Math.sin(tick8 * 0.85) + windDir * 0.7);
+
+        // Draw trees with trunk + layered pixel canopy
+        for (let t = 0; t < TREES.length; t++) {
+          const tr = TREES[t];
+          const pBase = projectIso(tr.x, tr.y, tr.z);
+          // Trunk
+          for (let h = 0; h < 10; h++) {
+            putPixelZ(pBase.sx, pBase.sy - h, pBase.depth + 2, packRGB(108, 72, 52), MAT_WOOD, 30 + t);
+            putPixelZ(pBase.sx + 1, pBase.sy - h, pBase.depth + 2, packRGB(82, 54, 42), MAT_WOOD, 30 + t);
+          }
+          // Right-leaning tree shadow on ground
+          for (let sx = 2; sx <= 16; sx++) {
+            for (let sy = -3; sy <= 3; sy++) {
+              const idx = (pBase.sy + sy) * W + (pBase.sx + sx);
+              if (idx >= 0 && idx < W * H && matbuf[idx] === MAT_GRASS) {
+                const c = fb[idx];
+                const dark = mixRGB([c & 255, (c >> 8) & 255, (c >> 16) & 255], COOL_DARK, 0.42);
+                fb[idx] = packRGB(dark[0], dark[1], dark[2]);
+              }
+            }
+          }
+
+          // Canopy with whole-pixel 8fps sway
+          const cx = pBase.sx + swayPx;
+          const cy = pBase.sy - 14;
+          const rad = tr.r;
+          for (let dy = -rad; dy <= rad; dy++) {
+            for (let dx = -rad; dx <= rad; dx++) {
+              if (dx * dx + dy * dy <= rad * rad) {
+                const px = cx + dx;
+                const py = cy + dy;
+                // Highlight top-left, shadow bottom-right
+                let lVal = 2.4 - (dx * 0.09 + dy * 0.11);
+                const col = sampleRampDithered(MAT_FOLIAGE, lVal, px, py);
+                putPixelZ(px, py, pBase.depth + 6 - dy * 0.1, col, MAT_FOLIAGE, 30 + t);
+              }
+            }
+          }
+        }
+
+        // Draw swaying grass blades (8fps whole pixel)
+        for (let g = 0; g < GRASS_TUFTS.length; g++) {
+          const gt = GRASS_TUFTS[g];
+          const pg = projectIso(gt.x, gt.y, gt.z);
+          const bladeShift = ((tick8 + g) % 2 === 0) ? swayPx : 0;
+          const colBright = packRGB(138, 196, 108);
+          const colMid = packRGB(84, 142, 74);
+          putPixelZ(pg.sx, pg.sy, pg.depth + 2, colMid, MAT_FOLIAGE, 40);
+          putPixelZ(pg.sx + bladeShift, pg.sy - 1, pg.depth + 2, colBright, MAT_FOLIAGE, 40);
+          putPixelZ(pg.sx + 2 + bladeShift, pg.sy - 2, pg.depth + 2, colBright, MAT_FOLIAGE, 40);
+        }
+      }
+
+      // Draw a crisp pixel character (Rule 9: Flat color blocks, NO dithering, 1px dark outline, >=3px stripes)
+      function drawCrispCharacter(wx, wy, wz, coatRGB, pantsRGB, hasSax, angleRad, joyGlow) {
+        const p = projectIso(wx, wy, wz);
+        const cx = p.sx;
+        const cy = p.sy;
+        const d = p.depth + 8;
+
+        // Cast crisp right-leaning character shadow
+        for (let sh = 1; sh <= 9; sh++) {
+          const sx = cx + sh;
+          const sy = cy + Math.round(sh * 0.2);
+          if (sx >= 0 && sx < W && sy >= 0 && sy < H) {
+            const idx = sy * W + sx;
+            if (matbuf[idx] !== MAT_BG) {
+              fb[idx] = packRGB(52, 44, 88);
+            }
+          }
+        }
+
+        // Helper for flat pixel + dark outline
+        const coatPack = packRGB(coatRGB[0], coatRGB[1], coatRGB[2]);
+        const pantsPack = packRGB(pantsRGB[0], pantsRGB[1], pantsRGB[2]);
+        const skinPack = packRGB(252, 214, 176);
+        const saxPack  = packRGB(250, 202, 58);
+
+        // If rotating in mid-air (Scene 1 diving), draw rotated pixel sprite
+        if (angleRad && Math.abs(angleRad) > 0.05) {
+          const cosA = Math.cos(angleRad);
+          const sinA = Math.sin(angleRad);
+          for (let ly = -12; ly <= 2; ly++) {
+            for (let lx = -3; lx <= 3; lx++) {
+              let col = null;
+              if (ly <= -9 && Math.abs(lx) <= 2) col = skinPack;
+              else if (ly > -9 && ly <= -3 && Math.abs(lx) <= 2) col = coatPack;
+              else if (ly > -3 && Math.abs(lx) <= 1) col = pantsPack;
+              if (!col) continue;
+
+              const rx = Math.round(cx + lx * cosA - (ly + 6) * sinA);
+              const ry = Math.round(cy - 6 + lx * sinA + (ly + 6) * cosA);
+              // 1px dark outline around sprite
+              putPixelZ(rx - 1, ry, d - 0.1, OUTLINE_DARK, MAT_CHAR, 90);
+              putPixelZ(rx + 1, ry, d - 0.1, OUTLINE_DARK, MAT_CHAR, 90);
+              putPixelZ(rx, ry - 1, d - 0.1, OUTLINE_DARK, MAT_CHAR, 90);
+              putPixelZ(rx, ry + 1, d - 0.1, OUTLINE_DARK, MAT_CHAR, 90);
+              putPixelZ(rx, ry, d, col, MAT_CHAR, 90);
+            }
+          }
+          return;
+        }
+
+        // Standard upright crisp sprite with 1px dark contour
+        function drawRectCrisp(x0, y0, w, h, fillPack) {
+          for (let dy = -1; dy <= h; dy++) {
+            for (let dx = -1; dx <= w; dx++) {
+              const px = x0 + dx;
+              const py = y0 + dy;
+              const isBorder = (dx === -1 || dx === w || dy === -1 || dy === h);
+              putPixelZ(px, py, isBorder ? d - 0.05 : d, isBorder ? OUTLINE_DARK : fillPack, MAT_CHAR, 90);
+            }
+          }
+        }
+
+        // Legs (3px wide, 4px tall)
+        drawRectCrisp(cx - 1, cy - 4, 3, 4, pantsPack);
+        // Coat torso (>= 4px wide, 5px tall - Rule 9 minimum 3px pattern width)
+        drawRectCrisp(cx - 2, cy - 9, 5, 5, coatPack);
+        // Head (3px wide, 3px tall)
+        drawRectCrisp(cx - 1, cy - 12, 3, 3, skinPack);
+
+        // Golden classical saxophone in hands if Ah Yuen
+        if (hasSax) {
+          drawRectCrisp(cx + 3, cy - 9, 3, 4, saxPack);
+          putPixelZ(cx + 5, cy - 8, d + 0.1, packRGB(255, 244, 180), MAT_CHAR, 90);
+        }
+
+        // Floating golden musical heart/spark above listener when resonated
+        if (joyGlow) {
+          drawRectCrisp(cx - 1, cy - 18, 3, 3, saxPack);
+        }
+      }
+
+      /* =========================================================================
+       * 6. WEB AUDIO SYNTHESIZER (Pure JS Saxophone, Splash & Chimes - 0 MP3s)
+       * ========================================================================= */
+      let audioCtx = null;
+      let isMuted = false;
+
+      function ensureAudio() {
+        if (isMuted) return null;
+        if (!audioCtx) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (AudioContextClass) {
+            audioCtx = new AudioContextClass();
+          }
+        }
+        if (audioCtx && audioCtx.state === "suspended") {
+          audioCtx.resume();
+        }
+        return audioCtx;
+      }
+
+      function playSaxTone(freq, duration, warmVibrato) {
+        const ac = ensureAudio();
+        if (!ac) return;
+        const now = ac.currentTime;
+        const osc = ac.createOscillator();
+        const sub = ac.createOscillator();
+        const filter = ac.createBiquadFilter();
+        const gain = ac.createGain();
+
+        osc.type = "sawtooth";
+        osc.frequency.setValueAtTime(freq, now);
+        sub.type = "triangle";
+        sub.frequency.setValueAtTime(freq * 0.5, now);
+
+        if (warmVibrato) {
+          const lfo = ac.createOscillator();
+          const lfoGain = ac.createGain();
+          lfo.frequency.value = 5.2;
+          lfoGain.gain.value = 4.5;
+          lfo.connect(lfoGain);
+          lfoGain.connect(osc.frequency);
+          lfo.start(now);
+          lfo.stop(now + duration);
+        }
+
+        filter.type = "lowpass";
+        filter.frequency.setValueAtTime(1150, now);
+
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.14, now + 0.04);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+        osc.connect(filter);
+        sub.connect(filter);
+        filter.connect(gain);
+        gain.connect(ac.destination);
+
+        osc.start(now);
+        sub.start(now);
+        osc.stop(now + duration);
+        sub.stop(now + duration);
+      }
+
+      function playChordArpeggio(notes) {
+        notes.forEach(function(f, idx) {
+          setTimeout(function() {
+            playSaxTone(f, 0.38, true);
+          }, idx * 90);
+        });
+      }
+
+      /* =========================================================================
+       * 7. GAME MODES & STATE MACHINE (3 Playable Chapters in 1 Diorama)
+       * ========================================================================= */
+      let currentScene = 0; // 0: 古橋金笛共鳴, 1: 河畔飛躍試煉, 2: 暴風雨前收樂譜
+      let scores = [0, 0, 0];
+      let bestScores = [0, 0, 0];
+
+      try {
+        const saved = localStorage.getItem("pixel_plays_stone_bridge_best");
+        if (saved) bestScores = JSON.parse(saved);
+      } catch (e) {
+        // Ignore storage errors in sandboxed preview
+      }
+
+      function saveBestScore() {
+        if (scores[currentScene] > bestScores[currentScene]) {
+          bestScores[currentScene] = scores[currentScene];
+          try {
+            localStorage.setItem("pixel_plays_stone_bridge_best", JSON.stringify(bestScores));
+          } catch (e) {}
+        }
+      }
+
+      // Shared input state (One crisp physical action: Hold & Release)
+      let isHolding = false;
+      let power = 0;         // 0..100
+      let powerDir = 1;
+      let windSpeed = 0.6;   // -1.5 .. +1.5
+
+      // --- SCENE 0 STATE: 古橋金笛共鳴 (Ah Yuen's Saxophone Resonance) ---
+      const LISTENERS = [
+        { wx: -18, wy: 0,  wz: 33, coat: [232, 184, 56], pants: [54, 62, 96],  lit: false, name: "黃衣旅人" },
+        { wx: -4,  wy: -2, wz: 34, coat: [214, 72, 68],  pants: [48, 48, 72],  lit: false, name: "紅衣畫家" },
+        { wx: 10,  wy: 1,  wz: 34, coat: [68, 136, 208], pants: [52, 64, 88],  lit: false, name: "藍衣詩人" },
+        { wx: 24,  wy: -1, wz: 32, coat: [148, 96, 62],  pants: [62, 52, 48],  lit: false, name: "褐衣鐘錶匠" }
+      ];
+      let targetListenerIdx = 0;
+      let flyingNote = null; // { wx, wy, wz, vx, vy, vz, trail: [] }
+      let attemptsLeft0 = 6;
+
+      // --- SCENE 1 STATE: 河畔飛躍試煉 (Stari Most Bridge Diving) ---
+      let diver = {
+        phase: "ready", // "ready", "crouch", "air", "splash"
+        wx: 0, wy: 10, wz: 38,
+        vz: 0, angle: 0, angVel: 0, flips: 0,
+        splashTimer: 0, lastJudge: ""
+      };
+      let divesLeft1 = 5;
+
+      // --- SCENE 2 STATE: 暴風雨前收樂譜 (Rooftop Score & Laundry Rescue) ---
+      let clothesItems = [];
+      let rescueTimer2 = 45.0;
+      let reelActive = false;
+
+      function initScene(sceneIdx) {
+        currentScene = sceneIdx;
+        isHolding = false;
+        power = 0;
+        windSpeed = ((Math.random() * 2 - 1) * 1.1);
+
+        // Update Tab UI
+        document.getElementById("tabScene0").classList.toggle("active", sceneIdx === 0);
+        document.getElementById("tabScene1").classList.toggle("active", sceneIdx === 1);
+        document.getElementById("tabScene2").classList.toggle("active", sceneIdx === 2);
+
+        const banner = document.getElementById("storyBanner");
+        const hint = document.getElementById("controlHint");
+        const mainBtn = document.getElementById("btnMainAction");
+
+        if (sceneIdx === 0) {
+          scores[0] = 0;
+          attemptsLeft0 = 6;
+          targetListenerIdx = 0;
+          flyingNote = null;
+          LISTENERS.forEach(function(l) { l.lit = false; });
+          banner.textContent = "「老橋石拱下，阿遠舉起舊色士風——按住蓄氣，把金色樂音吹向橋上旅人。」";
+          hint.textContent = "操作：按住畫布或空白鍵蓄氣，對準橋上目標旅人的綠色共鳴區放開";
+          mainBtn.textContent = "按住吹奏 · 放開送出樂音 (Space)";
+        } else if (sceneIdx === 1) {
+          scores[1] = 0;
+          divesLeft1 = 5;
+          resetDiver();
+          banner.textContent = "「致敬 Stari Most 古橋跳水：按住起跳，空中按住翻轉，入水前放開垂直落水！」";
+          hint.textContent = "操作：按住蓄力起跳 → 空中按住縮身翻滾 → 入水前放開伸直身體";
+          mainBtn.textContent = "按住蹲下／空中翻轉 (Space)";
+        } else if (sceneIdx === 2) {
+          scores[2] = 0;
+          rescueTimer2 = 45.0;
+          spawnClothesLine();
+          banner.textContent = "「河谷暴風雨將至！趁狂風吹落前，按住拉動曬衣繩收回手寫樂譜與衣物。」";
+          hint.textContent = "操作：按住畫布或空白鍵逆風拉回樂譜，陣風過強時放開穩住繩索";
+          mainBtn.textContent = "按住拉回樂譜 · 放開穩繩 (Space)";
+        }
+        updateHUD();
+      }
+
+      function resetDiver() {
+        diver.phase = "ready";
+        diver.wx = 2;
+        diver.wy = 12;
+        diver.wz = 37;
+        diver.vz = 0;
+        diver.angle = 0;
+        diver.angVel = 0;
+        diver.flips = 0;
+        diver.splashTimer = 0;
+        windSpeed = ((Math.random() * 2 - 1) * 1.0);
+      }
+
+      function spawnClothesLine() {
+        clothesItems = [
+          { dist: 22, color: [255, 245, 210], w: 5, h: 6, pts: 15, name: "《里斯本》樂譜" },
+          { dist: 42, color: [224, 96, 78],   w: 6, h: 8, pts: 25, name: "紅絨披肩" },
+          { dist: 62, color: [250, 238, 190], w: 5, h: 6, pts: 20, name: "《小樽》手稿" },
+          { dist: 82, color: [82, 148, 212],  w: 7, h: 9, pts: 35, name: "旅人風衣" }
+        ];
+      }
+
+      function updateHUD() {
+        document.getElementById("valScore").textContent = scores[currentScene];
+        document.getElementById("valBest").textContent = bestScores[currentScene];
+        const sub = document.getElementById("valSubStat");
+        if (currentScene === 0) {
+          const litCount = LISTENERS.filter(function(l) { return l.lit; }).length;
+          sub.textContent = "共鳴 " + litCount + "/4 · 剩餘 " + attemptsLeft0 + " 曲";
+        } else if (currentScene === 1) {
+          sub.textContent = "跳水剩餘 " + divesLeft1 + "/5 次";
+        } else {
+          sub.textContent = "剩餘 " + Math.ceil(rescueTimer2) + " 秒 · 待收 " + clothesItems.length + " 件";
+        }
+      }
+
+      /* =========================================================================
+       * 8. INPUT HANDLERS (Pointer + Keyboard + Buttons)
+       * ========================================================================= */
+      function startHold() {
+        ensureAudio();
+        if (isHolding) return;
+        isHolding = true;
+        document.getElementById("btnMainAction").classList.add("charging");
+
+        if (currentScene === 0) {
+          if (!flyingNote && attemptsLeft0 > 0) {
+            power = 5;
+            powerDir = 1;
+            playSaxTone(293.66, 0.18, false);
+          }
+        } else if (currentScene === 1) {
+          if (diver.phase === "ready" && divesLeft1 > 0) {
+            diver.phase = "crouch";
+            power = 10;
+          }
+        } else if (currentScene === 2) {
+          reelActive = true;
+          playSaxTone(392.0, 0.1, false);
+        }
+      }
+
+      function endHold() {
+        if (!isHolding) return;
+        isHolding = false;
+        document.getElementById("btnMainAction").classList.remove("charging");
+
+        if (currentScene === 0) {
+          if (!flyingNote && attemptsLeft0 > 0) {
+            launchSaxNote();
+          }
+        } else if (currentScene === 1) {
+          if (diver.phase === "crouch") {
+            // Jump off the bridge!
+            diver.phase = "air";
+            diver.vz = 1.65 + (power / 100) * 1.1;
+            diver.angVel = 0.06;
+            playSaxTone(440, 0.25, true);
+          }
+        } else if (currentScene === 2) {
+          reelActive = false;
+        }
+      }
+
+      function launchSaxNote() {
+        attemptsLeft0--;
+        const tRatio = power / 100; // 0..1
+        // Launch from Ah Yuen at (-40, 6, 22) toward bridge targets
+        const target = LISTENERS[targetListenerIdx];
+        const idealPower = 32 + targetListenerIdx * 18 - windSpeed * 8;
+        const err = (power - idealPower) * 0.55;
+
+        const destX = target.wx + err;
+        const destY = target.wy + err * 0.2;
+        const destZ = target.wz + 6;
+
+        flyingNote = {
+          t: 0,
+          startX: -38, startY: 8, startZ: 26,
+          destX: destX, destY: destY, destZ: destZ,
+          wx: -38, wy: 8, wz: 26
+        };
+        playChordArpeggio([329.63, 392.00, 493.88]);
+        updateHUD();
+      }
+
+      // Attach listeners
+      const canvasContainer = document.getElementById("canvasContainer");
+      const btnMainAction = document.getElementById("btnMainAction");
+
+      function bindPressRelease(el) {
+        el.addEventListener("mousedown", function(e) { e.preventDefault(); startHold(); });
+        el.addEventListener("touchstart", function(e) { e.preventDefault(); startHold(); }, { passive: false });
+      }
+      bindPressRelease(canvasContainer);
+      bindPressRelease(btnMainAction);
+
+      window.addEventListener("mouseup", endHold);
+      window.addEventListener("touchend", endHold);
+
+      window.addEventListener("keydown", function(e) {
+        if (e.code === "Space") {
+          e.preventDefault();
+          startHold();
+        } else if (e.code === "KeyR") {
+          initScene(currentScene);
+        }
+      });
+      window.addEventListener("keyup", function(e) {
+        if (e.code === "Space") {
+          e.preventDefault();
+          endHold();
+        }
+      });
+
+      document.getElementById("tabScene0").addEventListener("click", function() { initScene(0); });
+      document.getElementById("tabScene1").addEventListener("click", function() { initScene(1); });
+      document.getElementById("tabScene2").addEventListener("click", function() { initScene(2); });
+      document.getElementById("btnReset").addEventListener("click", function() { initScene(currentScene); });
+
+      const rulesModal = document.getElementById("rulesModal");
+      document.getElementById("btnRules").addEventListener("click", function() {
+        rulesModal.classList.add("open");
+      });
+      document.getElementById("btnCloseModal").addEventListener("click", function() {
+        rulesModal.classList.remove("open");
+      });
+      rulesModal.addEventListener("click", function(e) {
+        if (e.target === rulesModal) rulesModal.classList.remove("open");
+      });
+
+      const btnMute = document.getElementById("btnMute");
+      btnMute.addEventListener("click", function() {
+        isMuted = !isMuted;
+        btnMute.textContent = isMuted ? "音效：關" : "音效：開";
+      });
+
+      /* =========================================================================
+       * 9. SIMULATION UPDATE & 2D PIXEL OVERLAYS ON 360x280 CANVAS
+       * ========================================================================= */
+      function drawPixelRect2D(x, y, w, h, packedCol) {
+        for (let dy = 0; dy < h; dy++) {
+          const sy = y + dy;
+          if (sy < 0 || sy >= H) continue;
+          for (let dx = 0; dx < w; dx++) {
+            const sx = x + dx;
+            if (sx >= 0 && sx < W) {
+              fb[sy * W + sx] = packedCol;
+            }
+          }
+        }
+      }
+
+      function drawPixelLine2D(x0, y0, x1, y1, packedCol) {
+        let dx = Math.abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
+        let dy = -Math.abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
+        let err = dx + dy;
+        while (true) {
+          if (x0 >= 0 && x0 < W && y0 >= 0 && y0 < H) {
+            fb[y0 * W + x0] = packedCol;
+          }
+          if (x0 === x1 && y0 === y1) break;
+          let e2 = 2 * err;
+          if (e2 >= dy) { err += dy; x0 += sx; }
+          if (e2 <= dx) { err += dx; y0 += sy; }
+        }
+      }
+
+      let lastTime = performance.now();
+      let waterRipples = [];
+
+      function updateAndRender(now) {
+        const dt = Math.min(0.05, (now - lastTime) / 1000);
+        lastTime = now;
+
+        if (staticDirty) buildStaticDiorama();
+
+        // Restore static diorama buffer
+        fb.set(staticFB);
+        zbuf.set(staticZ);
+        matbuf.set(staticMat);
+        objbuf.set(staticObj);
+
+        // Rule 10: 8 FPS whole-pixel plant animation
+        const prefersReduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const tick8 = prefersReduced ? 0 : Math.floor(now / 125);
+        drawFoliage8FPS(tick8, windSpeed);
+
+        // Animate subtle river sparkles at 8fps
+        for (let r = -60; r <= 60; r += 16) {
+          const wx = Math.sin((r + tick8 * 3) * 0.12) * 14;
+          const pw = projectIso(wx, r, -3.8);
+          putPixelZ(pw.sx, pw.sy, pw.depth + 0.3, packRGB(235, 248, 245), MAT_WATER, 5);
+          putPixelZ(pw.sx + 1, pw.sy, pw.depth + 0.3, packRGB(235, 248, 245), MAT_WATER, 5);
+        }
+
+        // Scene-specific simulation & crisp character rendering
+        const banner = document.getElementById("storyBanner");
+
+        if (currentScene === 0) {
+          // SCENE 0: Ah Yuen on left terrace (-40, 8, 18) + 4 Listeners on bridge
+          drawCrispCharacter(-40, 8, 18, [58, 72, 112], [38, 42, 64], true, 0, isHolding);
+
+          for (let i = 0; i < LISTENERS.length; i++) {
+            const l = LISTENERS[i];
+            drawCrispCharacter(l.wx, l.wy, l.wz, l.coat, l.pants, false, 0, l.lit);
+            // Highlight current target listener with subtle golden marker above head
+            if (i === targetListenerIdx && !l.lit) {
+              const pt = projectIso(l.wx, l.wy, l.wz + 18 + (tick8 % 2));
+              drawPixelRect2D(pt.sx - 1, pt.sy, 3, 3, packRGB(245, 190, 50));
+            }
+          }
+
+          if (isHolding && !flyingNote && attemptsLeft0 > 0) {
+            power += powerDir * 85 * dt;
+            if (power >= 100) { power = 100; powerDir = -1; }
+            if (power <= 5)   { power = 5;   powerDir = 1; }
+          }
+
+          // Update flying golden musical note
+          if (flyingNote) {
+            flyingNote.t += dt * 1.45;
+            const t = Math.min(1, flyingNote.t);
+            const arcZ = Math.sin(t * Math.PI) * 26;
+            flyingNote.wx = flyingNote.startX + (flyingNote.destX - flyingNote.startX) * t;
+            flyingNote.wy = flyingNote.startY + (flyingNote.destY - flyingNote.startY) * t;
+            flyingNote.wz = flyingNote.startZ + (flyingNote.destZ - flyingNote.startZ) * t + arcZ;
+
+            const pn = projectIso(flyingNote.wx, flyingNote.wy, flyingNote.wz);
+            drawPixelRect2D(pn.sx - 2, pn.sy - 2, 5, 5, OUTLINE_DARK);
+            drawPixelRect2D(pn.sx - 1, pn.sy - 1, 3, 3, packRGB(255, 215, 64));
+
+            if (t >= 1) {
+              const target = LISTENERS[targetListenerIdx];
+              const distErr = Math.abs(flyingNote.destX - target.wx);
+              if (distErr < 7.5) {
+                target.lit = true;
+                const bonus = distErr < 3.0 ? 30 : 20;
+                scores[0] += bonus;
+                saveBestScore();
+                playChordArpeggio([523.25, 659.25, 783.99, 1046.5]);
+                banner.textContent = "✨ 金色樂音完美共鳴！喚醒了" + target.name + "的溫暖記憶 (+" + bonus + " 分)";
+                // Advance to next unlit listener
+                for (let k = 0; k < LISTENERS.length; k++) {
+                  if (!LISTENERS[k].lit) { targetListenerIdx = k; break; }
+                }
+                if (LISTENERS.every(function(item) { return item.lit; })) {
+                  scores[0] += 50;
+                  saveBestScore();
+                  banner.textContent = "🎷 全橋旅人皆已共鳴！阿遠的舊色士風響徹翡翠河谷 (+50 完美獎勵)";
+                }
+              } else {
+                playSaxTone(196.0, 0.3, false);
+                banner.textContent = "💨 樂音隨河谷微風偏離了目標（誤差 " + Math.round(distErr) + " 步），再試一次！";
+              }
+              flyingNote = null;
+              windSpeed = ((Math.random() * 2 - 1) * 1.1);
+              updateHUD();
+            }
+          }
+
+          // Draw compact power & ideal zone bar above Ah Yuen
+          if (attemptsLeft0 > 0) {
+            const idealP = Math.max(10, Math.min(90, 32 + targetListenerIdx * 18 - windSpeed * 8));
+            const bx = 42, by = 52, bw = 84, bh = 6;
+            drawPixelRect2D(bx - 1, by - 1, bw + 2, bh + 2, OUTLINE_DARK);
+            drawPixelRect2D(bx, by, bw, bh, packRGB(235, 232, 242));
+            // Target green sweet spot
+            const gx = bx + Math.round(((idealP - 9) / 100) * bw);
+            const gw = Math.max(6, Math.round((18 / 100) * bw));
+            drawPixelRect2D(gx, by, gw, bh, packRGB(106, 184, 98));
+            // Current power needle
+            const px = bx + Math.round((power / 100) * (bw - 2));
+            drawPixelRect2D(px, by - 2, 3, bh + 4, packRGB(232, 92, 56));
+          }
+
+        } else if (currentScene === 1) {
+          // SCENE 1: Stari Most Bridge Diving
+          // Spectator NPCs watching from bridge
+          drawCrispCharacter(-16, -9, 32, [232, 184, 56], [54, 62, 96], false, 0, false);
+          drawCrispCharacter(18, -9, 32, [68, 136, 208], [52, 64, 88], false, 0, false);
+
+          if (diver.phase === "crouch") {
+            power = Math.min(100, power + 90 * dt);
+            drawCrispCharacter(diver.wx, diver.wy, diver.wz - 2, [214, 72, 68], [48, 48, 72], false, 0.2, false);
+            // Jump power bar
+            const bx = 148, by = 48, bw = 64, bh = 5;
+            drawPixelRect2D(bx - 1, by - 1, bw + 2, bh + 2, OUTLINE_DARK);
+            drawPixelRect2D(bx, by, Math.round((power / 100) * bw), bh, packRGB(242, 168, 58));
+          } else if (diver.phase === "air") {
+            diver.wz += diver.vz;
+            diver.vz -= 4.2 * dt; // Gravity
+            diver.wx += windSpeed * 3.5 * dt;
+            if (isHolding) {
+              diver.angVel = 9.2; // Fast tuck spin
+            } else {
+              diver.angVel = 1.4; // Extend body to slow rotation
+            }
+            diver.angle += diver.angVel * dt;
+            diver.flips = Math.floor(Math.abs(diver.angle) / (Math.PI * 2));
+
+            drawCrispCharacter(diver.wx, diver.wy, diver.wz, [214, 72, 68], [48, 48, 72], false, diver.angle, false);
+
+            // Check water entry at wz <= -3
+            if (diver.wz <= -3) {
+              diver.phase = "splash";
+              diver.splashTimer = 1.1;
+              divesLeft1--;
+
+              // Calculate vertical alignment (0 or PI is vertical head/feet first)
+              const normA = ((diver.angle % Math.PI) + Math.PI) % Math.PI;
+              const vertDiff = Math.min(normA, Math.PI - normA); // 0 = perfectly vertical, PI/2 = belly flop
+              const mult = 1 + diver.flips;
+
+              if (vertDiff < 0.38) {
+                const pts = Math.round(30 * mult);
+                scores[1] += pts;
+                saveBestScore();
+                playChordArpeggio([587.33, 783.99, 1174.66]);
+                banner.textContent = "🌊 完美垂直入水！空翻 " + diver.flips + " 圈 (+" + pts + " 分)";
+              } else if (vertDiff < 0.85) {
+                const pts = Math.round(12 * mult);
+                scores[1] += pts;
+                saveBestScore();
+                playSaxTone(349.23, 0.25, false);
+                banner.textContent = "💦 微斜入水！空翻 " + diver.flips + " 圈 (+" + pts + " 分)";
+              } else {
+                playSaxTone(146.83, 0.35, false);
+                banner.textContent = "💥 平拍水面（0 分）！入水前務必放開按鍵伸直身體！";
+              }
+
+              const ps = projectIso(diver.wx, diver.wy, -4);
+              waterRipples.push({ sx: ps.sx, sy: ps.sy, r: 2 });
+              updateHUD();
+            }
+          } else if (diver.phase === "splash") {
+            diver.splashTimer -= dt;
+            if (diver.splashTimer <= 0 && divesLeft1 > 0) {
+              resetDiver();
+            }
+          } else {
+            // Ready on parapet
+            drawCrispCharacter(diver.wx, diver.wy, diver.wz, [214, 72, 68], [48, 48, 72], false, 0, false);
+          }
+
+          // Render expanding pixel water ripples
+          for (let i = waterRipples.length - 1; i >= 0; i--) {
+            const rp = waterRipples[i];
+            rp.r += 18 * dt;
+            const rad = Math.round(rp.r);
+            for (let a = 0; a < 16; a++) {
+              const ang = (a / 16) * Math.PI * 2;
+              const rx = Math.round(rp.sx + Math.cos(ang) * rad);
+              const ry = Math.round(rp.sy + Math.sin(ang) * rad * 0.5);
+              if (rx >= 0 && rx < W && ry >= 0 && ry < H) {
+                fb[ry * W + rx] = WHITE_PACKED;
+              }
+            }
+            if (rp.r > 22) waterRipples.splice(i, 1);
+          }
+
+        } else if (currentScene === 2) {
+          // SCENE 2: Rooftop Laundry & Musical Score Rescue before Storm
+          if (rescueTimer2 > 0 && clothesItems.length > 0) {
+            rescueTimer2 = Math.max(0, rescueTimer2 - dt);
+            // Gusts oscillate over time
+            windSpeed = 0.85 + Math.sin(now * 0.0025) * 0.95;
+
+            for (let i = clothesItems.length - 1; i >= 0; i--) {
+              const item = clothesItems[i];
+              if (reelActive) {
+                item.dist -= 26 * dt;
+              } else {
+                // Strong gust pushes uncollected items outward slowly
+                if (windSpeed > 1.2) item.dist += 5 * dt;
+              }
+
+              if (item.dist <= 6) {
+                scores[2] += item.pts;
+                saveBestScore();
+                playChordArpeggio([440, 554.37, 659.25]);
+                banner.textContent = "🧺 成功收進「" + item.name + "」！(+" + item.pts + " 分)";
+                clothesItems.splice(i, 1);
+                if (clothesItems.length === 0) {
+                  const timeBonus = Math.round(rescueTimer2);
+                  scores[2] += timeBonus;
+                  saveBestScore();
+                  banner.textContent = "🎉 暴風雨前全數搶救完成！獲得時間獎勵 +" + timeBonus + " 分";
+                }
+              }
+            }
+            updateHUD();
+          }
+
+          // Draw clothesline between Left Cottage roof (-44, -28, 42) and Bridge post (0, -12, 38)
+          const pStart = projectIso(-44, -28, 42);
+          const pEnd   = projectIso(12, -12, 38);
+          drawPixelLine2D(pStart.sx, pStart.sy, pEnd.sx, pEnd.sy, OUTLINE_DARK);
+
+          // Draw Ah Yuen by the basket at left cottage
+          drawCrispCharacter(-42, -22, 18, [58, 72, 112], [38, 42, 64], false, 0, reelActive);
+
+          // Draw hanging scores & garments along the line
+          for (let i = 0; i < clothesItems.length; i++) {
+            const it = clothesItems[i];
+            const ratio = Math.max(0, Math.min(1, it.dist / 95));
+            const lx = Math.round(pStart.sx + (pEnd.sx - pStart.sx) * ratio);
+            const ly = Math.round(pStart.sy + (pEnd.sy - pStart.sy) * ratio);
+            const sway = Math.round(windSpeed * 2.5);
+            const colPack = packRGB(it.color[0], it.color[1], it.color[2]);
+
+            drawPixelRect2D(lx - 1 + sway, ly, it.w + 2, it.h + 2, OUTLINE_DARK);
+            drawPixelRect2D(lx + sway, ly + 1, it.w, it.h, colPack);
+          }
+        }
+
+        // Flush 360x280 pixel buffer to Canvas
+        ctx.putImageData(imgData, 0, 0);
+        requestAnimationFrame(updateAndRender);
+      }
+
+      window.onload = function() {
+        buildStaticDiorama();
+        initScene(0);
+        requestAnimationFrame(updateAndRender);
+      };
+    })();
+  </script>
+</body>
+</html>
