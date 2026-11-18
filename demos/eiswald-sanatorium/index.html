@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>《霧嶺療養院：白鴉之冬》Eiswald Sanatorium — Vincent Games Studio 本機 3D 遊戲啟動中心</title>
+  <style>
+    :root {
+      --bg-dark: #090d14;
+      --panel-bg: rgba(18, 25, 38, 0.92);
+      --gold: #f5d061;
+      --crimson: #e63946;
+      --cyan: #48cae4;
+      --text-main: #eef2f7;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif;
+      background: radial-gradient(circle at 50% 20%, #162235 0%, #070a10 100%);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 36px 20px;
+    }
+    .container {
+      max-width: 1120px;
+      width: 100%;
+      background: var(--panel-bg);
+      border: 1px solid rgba(245, 208, 97, 0.32);
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.75);
+    }
+    .badge {
+      display: inline-block;
+      background: rgba(230, 57, 70, 0.2);
+      border: 1px solid var(--crimson);
+      color: #ff8fa3;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+    h1 {
+      font-size: 32px;
+      color: var(--gold);
+      margin-bottom: 6px;
+      letter-spacing: 0.5px;
+    }
+    .subtitle {
+      color: #a9b8cc;
+      font-size: 16px;
+      margin-bottom: 24px;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.35fr 1fr;
+      gap: 28px;
+      align-items: center;
+      margin-bottom: 32px;
+    }
+    @media (max-width: 860px) {
+      .hero-grid { grid-template-columns: 1fr; }
+    }
+    .cover-box {
+      position: relative;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 2px solid rgba(245, 208, 97, 0.45);
+      cursor: pointer;
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+    .cover-box:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 32px rgba(245, 208, 97, 0.25);
+    }
+    .cover-box img {
+      width: 100%;
+      display: block;
+    }
+    .launch-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .btn-launch-primary {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      background: linear-gradient(135deg, #e63946 0%, #b51724 100%);
+      color: #fff;
+      font-size: 20px;
+      font-weight: 700;
+      padding: 18px 24px;
+      border-radius: 12px;
+      border: 1px solid #ff758f;
+      text-decoration: none;
+      cursor: pointer;
+      box-shadow: 0 8px 25px rgba(230, 57, 70, 0.45);
+      transition: transform 0.15s ease, filter 0.15s ease;
+    }
+    .btn-launch-primary:hover {
+      transform: scale(1.02);
+      filter: brightness(1.12);
+    }
+    .btn-setup-secondary {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: rgba(72, 202, 228, 0.15);
+      color: var(--cyan);
+      font-size: 16px;
+      font-weight: 600;
+      padding: 14px 20px;
+      border-radius: 10px;
+      border: 1px solid var(--cyan);
+      text-decoration: none;
+      transition: background 0.2s ease;
+    }
+    .btn-setup-secondary:hover {
+      background: rgba(72, 202, 228, 0.28);
+    }
+    .status-box {
+      background: rgba(10, 15, 24, 0.85);
+      border-left: 4px solid var(--gold);
+      padding: 14px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      line-height: 1.6;
+      color: #d0d9e6;
+    }
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 24px;
+    }
+    @media (max-width: 760px) {
+      .gallery-grid { grid-template-columns: 1fr; }
+    }
+    .gallery-grid img {
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.18);
+    }
+    .back-link {
+      display: inline-block;
+      margin-top: 24px;
+      color: var(--gold);
+      text-decoration: none;
+      font-size: 15px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <span class="badge">GODOT 4.3 FORWARD+ 3D 生存恐怖大作 (NATIVE PC CLIENT)</span>
+    <h1>《霧嶺療養院：白鴉之冬》Eiswald Sanatorium: Winter of the White Crow</h1>
+    <p class="subtitle">參照《Crow Country》（鴉國）箱庭架構 · 四大放射狀主題園區 · 3D 體積雷射瞄準 · 雙模式操作 (現代 / 經典坦克)</p>
+
+    <div class="hero-grid">
+      <div class="cover-box" onclick="launchLocalGame()" title="點擊立即啟動本機 3D 遊戲！">
+        <img src="scene_fairytale_hub.png" alt="霧嶺療養院：白鴉之冬 遊戲場景" />
+      </div>
+
+      <div class="launch-panel">
+        <a href="vincentgame://launch/eiswald-sanatorium" onclick="onLaunchClicked()" class="btn-launch-primary">
+          🎮 點擊立即在本機啟動 3D 遊戲 (Click to Launch)
+        </a>
+
+        <a href="EiswaldSanatorium_ClickToPlay_Setup.bat" download class="btn-setup-secondary">
+          ⚡ 首次遊玩？點此下載一鍵安裝啟動器 (.bat)
+        </a>
+
+        <a href="eiswald_sanatorium_full_game.tar.gz" download class="btn-setup-secondary">
+          📦 下載完整 Godot 4.3 3D 遊戲主程式包 (5.5 MB)
+        </a>
+
+        <div id="launch-status" class="status-box">
+          <strong>💡 即時啟動說明：</strong><br/>
+          1. 點擊上方紅色按鈕或左側遊戲封面，瀏覽器會自動透過 <code>vincentgame://</code> 協定喚醒你本機的 <strong>Godot 4.3 64-bit 3D 引擎</strong> 並全螢幕啟動遊戲。<br/>
+          2. 若你是首次在新電腦遊玩，請先點擊藍色按鈕下載並執行一次 <code>EiswaldSanatorium_ClickToPlay_Setup.bat</code>，即可自動完成引擎安裝與網站一鍵啟動綁定！
+        </div>
+      </div>
+    </div>
+
+    <h3 style="color: var(--gold); margin-bottom: 8px;">遊戲實機設定與四大武器／頭目預覽</h3>
+    <div class="gallery-grid">
+      <img src="scene_fairytale_hub.png" alt="四大主題園區中央樞紐" />
+      <img src="protagonist_vera.png" alt="主角薇拉·林德奎斯特設定圖" />
+      <img src="boss_and_weapons.png" alt="雙頭目與手提箱四大武器庫" />
+    </div>
+
+    <a class="back-link" href="../">← 返回 Vincent Games Studio 遊戲大廳</a>
+  </div>
+
+  <script>
+    function launchLocalGame() {
+      window.location.href = "vincentgame://launch/eiswald-sanatorium";
+      onLaunchClicked();
+    }
+    function onLaunchClicked() {
+      var st = document.getElementById("launch-status");
+      st.innerHTML = "<strong style='color:#4cd964;'>🚀 正在喚醒本機 Godot 4.3 3D 遊戲引擎 (vincentgame://launch/eiswald-sanatorium)...</strong><br/>若瀏覽器彈出「要開啟 Vincent Games Studio Native 3D Launcher 嗎？」，請勾選允許並點擊開啟！若尚未安裝本機啟動器，請點擊上方藍色按鈕下載 <code>EiswaldSanatorium_ClickToPlay_Setup.bat</code>。";
+    }
+    // 進入頁面時預設自動喚醒本機 3D 遊戲（若非 fallback autoinstall 模式）
+    if (window.location.search.indexOf("autoinstall=1") === -1) {
+      setTimeout(launchLocalGame, 300);
+    }
+  </script>
+</body>
+</html>
