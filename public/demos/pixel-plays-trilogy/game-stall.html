@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>茶樓點心塔：像素劇場</title>
+  <style>
+    :root {
+      --bg-paper: #ffffff;
+      --ink-main: #231f2e;
+      --ink-muted: #6e6782;
+      --ink-faint: #b3adc4;
+      --accent-warm: #c96a3b;
+      --accent-purple: #7a5636;
+      --border-soft: #eae6f0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+    html, body {
+      width: 100%; min-height: 100vh; background-color: var(--bg-paper); color: var(--ink-main);
+      font-family: "Inter", "Noto Serif TC", "PingFang HK", "Microsoft JhengHei", sans-serif;
+      display: flex; flex-direction: column; align-items: center; justify-content: space-between; overflow-x: hidden;
+    }
+    .top-bar {
+      width: 100%; max-width: 980px; padding: 16px 24px 8px; display: flex; flex-wrap: wrap;
+      align-items: center; justify-content: space-between; gap: 12px; z-index: 10;
+    }
+    .brand-group { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+    .brand-title { font-size: 15px; font-weight: 700; letter-spacing: .04em; }
+    .brand-subtitle { font-size: 11px; color: var(--ink-muted); font-family: monospace; }
+    .scene-tabs { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .tab-btn {
+      background: transparent; border: 1px solid var(--border-soft); color: var(--ink-muted);
+      font-size: 12px; padding: 6px 12px; border-radius: 999px; cursor: pointer;
+      transition: all .15s ease; font-weight: 500;
+    }
+    .tab-btn:hover { border-color: var(--ink-muted); color: var(--ink-main); }
+    .tab-btn.active { background: var(--ink-main); color: #fff; border-color: var(--ink-main); }
+    .tab-btn.done::after { content: " ✓"; }
+    .utility-btns { display: flex; align-items: center; gap: 6px; }
+    .icon-btn {
+      background: transparent; border: 1px solid var(--border-soft); color: var(--ink-muted);
+      font-size: 12px; padding: 6px 11px; border-radius: 999px; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 4px; transition: all .15s ease;
+    }
+    .icon-btn:hover { border-color: var(--ink-main); color: var(--ink-main); }
+    .stage-wrap {
+      flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      width: 100%; padding: 4px 16px; position: relative;
+    }
+    .hud-strip {
+      width: 100%; max-width: 720px; display: flex; align-items: baseline; justify-content: space-between;
+      padding: 0 8px 8px; font-size: 13px; color: var(--ink-muted); flex-wrap: wrap; gap: 6px;
+    }
+    .story-line { font-size: 13px; color: var(--ink-main); font-weight: 500; letter-spacing: .02em; }
+    .score-cluster { display: flex; gap: 16px; font-family: monospace; font-size: 13px; color: var(--ink-main); }
+    .score-cluster span b { color: var(--accent-warm); }
+    .canvas-holder {
+      position: relative; display: flex; align-items: center; justify-content: center;
+      background: #fff; cursor: pointer; touch-action: none;
+    }
+    #dioramaCanvas {
+      width: 360px; height: 280px;
+      image-rendering: -moz-crisp-edges; image-rendering: -webkit-optimize-contrast;
+      image-rendering: pixelated; image-rendering: crisp-edges;
+      background: #fff; display: block;
+    }
+    .bottom-bar {
+      width: 100%; max-width: 980px; padding: 8px 24px 18px; display: flex; flex-wrap: wrap;
+      align-items: center; justify-content: space-between; gap: 12px; z-index: 10;
+    }
+    .action-cluster { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .primary-action-btn {
+      background: var(--ink-main); color: #fff; border: none; padding: 11px 22px; border-radius: 999px;
+      font-size: 13.5px; font-weight: 600; cursor: pointer; letter-spacing: .03em;
+      transition: transform .1s ease, background .15s ease;
+    }
+    .primary-action-btn:active, .primary-action-btn.charging { background: var(--accent-warm); transform: scale(.97); }
+    .secondary-action-btn {
+      background: #f6f4f9; color: var(--ink-main); border: 1px solid var(--border-soft);
+      padding: 8px 14px; border-radius: 999px; font-size: 12px; cursor: pointer;
+    }
+    .secondary-action-btn:hover { border-color: var(--ink-muted); }
+    .hint-text { font-size: 12px; color: var(--ink-muted); }
+    .tech-badge { font-family: monospace; font-size: 11px; color: var(--ink-faint); }
+
+    /* 關卡結算／開場 */
+    .overlay {
+      position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 20px;
+      background: rgba(255,255,255,.9); backdrop-filter: blur(5px);
+    }
+    .overlay.hidden { display: none; }
+    .panel {
+      width: min(560px, 100%); background: #fff; border: 1px solid var(--border-soft);
+      border-radius: 18px; padding: 28px 26px; text-align: center;
+      box-shadow: 0 24px 60px rgba(35,31,46,.12);
+    }
+    .panel .kicker { font-family: monospace; font-size: 11px; letter-spacing: .2em; color: var(--ink-faint); }
+    .panel h2 { font-size: 22px; margin: 10px 0 8px; }
+    .panel p { font-size: 13.5px; line-height: 1.8; color: var(--ink-muted); }
+    .panel .story { font-size: 13.5px; line-height: 1.9; color: var(--ink-main); margin: 12px 0 0; }
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 18px 0 6px; }
+    .stats div { background: #faf9fc; border: 1px solid var(--border-soft); border-radius: 12px; padding: 10px; }
+    .stats span { display: block; font-size: 11px; color: var(--ink-muted); }
+    .stats b { font-size: 19px; font-family: monospace; }
+    .row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 16px; }
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(255,255,255,.88); backdrop-filter: blur(4px);
+      display: none; align-items: center; justify-content: center; padding: 20px; z-index: 70;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal-card {
+      background: #fff; border: 1px solid var(--border-soft); box-shadow: 0 20px 50px rgba(35,31,46,.08);
+      max-width: 620px; width: 100%; max-height: 85vh; overflow-y: auto; border-radius: 16px;
+      padding: 28px; color: var(--ink-main);
+    }
+    .modal-header {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;
+      padding-bottom: 12px; border-bottom: 1px solid var(--border-soft);
+    }
+    .modal-title { font-size: 16px; font-weight: 700; }
+    .close-btn {
+      background: transparent; border: 1px solid var(--border-soft); border-radius: 999px;
+      padding: 4px 12px; font-size: 12px; cursor: pointer; color: var(--ink-muted);
+    }
+    .close-btn:hover { color: var(--ink-main); border-color: var(--ink-main); }
+    .modal-section { margin-bottom: 18px; }
+    .modal-section h4 { font-size: 13px; font-weight: 700; margin-bottom: 6px; color: var(--accent-purple); }
+    .modal-section p, .modal-section li { font-size: 13px; line-height: 1.68; color: var(--ink-muted); }
+    .modal-section ul { padding-left: 18px; margin-top: 6px; }
+    .rule-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+    .rule-item { background: #faf9fc; border: 1px solid var(--border-soft); border-radius: 8px; padding: 8px 10px; font-size: 12px; color: var(--ink-muted); }
+    .rule-item b { display: block; color: var(--ink-main); margin-bottom: 2px; }
+    @media (max-width: 640px) {
+      .top-bar, .bottom-bar { padding: 12px 16px; }
+      .hud-strip { flex-direction: column; align-items: flex-start; }
+      .rule-grid { grid-template-columns: 1fr; }
+      .stats { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="top-bar">
+    <div class="brand-group">
+      <div class="brand-title">茶樓點心塔 · 零圖片像素劇場</div>
+      <div class="brand-subtitle">360×280 · 0 Images · Software Z-Buffer</div>
+    </div>
+    <nav class="scene-tabs" aria-label="關卡切換">
+      <button type="button" class="tab-btn active" id="tab0">第一朝 · 首籠</button>
+      <button type="button" class="tab-btn" id="tab1">第二朝 · 風起</button>
+      <button type="button" class="tab-btn" id="tab2">第三朝 · 開市前</button>
+    </nav>
+    <div class="utility-btns">
+      <button type="button" class="icon-btn" id="btnRules">故事與規則</button>
+      <button type="button" class="icon-btn" id="btnMute" aria-label="切換音效">音效：開</button>
+    </div>
+  </header>
+
+  <main class="stage-wrap">
+    <div class="hud-strip">
+      <div class="story-line" id="storyBanner"></div>
+      <div class="score-cluster">
+        <span>本關 <b id="valScore">0</b></span>
+        <span>最佳 <b id="valBest">0</b></span>
+        <span id="valSubStat"></span>
+      </div>
+    </div>
+    <div class="canvas-holder" id="canvasContainer" title="按住畫布或空白鍵進行操作">
+      <canvas id="dioramaCanvas" width="360" height="280"></canvas>
+    </div>
+  </main>
+
+  <footer class="bottom-bar">
+    <div class="action-cluster">
+      <button type="button" class="primary-action-btn" id="btnMainAction">按住 (Space)</button>
+      <button type="button" class="secondary-action-btn" id="btnReset">重玩本關 (R)</button>
+      <span class="hint-text" id="controlHint"></span>
+    </div>
+    <div class="tech-badge" id="scaleReadout">360×280 px · 2x Nearest · 30° Ortho</div>
+  </footer>
+
+  <!-- 開場／結算 -->
+  <div class="overlay hidden" id="stageOverlay">
+    <div class="panel">
+      <div class="kicker" id="ovKicker"></div>
+      <h2 id="ovTitle"></h2>
+      <p id="ovText"></p>
+      <div class="stats">
+        <div><span>本關得分</span><b id="ovScore">0</b></div>
+        <div><span>最佳</span><b id="ovBest">0</b></div>
+        <div><span>用時</span><b id="ovTime">0s</b></div>
+      </div>
+      <p class="story" id="ovStory"></p>
+      <div class="row" id="ovRow"></div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="rulesModal" role="dialog" aria-modal="true" aria-labelledby="modalTitleText">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title" id="modalTitleText"></div>
+        <button type="button" class="close-btn" id="btnCloseModal">關閉</button>
+      </div>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      "use strict";
+
+      const THEME = {"id":"stall","storageKey":"px_stall_best","coolDark":[40,34,66],"warmLight":[255,236,186],"mats":{"1":[46,52,64],"2":[158,152,148],"3":[186,180,170],"4":[178,74,62],"5":[146,112,74],"6":[96,140,96],"7":[250,206,110]},"trunk":[122,92,62],"leafBright":[150,186,112],"leafMid":[92,130,86],"skin":[252,214,176],"charShadow":[58,48,70],"accessory":{"color":[230,190,120],"dx":3,"dy":-8,"w":4,"h":4},"audio":{"wave":"square","subWave":"triangle","subRatio":0.5,"cutoff":1800,"vibrato":4.6},"trees":[{"x":-52,"y":16,"z":18,"r":8},{"x":24,"y":20,"z":18,"r":8}],"grass":[{"x":-60,"y":24,"z":18},{"x":-30,"y":24,"z":18},{"x":20,"y":26,"z":18},{"x":50,"y":26,"z":18},{"x":60,"y":18,"z":18}],"stages":[{"tab":"第一朝 · 首籠","banner":"「同興茶樓五點半開門。阿珍把師父留下的竹吊臂試了三下——今天要把第一座蒸籠塔疊起來。」","hint":"按住＝吊車放繩（蒸籠下降）· 放開＝放手。放手時蒸籠要在塔心正上方，而且不可離塔頂太高。","btn":"按住放繩 · 放開放手 (Space)","clearTitle":"第一朝 · 開市前的第一座塔","failTitle":"第一朝 · 塔散了一地","clearStory":"四層蒸籠疊得整整齊齊。阿珍抹了抹額角，把頂籠的蓋子掀開一角——蝦餃的熱氣衝上來，正好趕上第一批茶客。","failStory":"蒸籠散落地堂，竹片滾到騎樓底。阿珍蹲下來逐個拾起，茶市還是開了門——只是今天沒有高塔。"},{"tab":"第二朝 · 風起","banner":"「今日有風。吊臂會偏，塔身亦會被風推——阿珍把毛巾綁緊，繼續疊。」","hint":"陣風會推動滑車（畫面右上會顯示起風）並直接增加搖晃。放慢一點、等塔回穩再放下一籠。","btn":"按住放繩 · 頂住風 (Space)","clearTitle":"第二朝 · 六層塔","failTitle":"第二朝 · 風把塔吹散","clearStory":"六層蒸籠在風裡穩穩立著。阿珍退後兩步看了看，終於笑出來——師父那副舊吊臂還撐得住。","failStory":"風從街口掃進來，竹塔像骨牌一樣散開。阿珍把散落的蒸籠一個一個疊回牆邊，等明天。"},{"tab":"第三朝 · 開市前","banner":"「五點半開門，現在只剩一個半鐘都不夠——八層蒸籠塔，加上陣風，還有門外排隊的茶客。」","hint":"第三朝有開市倒數（95 秒）。陣風更頻繁：滑車偏移、塔身搖晃都會加大。穩、準、快。","btn":"按住放繩 · 趕開市 (Space)","clearTitle":"第三朝 · 八層準時開市","failTitle":"第三朝 · 開市遲了","clearStory":"八層蒸籠塔在五點二十九分疊好，頂籠的鳳爪正好冒煙。夥計拉開鐵閘，第一位茶客抬頭望了望那座塔，說：「同興，果然係同興。」","failStory":"時間不夠，塔只疊到一半。鐵閘拉開時，阿珍還在扶著竹梯——她把毛巾解下來，說：「聽日早啲。」"}],"modalTitle":"關於《茶樓點心塔》與零圖片像素規格","modalHtml":"\n<div class=\"modal-section\">\n  <h4>故事：師父留下的竹吊臂</h4>\n  <p>\n    同興茶樓的點心師傅<strong>阿珍</strong>，每天清晨四點就回到地堂。茶市五點半開門之前，\n    她要把一座竹蒸籠塔疊到規定的層數——那是廚房出籠的次序，也是茶樓的面子。\n    去年退休的師父沒有留下別的，只留下那副竹吊臂和一句話：「手要定，眼要準，心要慢。」\n  </p>\n</div>\n\n<div class=\"modal-section\">\n  <h4>玩法：一顆按鈕的吊放與平衡</h4>\n  <ul>\n    <li><strong>按住＝放繩</strong>：吊車的蒸籠以每秒 34 的速度下降（到底會自動停住）。</li>\n    <li><strong>放開＝放手</strong>：蒸籠在<strong>放手那一刻的位置</strong>落下——所以你要預判這 1 秒內滑車會走到哪裡。</li>\n    <li><strong>滑車一直在來回</strong>：第一朝每秒 20、第二朝 26、第三朝 31（還有陣風會再加減速）。</li>\n    <li><strong>兩個失誤來源</strong>：① 落點偏離塔心（畫面有十字準星與虛線提示）② 放手時離塔頂太高（綠色虛線＝安全，橙色＝太高）。偏移超過 8.5 蒸籠會滑落枱邊。</li>\n    <li><strong>搖晃</strong>：每次落籠都會累積搖晃（偏移與高度都有份），不放手時每秒回穩 15。搖晃到 100 塔就倒。</li>\n    <li><strong>陣風</strong>（第二朝起）會推滑車、亦直接加搖晃，右上「起風」提示時最好等一等。</li>\n    <li>評分：每層 60 分起，正中塔心（偏移 &lt; 1.8）+80；疊滿目標再加穩定獎勵與時間獎勵（第三朝）。</li>\n    <li>第三朝限時 95 秒，倒數歸零茶市就開門。</li>\n  </ul>\n</div>\n\n<div class=\"modal-section\">\n  <h4>零圖片像素引擎（十條視覺與工法規格）</h4>\n  <div class=\"rule-grid\">\n    <div class=\"rule-item\"><b>1. 純白無框浮島</b>微縮場景漂浮於純白背景，邊緣以 Bayer 抖點自然消融。</div>\n    <div class=\"rule-item\"><b>2. 360×280 整數倍放大</b>低解析度畫布以最近鄰整數倍縮放（1x–4x），永不模糊。</div>\n    <div class=\"rule-item\"><b>3. 固定 30° 正交鏡頭</b>不旋轉不縮放，真實 (x,y,z) 投影與 Z-Buffer 深度緩衝。</div>\n    <div class=\"rule-item\"><b>4. 4×4 Bayer 規律抖點</b>地形、水面與材質採有序矩陣抖點。</div>\n    <div class=\"rule-item\"><b>5. 右傾長硬陰影</b>建築、物件與人物一致向右投出平行硬邊長影。</div>\n    <div class=\"rule-item\"><b>6. 暗冷亮暖偏色</b>暗部往晨霧灰紫偏移 (40,34,66)，亮部往早晨暖陽偏移 (255,236,186)。</div>\n    <div class=\"rule-item\"><b>7. 深度緩衝輪廓光</b>前景自動壓暗交界線，左上受光邊緣補暖色高光。</div>\n    <div class=\"rule-item\"><b>8. 平整人物＋8FPS 植物</b>人物為平整色塊加 1px 黑框；植物每秒 8 格整像素擺動。</div>\n    <div class=\"rule-item\"><b>9. 零圖片</b>場景、角色與特效全部程式即時繪製，沒有任何圖檔。</div>\n    <div class=\"rule-item\"><b>10. 零音檔</b>所有音效由 WebAudio 振盪器即時合成。</div>\n  </div>\n</div>\n"};
+
+      /* =========================================================================
+       * 1. 軟體光柵化常數、色偏與材料表（360 × 280）
+       * ========================================================================= */
+      const W = 360;
+      const H = 280;
+      const SHADOW_X = 1.3;
+      const SHADOW_Y = 0.28;
+      const COOL_DARK = THEME.coolDark;
+      const WARM_LIGHT = THEME.warmLight;
+      const BAYER4 = [[0,8,2,10],[12,4,14,6],[3,11,1,9],[15,7,13,5]];
+
+      const MAT_BG = 0, MAT_PLANE = 1, MAT_STONE = 2, MAT_GROUND = 3,
+            MAT_ROOF = 4, MAT_WOOD = 5, MAT_LEAF = 6, MAT_ACCENT = 7, MAT_CHAR = 8;
+
+      const BASE_MATS = {};
+      Object.keys(THEME.mats).forEach(function(k) { BASE_MATS[k] = THEME.mats[k]; });
+
+      function mixRGB(a, b, t) {
+        return [Math.round(a[0] + (b[0]-a[0])*t), Math.round(a[1] + (b[1]-a[1])*t), Math.round(a[2] + (b[2]-a[2])*t)];
+      }
+      function packRGB(r, g, b) { return (255 << 24) | ((b & 255) << 16) | ((g & 255) << 8) | (r & 255); }
+      function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
+      function lerp(a, b, t) { return a + (b - a) * t; }
+
+      const RAMPS = {};
+      Object.keys(BASE_MATS).forEach(function(k) {
+        const base = BASE_MATS[k];
+        RAMPS[k] = [
+          mixRGB(base, COOL_DARK, 0.66), mixRGB(base, COOL_DARK, 0.36), base.slice(),
+          mixRGB(base, WARM_LIGHT, 0.32), mixRGB(base, WARM_LIGHT, 0.64)
+        ];
+      });
+
+      /* =========================================================================
+       * 2. 畫布與整數倍縮放（最近鄰，永不模糊）
+       * ========================================================================= */
+      const canvas = document.getElementById("dioramaCanvas");
+      const ctx = canvas.getContext("2d", { alpha: false });
+      ctx.imageSmoothingEnabled = false;
+
+      const imgData = ctx.createImageData(W, H);
+      const fb = new Uint32Array(imgData.data.buffer);
+      const zbuf = new Float32Array(W * H);
+      const matbuf = new Uint8Array(W * H);
+      const objbuf = new Uint16Array(W * H);
+      const shadowMask = new Uint8Array(W * H);
+
+      const staticFB = new Uint32Array(W * H);
+      const staticZ = new Float32Array(W * H);
+      const staticMat = new Uint8Array(W * H);
+      const staticObj = new Uint16Array(W * H);
+      let staticDirty = true;
+
+      const scaleReadout = document.getElementById("scaleReadout");
+      const WHITE_PACKED = packRGB(255, 255, 255);
+      const OUTLINE_DARK = packRGB(36, 28, 62);
+
+      function updateCanvasScale() {
+        const availW = Math.max(360, window.innerWidth - 32);
+        const availH = Math.max(280, window.innerHeight - 165);
+        let scale = Math.floor(Math.min(availW / W, availH / H));
+        scale = clamp(scale, 1, 4);
+        if (window.innerWidth < 380) {
+          canvas.style.width = (window.innerWidth - 20) + "px";
+          canvas.style.height = Math.round((window.innerWidth - 20) * (H / W)) + "px";
+          scaleReadout.textContent = "360×280 px · Fit · 30° Ortho";
+        } else {
+          canvas.style.width = (W * scale) + "px";
+          canvas.style.height = (H * scale) + "px";
+          scaleReadout.textContent = "360×280 px · " + scale + "x Nearest · 30° Ortho";
+        }
+      }
+      window.addEventListener("resize", updateCanvasScale);
+      updateCanvasScale();
+
+      /* =========================================================================
+       * 3. 30° 正交投影、Bayer 抖點、等角方塊
+       * ========================================================================= */
+      const CAM_X = 180, CAM_Y = 158;
+
+      function projectIso(wx, wy, wz) {
+        return {
+          sx: Math.round(CAM_X + (wx - wy) * 0.866025),
+          sy: Math.round(CAM_Y + (wx + wy) * 0.5 - wz),
+          depth: (wx + wy) * 0.7071 + wz * 0.35
+        };
+      }
+
+      function sampleRampDithered(matId, lightVal, sx, sy) {
+        const ramp = RAMPS[matId];
+        if (!ramp) return WHITE_PACKED;
+        const c = clamp(lightVal, 0, 3.999);
+        const idx = Math.floor(c), frac = c - idx;
+        const bayerVal = (BAYER4[sy & 3][sx & 3] + 0.5) / 16.0;
+        const finalIdx = (frac > bayerVal && idx < 4) ? idx + 1 : idx;
+        const col = ramp[finalIdx];
+        return packRGB(col[0], col[1], col[2]);
+      }
+
+      function putPixelZ(sx, sy, depth, colorPacked, matId, objId) {
+        if (sx < 0 || sx >= W || sy < 0 || sy >= H) return;
+        const i = sy * W + sx;
+        if (depth >= zbuf[i]) { zbuf[i] = depth; fb[i] = colorPacked; matbuf[i] = matId; objbuf[i] = objId; }
+      }
+
+      function drawIsoBox(x0, y0, z0, x1, y1, z1, matId, objId, castShadow) {
+        const step = 0.9;
+        for (let wx = x0; wx <= x1; wx += step)
+          for (let wy = y0; wy <= y1; wy += step) {
+            const p = projectIso(wx, wy, z1);
+            putPixelZ(p.sx, p.sy, p.depth, sampleRampDithered(matId, 3.45, p.sx, p.sy), matId, objId);
+          }
+        for (let wy = y0; wy <= y1; wy += step)
+          for (let wz = z0; wz <= z1; wz += step) {
+            const p = projectIso(x1, wy, wz);
+            putPixelZ(p.sx, p.sy, p.depth + 0.1, sampleRampDithered(matId, 2.35, p.sx, p.sy), matId, objId);
+          }
+        for (let wx = x0; wx <= x1; wx += step)
+          for (let wz = z0; wz <= z1; wz += step) {
+            const p = projectIso(wx, y1, wz);
+            putPixelZ(p.sx, p.sy, p.depth + 0.1, sampleRampDithered(matId, 1.15, p.sx, p.sy), matId, objId);
+          }
+        if (castShadow) {
+          for (let wx = x0; wx <= x1; wx += 1.5)
+            for (let wy = y0; wy <= y1; wy += 1.5)
+              for (let wz = Math.max(0, z0); wz <= z1; wz += 1.5) {
+                const b = projectIso(wx, wy, 0);
+                const sx = Math.round(b.sx + wz * SHADOW_X), sy = Math.round(b.sy + wz * SHADOW_Y);
+                if (sx >= 0 && sx < W && sy >= 0 && sy < H) {
+                  shadowMask[sy * W + sx] = 1;
+                  if (sx + 1 < W) shadowMask[sy * W + sx + 1] = 1;
+                }
+              }
+        }
+      }
+
+      /* 2D 像素矩形：非有限值／超大字面一律擋掉（防止 NaN 造成卡死） */
+      function drawPixelRect2D(x, y, w, h, packedCol) {
+        if (!isFinite(x) || !isFinite(y) || !isFinite(w) || !isFinite(h)) return;
+        x = Math.round(x); y = Math.round(y);
+        w = Math.min(4096, Math.round(w)); h = Math.min(4096, Math.round(h));
+        for (let dy = 0; dy < h; dy++) {
+          const sy = y + dy;
+          if (sy < 0 || sy >= H) continue;
+          for (let dx = 0; dx < w; dx++) {
+            const sx = x + dx;
+            if (sx >= 0 && sx < W) fb[sy * W + sx] = packedCol;
+          }
+        }
+      }
+
+      /* 像素直線（Bresenham）：端點先取整，並設安全閥；非有限值直接返回 */
+      function drawPixelLine2D(x0, y0, x1, y1, packedCol, dashed) {
+        if (!isFinite(x0) || !isFinite(y0) || !isFinite(x1) || !isFinite(y1)) return;
+        x0 = Math.round(x0); y0 = Math.round(y0); x1 = Math.round(x1); y1 = Math.round(y1);
+        let dx = Math.abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
+        let dy = -Math.abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
+        let err = dx + dy, n = 0, guard = 0;
+        while (true) {
+          if ((!dashed || (n % 4) < 3) && x0 >= 0 && x0 < W && y0 >= 0 && y0 < H) fb[y0 * W + x0] = packedCol;
+          n++;
+          if (x0 === x1 && y0 === y1) break;
+          if (++guard > 4096) break;                 // 安全閥：永不無限迴圈
+          const e2 = 2 * err;
+          if (e2 >= dy) { err += dy; x0 += sx; }
+          if (e2 <= dx) { err += dx; y0 += sy; }
+        }
+      }
+
+      /* 畫一條像素計量條（可帶「目標線」標記） */
+      function drawBar(x, y, w, h, frac, fillRGB, markerFrac, bgRGB) {
+        drawPixelRect2D(x - 1, y - 1, w + 2, h + 2, OUTLINE_DARK);
+        drawPixelRect2D(x, y, w, h, packRGB(bgRGB[0], bgRGB[1], bgRGB[2]));
+        const fw = Math.round(clamp(frac, 0, 1) * w);
+        if (fw > 0) drawPixelRect2D(x, y, fw, h, packRGB(fillRGB[0], fillRGB[1], fillRGB[2]));
+        if (markerFrac !== null && markerFrac !== undefined) {
+          const mx = x + Math.round(clamp(markerFrac, 0, 1) * (w - 2));
+          drawPixelRect2D(mx, y - 2, 2, h + 4, packRGB(255, 92, 62));
+        }
+      }
+
+      /* 以下由建置器注入遊戲模組 */
+            /* =====================================================================
+       * 遊戲三：茶樓點心塔
+       * 玩法：按住＝吊車放繩（蒸籠下降），放開＝放手（蒸籠落下）。
+       *       滑車一直在吊臂上來回移動；落點偏移與落下高度都會累積「搖晃」，
+       *       搖晃超過 100 蒸籠塔就會倒。茶市開門前要疊夠層數。
+       * ===================================================================== */
+
+      const D_STAGES = [
+        { target: 4, trolleySpeed: 20, gustEvery: 0,   gustDur: 0,   gustPush: 0,  timeLimit: 0,  dropSafe: 26 },
+        { target: 6, trolleySpeed: 26, gustEvery: 8.5, gustDur: 2.4, gustPush: 7,  timeLimit: 0,  dropSafe: 24 },
+        { target: 8, trolleySpeed: 31, gustEvery: 6.5, gustDur: 2.8, gustPush: 10, timeLimit: 95, dropSafe: 22 }
+      ];
+
+      const STACK_X = 0, TABLE_Z = 18, LAYER_H = 4.6, ARM_Z = 64, TROLLEY_MIN = -26, TROLLEY_MAX = 26;
+
+      const D = {
+        layers: 0, sway: 0, swayPhase: 0,
+        trolleyX: 0, trolleyDir: 1, basketZ: ARM_Z - 5, state: "idle",
+        dropX: 0, dropZ: 0, landT: 0, gustT: 6, gustLeft: 0,
+        timeLeft: 0, perfects: 0, misses: 0, toppled: false, cfg: D_STAGES[0],
+        lastOffset: null, flash: 0, log: []
+      };
+
+      /* --------------------------- 微縮場景 --------------------------- */
+      const THEME_DIORAMA = function() {
+        const R_MAX = 96;
+
+        // 島面：茶樓前的地堂（石屎地）+ 兩條街道暗渠
+        for (let wx = -R_MAX; wx <= R_MAX; wx += 0.85) {
+          for (let wy = -R_MAX; wy <= R_MAX; wy += 0.85) {
+            const dist = Math.sqrt(wx * wx * 0.9 + wy * wy * 0.9);
+            const p0 = projectIso(wx, wy, 0);
+            if (p0.sx < 0 || p0.sx >= W || p0.sy < 0 || p0.sy >= H) continue;
+            const bayerEdge = (BAYER4[p0.sy & 3][p0.sx & 3] / 16.0) * 14.0;
+            if (dist > R_MAX - bayerEdge) continue;
+
+            const ay = Math.abs(wy);
+            if (ay > 22 && ay < 31) {
+              // 街道暗渠（深色，帶水光）
+              const pw = projectIso(wx, wy, -1.5);
+              const l = 2.2 + Math.sin(wx * 0.08) * 0.3;
+              putPixelZ(pw.sx, pw.sy, pw.depth, sampleRampDithered(MAT_PLANE, l, pw.sx, pw.sy), MAT_PLANE, 1);
+            } else if (ay <= 22) {
+              // 地堂（洗過的石屎地）
+              const pg = projectIso(wx, wy, 18);
+              const l = 2.62 + Math.sin(wx * 0.07 + wy * 0.06) * 0.26;
+              putPixelZ(pg.sx, pg.sy, pg.depth + 0.2, sampleRampDithered(MAT_GROUND, l, pg.sx, pg.sy), MAT_GROUND, 1);
+            } else {
+              // 街外矮牆與騎樓底
+              for (let wz = -1.5; wz < 16; wz += 1.0) {
+                const pc = projectIso(wx, wy, wz);
+                putPixelZ(pc.sx, pc.sy, pc.depth, sampleRampDithered(MAT_STONE, (wx > wy) ? 2.1 : 1.2, pc.sx, pc.sy), MAT_STONE, 2);
+              }
+              const pt = projectIso(wx, wy, 16);
+              putPixelZ(pt.sx, pt.sy, pt.depth + 0.2, sampleRampDithered(MAT_ROOF, 3.0, pt.sx, pt.sy), MAT_ROOF, 2);
+            }
+          }
+        }
+
+        // 茶樓主樓（左後）：外牆、騎樓窗、招牌
+        drawIsoBox(-84, -44, 18, -46, -8, 56, MAT_STONE, 10, true);
+        drawIsoBox(-86, -46, 56, -44, -6, 60, MAT_ROOF, 11, true);
+        for (let wy = -38; wy <= -14; wy += 3.2) {
+          for (let wz = 30; wz <= 42; wz += 3.2) {
+            const pw = projectIso(-45.6, wy, wz);
+            for (let d = 0; d < 3; d++)
+              for (let e = 0; e < 3; e++)
+                putPixelZ(pw.sx + d, pw.sy + e, pw.depth + 0.5, packRGB(255, 228, 158), MAT_ACCENT, 10);
+          }
+        }
+        for (let wy = -40; wy <= -12; wy += 0.8) {                 // 招牌
+          for (let wz = 44; wz <= 50; wz += 0.8) {
+            const ps = projectIso(-45.4, wy, wz);
+            putPixelZ(ps.sx, ps.sy, ps.depth + 0.6, sampleRampDithered(MAT_ACCENT, 3.5, ps.sx, ps.sy), MAT_ACCENT, 12);
+          }
+        }
+
+        // 蒸籠塔的枱（不鏽鋼枱面，塔就疊在上面）
+        drawIsoBox(-11, -9, 14, 11, 9, TABLE_Z, MAT_STONE, 20, true);
+        for (let wx = -10.4; wx <= 10.4; wx += 0.8)
+          for (let wy = -8.4; wy <= 8.4; wy += 0.8) {
+            const p = projectIso(wx, wy, TABLE_Z + 0.2);
+            putPixelZ(p.sx, p.sy, p.depth + 0.4, sampleRampDithered(MAT_STONE, 3.3, p.sx, p.sy), MAT_STONE, 20);
+          }
+
+        // 竹吊臂：兩根立柱 + 橫樑 + 斜撐
+        [[-30, -2], [-30, 2], [30, -2], [30, 2]].forEach(function(c, i) {
+          for (let wz = 14; wz <= ARM_Z; wz += 0.8) {
+            const p = projectIso(c[0], c[1], wz);
+            putPixelZ(p.sx, p.sy, p.depth + 0.5, sampleRampDithered(MAT_WOOD, (c[0] > 0) ? 2.5 : 1.7, p.sx, p.sy), MAT_WOOD, 25 + i);
+            putPixelZ(p.sx + 1, p.sy, p.depth + 0.5, sampleRampDithered(MAT_WOOD, 1.5, p.sx + 1, p.sy), MAT_WOOD, 25 + i);
+          }
+        });
+        for (let wx = -32; wx <= 32; wx += 0.8) {                    // 橫樑（雙樑）
+          for (let wy = -3; wy <= 3; wy += 2) {
+            const p = projectIso(wx, wy, ARM_Z);
+            putPixelZ(p.sx, p.sy, p.depth + 0.8, sampleRampDithered(MAT_WOOD, 2.9, p.sx, p.sy), MAT_WOOD, 30);
+            putPixelZ(p.sx, p.sy + 1, p.depth + 0.8, sampleRampDithered(MAT_WOOD, 1.6, p.sx, p.sy + 1), MAT_WOOD, 30);
+          }
+        }
+        for (let k = 0; k <= 10; k++) {                              // 斜撐
+          const t = k / 10;
+          const p = projectIso(-30 + t * 12, 0, ARM_Z - 2 - t * 10);
+          putPixelZ(p.sx, p.sy, p.depth + 0.7, sampleRampDithered(MAT_WOOD, 2.2, p.sx, p.sy), MAT_WOOD, 31);
+        }
+
+        // 茶客枱（左右各兩張）與茶客
+        [[-40, -14], [-40, 12], [36, -16], [36, 10]].forEach(function(t, i) {
+          drawIsoBox(t[0] - 8, t[1] - 5, 18, t[0] + 8, t[1] + 5, 24, MAT_WOOD, 40 + i, true);
+          const p = projectIso(t[0], t[1] - 8, 18);
+          for (let d = -2; d <= 2; d++) putPixelZ(p.sx + d, p.sy, p.depth + 2, packRGB(240, 236, 244), MAT_ACCENT, 44);
+        });
+        drawCrispCharacter(-40, -22, 18, [96, 118, 164], [52, 56, 84], false, 0, false);
+        drawCrispCharacter(-40, 22, 18, [186, 96, 88], [56, 60, 88], false, 0, false);
+        drawCrispCharacter(36, -24, 18, [90, 148, 122], [50, 58, 82], false, 0, false);
+        drawCrispCharacter(36, 22, 18, [214, 168, 76], [56, 62, 88], false, 0, false);
+        // 點心師傅阿珍（站在吊臂控制位）
+        drawCrispCharacter(-22, -16, 18, [188, 84, 76], [46, 50, 76], true, 0, false);
+
+        // 廚房蒸氣台（右後）
+        drawIsoBox(46, -40, 16, 74, -14, 30, MAT_STONE, 50, true);
+        drawIsoBox(44, -42, 30, 76, -12, 34, MAT_ROOF, 51, true);
+        [50, 58, 66].forEach(function(sx) {
+          drawIsoBox(sx - 3, -30, 30, sx + 3, -22, 44, MAT_WOOD, 52, true);
+          drawIsoBox(sx - 1.6, -28.6, 44, sx + 1.6, -23.4, 46, MAT_ACCENT, 53, true);
+        });
+      };
+
+      /* --------------------------- 環境動畫 --------------------------- */
+      const THEME_AMBIENT = function(tick8, now) {
+        // 廚房蒸氣
+        for (let s = 0; s < 7; s++) {
+          const phase = ((tick8 + s * 5) % 30) / 30;
+          const p = projectIso(52 + s * 7, -26 + Math.sin(phase * 5 + s) * 3, 47 + phase * 22);
+          const col = packRGB(238, 234, 244);
+          putPixelZ(p.sx, p.sy, p.depth + 4, col, MAT_ACCENT, 60);
+          putPixelZ(p.sx + 1, p.sy, p.depth + 4, col, MAT_ACCENT, 60);
+        }
+        // 燈籠輕擺
+        const sway = Math.round(Math.sin(tick8 * 0.6));
+        [[-46, -8], [-46, 4]].forEach(function(l, i) {
+          const p = projectIso(l[0], l[1], 52 + (i ? 2 : 0));
+          for (let dy = -2; dy <= 2; dy++)
+            for (let dx = -2; dx <= 2; dx++)
+              if (dx * dx + dy * dy <= 4)
+                putPixelZ(p.sx + dx + sway, p.sy + dy, p.depth + 6, sampleRampDithered(MAT_ACCENT, 3.4 - dy * 0.15, p.sx + dx + sway, p.sy + dy), MAT_ACCENT, 61);
+        });
+        // 地堂反光
+        for (let r = -20; r <= 20; r += 10) {
+          const p = projectIso(r * 1.4, r * 0.6, 18.4);
+          putPixelZ(p.sx, p.sy, p.depth + 1, packRGB(226, 230, 238), MAT_ACCENT, 62);
+        }
+      };
+
+      /* --------------------------- 遊戲模組 --------------------------- */
+      const GAME = {
+        wind: function() { return D.gustLeft > 0 ? 1.5 : 0.35; },
+
+        stageInit: function(i) {
+          D.cfg = D_STAGES[i];
+          D.layers = 0; D.sway = 0; D.swayPhase = 0;
+          D.trolleyX = TROLLEY_MIN + 6; D.trolleyDir = 1;
+          D.basketZ = ARM_Z - 5; D.state = "idle";
+          D.landT = 0; D.gustT = 5; D.gustLeft = 0;
+          D.timeLeft = D.cfg.timeLimit || 0;
+          D.perfects = 0; D.misses = 0; D.toppled = false; D.lastOffset = null; D.flash = 0;
+          say(STAGES[i].banner);
+        },
+
+        onHold: function() {
+          if (D.state === "idle") D.state = "lowering";
+        },
+        onRelease: function() {
+          if (D.state !== "lowering") return;
+          // 放手：落點＝此刻滑車位置，落下高度＝蒸籠離塔頂的距離
+          D.dropX = D.trolleyX;
+          D.dropZ = D.basketZ;
+          D.state = "dropping";
+          tone(240, 0.12, false, 0.07);
+        },
+
+        stageUpdate: function(dt, now, tick8) {
+          const S = D.cfg;
+          D.swayPhase += dt * 3.2;
+
+          /* --- 陣風 --- */
+          if (S.gustEvery > 0) {
+            if (D.gustLeft > 0) D.gustLeft -= dt;
+            else {
+              D.gustT -= dt;
+              if (D.gustT <= 0) { D.gustT = S.gustEvery; D.gustLeft = S.gustDur; D.sway += 6; tone(180, 0.4, false, 0.06); say("🍃 一陣風掃過地堂——吊臂會偏，塔也會晃。"); }
+            }
+          }
+
+          /* --- 倒數（茶市開門） --- */
+          if (S.timeLimit > 0) {
+            D.timeLeft -= dt;
+            if (D.timeLeft <= 0) {
+              endStage(false, "茶市開門了，蒸籠塔只疊到 " + D.layers + "/" + S.target + " 層。");
+              return;
+            }
+          }
+
+          /* --- 滑車移動 --- */
+          let tSpeed = S.trolleySpeed;
+          if (D.gustLeft > 0) tSpeed += S.gustPush * Math.sin(now * 0.004);
+          D.trolleyX += D.trolleyDir * tSpeed * dt;
+          if (D.trolleyX > TROLLEY_MAX) { D.trolleyX = TROLLEY_MAX; D.trolleyDir = -1; }
+          if (D.trolleyX < TROLLEY_MIN) { D.trolleyX = TROLLEY_MIN; D.trolleyDir = 1; }
+
+          /* --- 吊車狀態機 --- */
+          const stackTop = TABLE_Z + D.layers * LAYER_H;
+          if (D.state === "lowering") {
+            D.basketZ -= 34 * dt;
+            if (D.basketZ < stackTop + 3) D.basketZ = stackTop + 3;   // 到底就停
+          } else if (D.state === "dropping") {
+            D.basketZ -= 120 * dt;
+            if (D.basketZ <= stackTop) {
+              // --- 落點判定 ---
+              const offset = Math.abs(D.dropX - STACK_X);
+              const dropH = Math.max(0, D.dropZ - stackTop);
+              const tooHigh = dropH > S.dropSafe;
+              const hardOffset = offset + (tooHigh ? dropH * 0.55 : 0);
+              D.lastOffset = +hardOffset.toFixed(1);
+              if (hardOffset > 8.5) {
+                D.misses++;
+                D.sway += 24;
+                tone(150, 0.4, false, 0.11); rumble(0.7, 0.08);
+                say("💥 蒸籠滑出枱邊（偏移 " + D.lastOffset + "）——塔身重重一晃，" + (D.layers ? "幸好沒有塌" : "先穩住再來"));
+              } else {
+                D.layers++;
+                D.sway += hardOffset * 2.0 + dropH * 0.32;
+                const perfect = hardOffset < 1.8;
+                if (perfect) D.perfects++;
+                const pts = 60 + (perfect ? 80 : hardOffset < 4.5 ? 40 : 0);
+                addScore(pts);
+                chord(perfect ? [523.25, 659.25, 880] : [392, 523.25]);
+                say((perfect ? "🎯 正中塔心！" : "🥟 疊上了") + "第 " + D.layers + " 層（偏移 " + D.lastOffset +
+                    (tooHigh ? "，放得太高" : "") + " · +" + pts + " 分）");
+                if (D.layers >= S.target) {
+                  const bonus = Math.round(Math.max(0, 100 - D.sway) * 2) + (S.timeLimit > 0 ? Math.round(D.timeLeft) * 3 : 0);
+                  addScore(200 + bonus);
+                  endStage(true, "蒸籠塔疊到 " + D.layers + " 層，茶市準時開門。" + (bonus ? " 穩定獎勵 +" + bonus + "。" : ""));
+                  return;
+                }
+              }
+              D.state = "idle";
+              D.basketZ = ARM_Z - 5;
+              D.landT = 0.9;
+            }
+          } else if (D.state === "idle" && D.landT > 0) {
+            D.landT -= dt;
+          }
+
+          /* --- 搖晃：自然回穩 --- */
+          D.sway -= 15 * dt;
+          D.sway = clamp(D.sway, 0, 130);
+          if (D.sway >= 100) {
+            D.toppled = true;
+            D.state = "idle";
+            rumble(1.6, 0.14);
+            endStage(false, "塔倒了——" + D.layers + " 層蒸籠散滿地堂，茶客都嚇了一跳。");
+            return;
+          }
+
+          if (D.flash > 0) D.flash -= dt;
+          setHUDSub("已疊 " + D.layers + "/" + S.target + " 層 · 搖晃 " + Math.round(D.sway) + "%" +
+                    (S.timeLimit > 0 ? " · 剩 " + Math.ceil(D.timeLeft) + " 秒" : "") +
+                    (D.gustLeft > 0 ? " · 起風" : "") + (D.lastOffset !== null ? " · 上次偏移 " + D.lastOffset : ""));
+
+          /* --- 畫面：蒸籠塔（隨搖晃左右擺） --- */
+          const swayPx = Math.round(Math.sin(D.swayPhase) * Math.min(D.sway, 100) * 0.055);
+          if (D.toppled) {
+            for (let k = 0; k < D.layers; k++) {
+              const wx = (k % 3 - 1) * 9 + Math.random() * 4;
+              const wy = (k % 2) * 7 - 3;
+              drawIsoBox(wx - 5, wy - 5, TABLE_Z, wx + 5, wy + 5, TABLE_Z + 3, MAT_WOOD, 70 + k, false);
+            }
+          } else {
+            for (let k = 0; k < D.layers; k++) {
+              const lean = Math.round(swayPx * (k / Math.max(1, D.layers)) * 1.2);
+              const z0 = TABLE_Z + k * LAYER_H;
+              drawIsoBox(-6, -6, z0, 6, 6, z0 + LAYER_H - 0.6, MAT_WOOD, 70 + k, false);
+              // 蒸籠邊緣的竹紋
+              const p = projectIso(6, 0, z0 + LAYER_H - 0.6);
+              for (let d = -1; d <= 1; d++) putPixelZ(p.sx + d + lean, p.sy, p.depth + 6, packRGB(150, 118, 82), MAT_WOOD, 70 + k);
+            }
+            // 塔頂目標十字（落點參考）
+            const top = projectIso(STACK_X, 0, stackTop + 0.4);
+            drawPixelRect2D(top.sx - 4, top.sy, 9, 1, packRGB(226, 96, 78));
+            drawPixelRect2D(top.sx, top.sy - 4, 1, 9, packRGB(226, 96, 78));
+          }
+
+          /* --- 畫面：吊臂滑車、繩、蒸籠 --- */
+          const tp = projectIso(D.trolleyX, 0, ARM_Z);
+          drawIsoBox(D.trolleyX - 3, -2, ARM_Z - 1, D.trolleyX + 3, 2, ARM_Z + 3, MAT_ACCENT, 80, false);
+          const bz = Math.max(D.basketZ, TABLE_Z + D.layers * LAYER_H);
+          const bp = projectIso(D.trolleyX, 0, bz);
+          drawPixelRect2D(tp.sx, tp.sy, 1, Math.max(1, tp.sy - bp.sy + 2), packRGB(120, 100, 76));  // 繩
+          drawIsoBox(D.trolleyX - 5, -5, bz, D.trolleyX + 5, 5, bz + LAYER_H - 0.6, MAT_WOOD, 81, false);
+          const handle = projectIso(D.trolleyX, -5, bz + LAYER_H - 0.6);
+          for (let d = -1; d <= 1; d++) putPixelZ(handle.sx + d, handle.sy, handle.depth + 6, packRGB(160, 128, 90), MAT_WOOD, 81);
+
+          // 落點預測：由蒸籠往下畫虛線到枱面
+          const land = projectIso(D.trolleyX, 0, stackTop);
+          const off = Math.abs(D.trolleyX - STACK_X);
+          const safe = off < 4.5 && (D.basketZ - stackTop) <= S.dropSafe;
+          drawPixelLine2D(bp.sx, Math.round(bp.sy + LAYER_H), land.sx, land.sy, safe ? packRGB(120, 200, 130) : packRGB(232, 140, 96), true);
+          // 高度提示：離塔頂還有多遠
+          const hPct = clamp((D.basketZ - stackTop) / 40, 0, 1);
+          drawPixelRect2D(land.sx - 5, land.sy - 1, 11, 2, OUTLINE_DARK);
+          drawPixelRect2D(land.sx - 4, land.sy, Math.round(9 * (1 - hPct)), 1, safe ? packRGB(120, 200, 130) : packRGB(232, 140, 96));
+
+          /* --- 計量條：搖晃 + 時間 --- */
+          drawPixelRect2D(4, 12, 7, 7, OUTLINE_DARK);                     // 圖示：塔
+          drawPixelRect2D(5, 13, 5, 2, packRGB(196, 160, 112));
+          drawPixelRect2D(5, 16, 5, 2, packRGB(196, 160, 112));
+          drawBar(16, 14, 92, 5, D.sway / 100, [236, 130, 90], null, [232, 230, 240]);
+          if (S.timeLimit > 0) {
+            drawPixelRect2D(4, 26, 7, 7, OUTLINE_DARK);                   // 圖示：鐘
+            drawPixelRect2D(5, 27, 5, 5, packRGB(240, 236, 246));
+            drawPixelRect2D(7, 28, 1, 2, packRGB(60, 60, 90));
+            drawPixelRect2D(7, 30, 2, 1, packRGB(60, 60, 90));
+            drawBar(16, 28, 92, 5, D.timeLeft / S.timeLimit, [120, 190, 240], null, [232, 230, 240]);
+          }
+        },
+
+        stageDraw: function(dt, now, tick8) {
+          // 結算後仍然畫出塔（倒塔則畫散落）
+          if (!D.toppled) {
+            for (let k = 0; k < D.layers; k++) {
+              const z0 = TABLE_Z + k * LAYER_H;
+              drawIsoBox(-6, -6, z0, 6, 6, z0 + LAYER_H - 0.6, MAT_WOOD, 70 + k, false);
+            }
+          } else {
+            for (let k = 0; k < D.layers; k++) {
+              const wx = (k % 3 - 1) * 9, wy = (k % 2) * 7 - 3;
+              drawIsoBox(wx - 5, wy - 5, TABLE_Z, wx + 5, wy + 5, TABLE_Z + 3, MAT_WOOD, 70 + k, false);
+            }
+          }
+        },
+
+        debug: function() {
+          return {
+            layers: D.layers, sway: Math.round(D.sway), trolleyX: Math.round(D.trolleyX),
+            basketZ: Math.round(D.basketZ), state: D.state, perfects: D.perfects, misses: D.misses,
+            lastOffset: D.lastOffset, toppled: D.toppled, timeLeft: Math.round(D.timeLeft),
+            target: D.cfg.target, stackTop: TABLE_Z + D.layers * LAYER_H
+          };
+        },
+        set: function(k, v) {
+          if (k === "layers") D.layers = v;
+          if (k === "sway") D.sway = v;
+          if (k === "trolleyX") D.trolleyX = v;
+          if (k === "state") D.state = v;
+          if (k === "timeLeft") D.timeLeft = v;
+        }
+      };
+
+
+      /* =========================================================================
+       * 5. 靜態場景合成 + 硬陰影 + 輪廓光
+       * ========================================================================= */
+      function buildStaticDiorama() {
+        for (let i = 0; i < W * H; i++) {
+          fb[i] = WHITE_PACKED; zbuf[i] = -99999; matbuf[i] = MAT_BG; objbuf[i] = 0; shadowMask[i] = 0;
+        }
+        THEME_DIORAMA();
+        for (let i = 0; i < W * H; i++) {
+          if (shadowMask[i] && matbuf[i] !== MAT_BG && objbuf[i] < 10) {
+            const c = fb[i];
+            const d = mixRGB([c & 255, (c >> 8) & 255, (c >> 16) & 255], COOL_DARK, 0.45);
+            fb[i] = packRGB(d[0], d[1], d[2]);
+          }
+        }
+        const copyFB = new Uint32Array(fb);
+        for (let sy = 2; sy < H - 2; sy++) {
+          for (let sx = 2; sx < W - 2; sx++) {
+            const i = sy * W + sx;
+            if (matbuf[i] === MAT_BG) continue;
+            const zc = zbuf[i], oc = objbuf[i];
+            if ((objbuf[i + 1] !== oc && zc - zbuf[i + 1] > 4.5) ||
+                (objbuf[i + W] !== oc && zc - zbuf[i + W] > 4.5)) {
+              copyFB[i] = OUTLINE_DARK;
+            } else if ((objbuf[i - 1] !== oc && zc - zbuf[i - 1] > 5.0) &&
+                       (objbuf[i - W] !== oc && zc - zbuf[i - W] > 5.0)) {
+              copyFB[i] = packRGB(Math.min(255, (copyFB[i] & 255) + 28),
+                                  Math.min(255, ((copyFB[i] >> 8) & 255) + 22),
+                                  Math.min(255, ((copyFB[i] >> 16) & 255) + 8));
+            }
+          }
+        }
+        staticFB.set(copyFB); staticZ.set(zbuf); staticMat.set(matbuf); staticObj.set(objbuf);
+        staticDirty = false;
+      }
+
+      /* =========================================================================
+       * 6. 植物 8FPS 擺動與平整人物
+       * ========================================================================= */
+      function drawFoliage8FPS(tick8, windDir) {
+        const sway = Math.round(Math.sin(tick8 * 0.85) + windDir * 0.7);
+        for (let t = 0; t < THEME.trees.length; t++) {
+          const tr = THEME.trees[t];
+          const pb = projectIso(tr.x, tr.y, tr.z);
+          const trunkA = packRGB(THEME.trunk[0], THEME.trunk[1], THEME.trunk[2]);
+          const trunkB = packRGB(Math.round(THEME.trunk[0]*.76), Math.round(THEME.trunk[1]*.76), Math.round(THEME.trunk[2]*.76));
+          for (let h = 0; h < 10; h++) {
+            putPixelZ(pb.sx, pb.sy - h, pb.depth + 2, trunkA, MAT_WOOD, 30 + t);
+            putPixelZ(pb.sx + 1, pb.sy - h, pb.depth + 2, trunkB, MAT_WOOD, 30 + t);
+          }
+          for (let sx = 2; sx <= 16; sx++)
+            for (let sy = -3; sy <= 3; sy++) {
+              const idx = (pb.sy + sy) * W + (pb.sx + sx);
+              if (idx >= 0 && idx < W * H && matbuf[idx] === MAT_GROUND) {
+                const c = fb[idx];
+                const d = mixRGB([c & 255, (c >> 8) & 255, (c >> 16) & 255], COOL_DARK, 0.42);
+                fb[idx] = packRGB(d[0], d[1], d[2]);
+              }
+            }
+          const cx = pb.sx + sway, cy = pb.sy - 14, rad = tr.r;
+          for (let dy = -rad; dy <= rad; dy++)
+            for (let dx = -rad; dx <= rad; dx++)
+              if (dx * dx + dy * dy <= rad * rad) {
+                const px = cx + dx, py = cy + dy;
+                putPixelZ(px, py, pb.depth + 6 - dy * 0.1,
+                  sampleRampDithered(MAT_LEAF, 2.4 - (dx * 0.09 + dy * 0.11), px, py), MAT_LEAF, 30 + t);
+              }
+        }
+        for (let g = 0; g < THEME.grass.length; g++) {
+          const gt = THEME.grass[g];
+          const pg = projectIso(gt.x, gt.y, gt.z);
+          const shift = ((tick8 + g) % 2 === 0) ? sway : 0;
+          const cb = packRGB(THEME.leafBright[0], THEME.leafBright[1], THEME.leafBright[2]);
+          const cm = packRGB(THEME.leafMid[0], THEME.leafMid[1], THEME.leafMid[2]);
+          putPixelZ(pg.sx, pg.sy, pg.depth + 2, cm, MAT_LEAF, 40);
+          putPixelZ(pg.sx + shift, pg.sy - 1, pg.depth + 2, cb, MAT_LEAF, 40);
+          putPixelZ(pg.sx + 2 + shift, pg.sy - 2, pg.depth + 2, cb, MAT_LEAF, 40);
+        }
+      }
+
+      function drawCrispCharacter(wx, wy, wz, coatRGB, pantsRGB, accessory, angleRad, glow) {
+        const p = projectIso(wx, wy, wz);
+        const cx = p.sx, cy = p.sy, d = p.depth + 8;
+        for (let sh = 1; sh <= 9; sh++) {
+          const sx = cx + sh, sy = cy + Math.round(sh * 0.2);
+          if (sx >= 0 && sx < W && sy >= 0 && sy < H) {
+            const idx = sy * W + sx;
+            if (matbuf[idx] !== MAT_BG) fb[idx] = packRGB(THEME.charShadow[0], THEME.charShadow[1], THEME.charShadow[2]);
+          }
+        }
+        const coatPack = packRGB(coatRGB[0], coatRGB[1], coatRGB[2]);
+        const pantsPack = packRGB(pantsRGB[0], pantsRGB[1], pantsRGB[2]);
+        const skinPack = packRGB(THEME.skin[0], THEME.skin[1], THEME.skin[2]);
+        const accPack = packRGB(THEME.accessory.color[0], THEME.accessory.color[1], THEME.accessory.color[2]);
+
+        function rect(x0, y0, w, h, fill) {
+          for (let dy = -1; dy <= h; dy++)
+            for (let dx = -1; dx <= w; dx++) {
+              const px = x0 + dx, py = y0 + dy;
+              const border = (dx === -1 || dx === w || dy === -1 || dy === h);
+              putPixelZ(px, py, border ? d - 0.05 : d, border ? OUTLINE_DARK : fill, MAT_CHAR, 90);
+            }
+        }
+        if (angleRad && Math.abs(angleRad) > 0.05) {
+          const cosA = Math.cos(angleRad), sinA = Math.sin(angleRad);
+          for (let ly = -12; ly <= 2; ly++)
+            for (let lx = -3; lx <= 3; lx++) {
+              let col = null;
+              if (ly <= -9 && Math.abs(lx) <= 2) col = skinPack;
+              else if (ly > -9 && ly <= -3 && Math.abs(lx) <= 2) col = coatPack;
+              else if (ly > -3 && Math.abs(lx) <= 1) col = pantsPack;
+              if (!col) continue;
+              const rx = Math.round(cx + lx * cosA - (ly + 6) * sinA);
+              const ry = Math.round(cy - 6 + lx * sinA + (ly + 6) * cosA);
+              putPixelZ(rx-1, ry, d-0.1, OUTLINE_DARK, MAT_CHAR, 90);
+              putPixelZ(rx+1, ry, d-0.1, OUTLINE_DARK, MAT_CHAR, 90);
+              putPixelZ(rx, ry-1, d-0.1, OUTLINE_DARK, MAT_CHAR, 90);
+              putPixelZ(rx, ry+1, d-0.1, OUTLINE_DARK, MAT_CHAR, 90);
+              putPixelZ(rx, ry, d, col, MAT_CHAR, 90);
+            }
+          return;
+        }
+        rect(cx - 1, cy - 4, 3, 4, pantsPack);
+        rect(cx - 2, cy - 9, 5, 5, coatPack);
+        rect(cx - 1, cy - 12, 3, 3, skinPack);
+        if (accessory) {
+          const a = THEME.accessory;
+          rect(cx + a.dx, cy + a.dy, a.w, a.h, accPack);
+          putPixelZ(cx + a.dx + a.w - 1, cy + a.dy + 1, d + 0.1, packRGB(255, 244, 180), MAT_CHAR, 90);
+        }
+        if (glow) rect(cx - 1, cy - 18, 3, 3, accPack);
+      }
+
+      /* 汽笛／風聲用的低頻短音（模組可選用） */
+      function rumble(duration, vol) {
+        const ac = ensureAudio(); if (!ac) return;
+        const now = ac.currentTime;
+        const o = ac.createOscillator(), g = ac.createGain(), f = ac.createBiquadFilter();
+        o.type = "sawtooth"; o.frequency.setValueAtTime(70, now);
+        f.type = "lowpass"; f.frequency.value = 320;
+        g.gain.setValueAtTime(0.001, now);
+        g.gain.linearRampToValueAtTime(vol || 0.09, now + 0.15);
+        g.gain.exponentialRampToValueAtTime(0.001, now + (duration || 0.9));
+        o.connect(f); f.connect(g); g.connect(ac.destination);
+        o.start(now); o.stop(now + (duration || 0.9));
+      }
+
+      /* =========================================================================
+       * 7. WebAudio 合成器（0 音檔）
+       * ========================================================================= */
+      let audioCtx = null, isMuted = false;
+
+      function ensureAudio() {
+        if (isMuted) return null;
+        if (!audioCtx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if (AC) audioCtx = new AC();
+        }
+        if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+        return audioCtx;
+      }
+
+      function tone(freq, duration, warm, vol) {
+        const ac = ensureAudio(); if (!ac) return;
+        const now = ac.currentTime, cfg = THEME.audio;
+        const osc = ac.createOscillator(), sub = ac.createOscillator();
+        const filter = ac.createBiquadFilter(), gain = ac.createGain();
+        osc.type = cfg.wave; osc.frequency.setValueAtTime(freq, now);
+        sub.type = cfg.subWave; sub.frequency.setValueAtTime(freq * cfg.subRatio, now);
+        if (warm) {
+          const lfo = ac.createOscillator(), lg = ac.createGain();
+          lfo.frequency.value = cfg.vibrato || 5.2; lg.gain.value = 4.5;
+          lfo.connect(lg); lg.connect(osc.frequency);
+          lfo.start(now); lfo.stop(now + duration);
+        }
+        filter.type = "lowpass"; filter.frequency.setValueAtTime(cfg.cutoff || 1150, now);
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(vol || 0.14, now + 0.04);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+        osc.connect(filter); sub.connect(filter); filter.connect(gain); gain.connect(ac.destination);
+        osc.start(now); sub.start(now); osc.stop(now + duration); sub.stop(now + duration);
+      }
+      function chord(notes) { notes.forEach(function(f, i) { setTimeout(function() { tone(f, 0.38, true); }, i * 90); }); }
+
+      /* =========================================================================
+       * 8. 關卡流程（每款遊戲三關，模組自行判定成敗）
+       * ========================================================================= */
+      const STAGES = THEME.stages;
+      let stageIndex = 0;
+      let stageScore = 0;
+      let stageStart = 0;
+      let running = false;
+      let ended = false;
+      let bestScores = [0, 0, 0];
+      let cleared = [false, false, false];
+
+      try {
+        const saved = localStorage.getItem(THEME.storageKey);
+        if (saved) { const o = JSON.parse(saved); bestScores = o.best || bestScores; cleared = o.cleared || cleared; }
+      } catch (e) {}
+
+      function saveBest() {
+        if (stageScore > bestScores[stageIndex]) bestScores[stageIndex] = stageScore;
+        try { localStorage.setItem(THEME.storageKey, JSON.stringify({ best: bestScores, cleared: cleared })); } catch (e) {}
+      }
+
+      function addScore(n) { stageScore += n; updateHUD(); }
+      function getScore() { return stageScore; }
+      function say(text) { document.getElementById("storyBanner").textContent = text; }
+      let subText = "";
+      function setHUDSub(text) { subText = text; updateHUD(); }
+
+      function updateHUD() {
+        document.getElementById("valScore").textContent = stageScore;
+        document.getElementById("valBest").textContent = bestScores[stageIndex];
+        document.getElementById("valSubStat").textContent = subText;
+      }
+
+      function setTabs() {
+        for (let i = 0; i < 3; i++) {
+          const t = document.getElementById("tab" + i);
+          t.classList.toggle("active", i === stageIndex);
+          t.classList.toggle("done", !!cleared[i]);
+        }
+      }
+
+      function loadStage(i) {
+        stageIndex = clamp(i, 0, 2);
+        stageScore = 0;
+        ended = false;
+        running = true;
+        isHolding = false;
+        document.getElementById("btnMainAction").classList.remove("charging");
+        const S = STAGES[stageIndex];
+        say(S.banner);
+        document.getElementById("controlHint").textContent = S.hint;
+        document.getElementById("btnMainAction").textContent = S.btn;
+        document.getElementById("stageOverlay").classList.add("hidden");
+        document.getElementById("rulesModal").classList.remove("open");
+        staticDirty = true;              // 每關重繪場景（部分關卡會改變地形）
+        buildStaticDiorama();
+        GAME.stageInit(stageIndex);
+        stageStart = performance.now();
+        setTabs();
+        updateHUD();
+      }
+
+      function endStage(won, text) {
+        if (ended) return;
+        ended = true;
+        running = false;
+        isHolding = false;
+        const elapsed = Math.max(1, Math.round((performance.now() - stageStart) / 1000));
+        if (won) { cleared[stageIndex] = true; isMuted || chord([523.25, 659.25, 783.99]); }
+        else { tone(146.83, 0.4, false, 0.12); }
+        saveBest();
+        setTabs();
+        updateHUD();
+
+        const ov = document.getElementById("stageOverlay");
+        document.getElementById("ovKicker").textContent = won
+          ? ("STAGE " + (stageIndex + 1) + " CLEARED")
+          : ("STAGE " + (stageIndex + 1) + " FAILED");
+        document.getElementById("ovTitle").textContent = won ? STAGES[stageIndex].clearTitle : STAGES[stageIndex].failTitle;
+        document.getElementById("ovText").textContent = text || "";
+        document.getElementById("ovScore").textContent = stageScore;
+        document.getElementById("ovBest").textContent = bestScores[stageIndex];
+        document.getElementById("ovTime").textContent = elapsed + "s";
+        document.getElementById("ovStory").innerHTML = won ? (STAGES[stageIndex].clearStory || "") : (STAGES[stageIndex].failStory || "");
+
+        const row = document.getElementById("ovRow");
+        row.innerHTML = "";
+        function mkBtn(label, fn, primary) {
+          const b = document.createElement("button");
+          b.className = primary ? "primary-action-btn" : "secondary-action-btn";
+          b.textContent = label;
+          b.addEventListener("click", fn);
+          row.appendChild(b);
+        }
+        mkBtn("重玩本關", function() { loadStage(stageIndex); });
+        if (won && stageIndex < 2) mkBtn("下一關 →", function() { loadStage(stageIndex + 1); }, true);
+        if (won && stageIndex === 2) {
+          const b = document.createElement("button");
+          b.className = "primary-action-btn";
+          b.textContent = "三部曲完成 ★";
+          b.disabled = true;
+          row.appendChild(b);
+        }
+        ov.classList.remove("hidden");
+      }
+
+      /* =========================================================================
+       * 9. 輸入（一顆按鈕：按住 / 放開；另有滑鼠與鍵盤）
+       * ========================================================================= */
+      let isHolding = false;
+
+      function startHold() {
+        ensureAudio();
+        if (!running || ended) return;
+        if (isHolding) return;
+        isHolding = true;
+        document.getElementById("btnMainAction").classList.add("charging");
+        GAME.onHold();
+      }
+      function endHold() {
+        if (!isHolding) return;
+        isHolding = false;
+        document.getElementById("btnMainAction").classList.remove("charging");
+        if (GAME.onRelease) GAME.onRelease();
+      }
+
+      /* =========================================================================
+       * 10. 主迴圈
+       * ========================================================================= */
+      let lastTime = performance.now();
+
+      function frame(now) {
+        const dt = Math.min(0.05, (now - lastTime) / 1000);
+        lastTime = now;
+        if (staticDirty) buildStaticDiorama();
+        fb.set(staticFB); zbuf.set(staticZ); matbuf.set(staticMat); objbuf.set(staticObj);
+        const reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const tick8 = reduced ? 0 : Math.floor(now / 125);
+        drawFoliage8FPS(tick8, GAME.wind ? GAME.wind() : 0.5);
+        THEME_AMBIENT(tick8, now);
+        if (running && !ended) GAME.stageUpdate(dt, now, tick8);
+        if (ended) GAME.stageDraw ? GAME.stageDraw(dt, now, tick8) : null;
+        ctx.putImageData(imgData, 0, 0);
+        requestAnimationFrame(frame);
+      }
+
+      /* =========================================================================
+       * 11. 介面綁定
+       * ========================================================================= */
+      const canvasContainer = document.getElementById("canvasContainer");
+      const btnMainAction = document.getElementById("btnMainAction");
+
+      function bindPressRelease(el) {
+        el.addEventListener("mousedown", function(e) { e.preventDefault(); startHold(); });
+        el.addEventListener("touchstart", function(e) { e.preventDefault(); startHold(); }, { passive: false });
+      }
+      bindPressRelease(canvasContainer);
+      bindPressRelease(btnMainAction);
+      window.addEventListener("mouseup", endHold);
+      window.addEventListener("touchend", endHold);
+      window.addEventListener("keydown", function(e) {
+        if (e.code === "Space") { e.preventDefault(); startHold(); }
+        else if (e.code === "KeyR") { loadStage(stageIndex); }
+      });
+      window.addEventListener("keyup", function(e) { if (e.code === "Space") { e.preventDefault(); endHold(); } });
+
+      document.getElementById("tab0").addEventListener("click", function() { loadStage(0); });
+      document.getElementById("tab1").addEventListener("click", function() { loadStage(1); });
+      document.getElementById("tab2").addEventListener("click", function() { loadStage(2); });
+      document.getElementById("btnReset").addEventListener("click", function() { loadStage(stageIndex); });
+
+      const rulesModal = document.getElementById("rulesModal");
+      document.getElementById("btnRules").addEventListener("click", function() { rulesModal.classList.add("open"); });
+      document.getElementById("btnCloseModal").addEventListener("click", function() { rulesModal.classList.remove("open"); });
+      rulesModal.addEventListener("click", function(e) { if (e.target === rulesModal) rulesModal.classList.remove("open"); });
+      const btnMute = document.getElementById("btnMute");
+      btnMute.addEventListener("click", function() {
+        isMuted = !isMuted;
+        btnMute.textContent = isMuted ? "音效：關" : "音效：開";
+      });
+
+      document.getElementById("modalTitleText").textContent = THEME.modalTitle;
+      document.getElementById("modalBody").innerHTML = THEME.modalHtml;
+
+      window.onload = function() {
+        buildStaticDiorama();
+        loadStage(0);
+        requestAnimationFrame(frame);
+      };
+
+      /* 自動化測試用除錯介面 */
+      window.PP = {
+        game: THEME.id,
+        stage: function(i) { if (i !== undefined) loadStage(i); return stageIndex; },
+        hold: startHold, release: endHold,
+        step: function(n) {
+          n = n || 1;
+          for (let i = 0; i < n; i++) { lastTime = performance.now() - 16.7; frame(performance.now()); }
+          return this.debug();
+        },
+        set: function(k, v) { if (GAME.set) GAME.set(k, v); return this.debug(); },
+        debug: function() {
+          return {
+            stage: stageIndex, score: stageScore, running: running, ended: ended,
+            best: bestScores.slice(), cleared: cleared.slice(),
+            game: GAME.debug ? GAME.debug() : {}
+          };
+        },
+        end: function(won, txt) { endStage(!!won, txt || "（測試）"); },
+        overlayVisible: function() { return !document.getElementById("stageOverlay").classList.contains("hidden"); }
+      };
+    })();
+  </script>
+</body>
+</html>
