@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>霧港守燈人：像素劇場</title>
+  <style>
+    :root {
+      --bg-paper: #ffffff;
+      --ink-main: #231f2e;
+      --ink-muted: #6e6782;
+      --ink-faint: #b3adc4;
+      --accent-warm: #c96a3b;
+      --accent-purple: #2f4a7c;
+      --border-soft: #eae6f0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+    html, body {
+      width: 100%; min-height: 100vh; background-color: var(--bg-paper); color: var(--ink-main);
+      font-family: "Inter", "Noto Serif TC", "PingFang HK", "Microsoft JhengHei", sans-serif;
+      display: flex; flex-direction: column; align-items: center; justify-content: space-between; overflow-x: hidden;
+    }
+    .top-bar {
+      width: 100%; max-width: 980px; padding: 16px 24px 8px; display: flex; flex-wrap: wrap;
+      align-items: center; justify-content: space-between; gap: 12px; z-index: 10;
+    }
+    .brand-group { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+    .brand-title { font-size: 15px; font-weight: 700; letter-spacing: .04em; }
+    .brand-subtitle { font-size: 11px; color: var(--ink-muted); font-family: monospace; }
+    .scene-tabs { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .tab-btn {
+      background: transparent; border: 1px solid var(--border-soft); color: var(--ink-muted);
+      font-size: 12px; padding: 6px 12px; border-radius: 999px; cursor: pointer;
+      transition: all .15s ease; font-weight: 500;
+    }
+    .tab-btn:hover { border-color: var(--ink-muted); color: var(--ink-main); }
+    .tab-btn.active { background: var(--ink-main); color: #fff; border-color: var(--ink-main); }
+    .tab-btn.done::after { content: " ✓"; }
+    .utility-btns { display: flex; align-items: center; gap: 6px; }
+    .icon-btn {
+      background: transparent; border: 1px solid var(--border-soft); color: var(--ink-muted);
+      font-size: 12px; padding: 6px 11px; border-radius: 999px; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 4px; transition: all .15s ease;
+    }
+    .icon-btn:hover { border-color: var(--ink-main); color: var(--ink-main); }
+    .stage-wrap {
+      flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      width: 100%; padding: 4px 16px; position: relative;
+    }
+    .hud-strip {
+      width: 100%; max-width: 720px; display: flex; align-items: baseline; justify-content: space-between;
+      padding: 0 8px 8px; font-size: 13px; color: var(--ink-muted); flex-wrap: wrap; gap: 6px;
+    }
+    .story-line { font-size: 13px; color: var(--ink-main); font-weight: 500; letter-spacing: .02em; }
+    .score-cluster { display: flex; gap: 16px; font-family: monospace; font-size: 13px; color: var(--ink-main); }
+    .score-cluster span b { color: var(--accent-warm); }
+    .canvas-holder {
+      position: relative; display: flex; align-items: center; justify-content: center;
+      background: #fff; cursor: pointer; touch-action: none;
+    }
+    #dioramaCanvas {
+      width: 360px; height: 280px;
+      image-rendering: -moz-crisp-edges; image-rendering: -webkit-optimize-contrast;
+      image-rendering: pixelated; image-rendering: crisp-edges;
+      background: #fff; display: block;
+    }
+    .bottom-bar {
+      width: 100%; max-width: 980px; padding: 8px 24px 18px; display: flex; flex-wrap: wrap;
+      align-items: center; justify-content: space-between; gap: 12px; z-index: 10;
+    }
+    .action-cluster { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .primary-action-btn {
+      background: var(--ink-main); color: #fff; border: none; padding: 11px 22px; border-radius: 999px;
+      font-size: 13.5px; font-weight: 600; cursor: pointer; letter-spacing: .03em;
+      transition: transform .1s ease, background .15s ease;
+    }
+    .primary-action-btn:active, .primary-action-btn.charging { background: var(--accent-warm); transform: scale(.97); }
+    .secondary-action-btn {
+      background: #f6f4f9; color: var(--ink-main); border: 1px solid var(--border-soft);
+      padding: 8px 14px; border-radius: 999px; font-size: 12px; cursor: pointer;
+    }
+    .secondary-action-btn:hover { border-color: var(--ink-muted); }
+    .hint-text { font-size: 12px; color: var(--ink-muted); }
+    .tech-badge { font-family: monospace; font-size: 11px; color: var(--ink-faint); }
+
+    /* 關卡結算／開場 */
+    .overlay {
+      position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 20px;
+      background: rgba(255,255,255,.9); backdrop-filter: blur(5px);
+    }
+    .overlay.hidden { display: none; }
+    .panel {
+      width: min(560px, 100%); background: #fff; border: 1px solid var(--border-soft);
+      border-radius: 18px; padding: 28px 26px; text-align: center;
+      box-shadow: 0 24px 60px rgba(35,31,46,.12);
+    }
+    .panel .kicker { font-family: monospace; font-size: 11px; letter-spacing: .2em; color: var(--ink-faint); }
+    .panel h2 { font-size: 22px; margin: 10px 0 8px; }
+    .panel p { font-size: 13.5px; line-height: 1.8; color: var(--ink-muted); }
+    .panel .story { font-size: 13.5px; line-height: 1.9; color: var(--ink-main); margin: 12px 0 0; }
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 18px 0 6px; }
+    .stats div { background: #faf9fc; border: 1px solid var(--border-soft); border-radius: 12px; padding: 10px; }
+    .stats span { display: block; font-size: 11px; color: var(--ink-muted); }
+    .stats b { font-size: 19px; font-family: monospace; }
+    .row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 16px; }
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(255,255,255,.88); backdrop-filter: blur(4px);
+      display: none; align-items: center; justify-content: center; padding: 20px; z-index: 70;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal-card {
+      background: #fff; border: 1px solid var(--border-soft); box-shadow: 0 20px 50px rgba(35,31,46,.08);
+      max-width: 620px; width: 100%; max-height: 85vh; overflow-y: auto; border-radius: 16px;
+      padding: 28px; color: var(--ink-main);
+    }
+    .modal-header {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;
+      padding-bottom: 12px; border-bottom: 1px solid var(--border-soft);
+    }
+    .modal-title { font-size: 16px; font-weight: 700; }
+    .close-btn {
+      background: transparent; border: 1px solid var(--border-soft); border-radius: 999px;
+      padding: 4px 12px; font-size: 12px; cursor: pointer; color: var(--ink-muted);
+    }
+    .close-btn:hover { color: var(--ink-main); border-color: var(--ink-main); }
+    .modal-section { margin-bottom: 18px; }
+    .modal-section h4 { font-size: 13px; font-weight: 700; margin-bottom: 6px; color: var(--accent-purple); }
+    .modal-section p, .modal-section li { font-size: 13px; line-height: 1.68; color: var(--ink-muted); }
+    .modal-section ul { padding-left: 18px; margin-top: 6px; }
+    .rule-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+    .rule-item { background: #faf9fc; border: 1px solid var(--border-soft); border-radius: 8px; padding: 8px 10px; font-size: 12px; color: var(--ink-muted); }
+    .rule-item b { display: block; color: var(--ink-main); margin-bottom: 2px; }
+    @media (max-width: 640px) {
+      .top-bar, .bottom-bar { padding: 12px 16px; }
+      .hud-strip { flex-direction: column; align-items: flex-start; }
+      .rule-grid { grid-template-columns: 1fr; }
+      .stats { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="top-bar">
+    <div class="brand-group">
+      <div class="brand-title">霧港守燈人 · 零圖片像素劇場</div>
+      <div class="brand-subtitle">360×280 · 0 Images · Software Z-Buffer</div>
+    </div>
+    <nav class="scene-tabs" aria-label="關卡切換">
+      <button type="button" class="tab-btn active" id="tab0">第一晚 · 初霧</button>
+      <button type="button" class="tab-btn" id="tab1">第二晚 · 漲霧</button>
+      <button type="button" class="tab-btn" id="tab2">第三晚 · 風暴前夜</button>
+    </nav>
+    <div class="utility-btns">
+      <button type="button" class="icon-btn" id="btnRules">故事與規則</button>
+      <button type="button" class="icon-btn" id="btnMute" aria-label="切換音效">音效：開</button>
+    </div>
+  </header>
+
+  <main class="stage-wrap">
+    <div class="hud-strip">
+      <div class="story-line" id="storyBanner"></div>
+      <div class="score-cluster">
+        <span>本關 <b id="valScore">0</b></span>
+        <span>最佳 <b id="valBest">0</b></span>
+        <span id="valSubStat"></span>
+      </div>
+    </div>
+    <div class="canvas-holder" id="canvasContainer" title="按住畫布或空白鍵進行操作">
+      <canvas id="dioramaCanvas" width="360" height="280"></canvas>
+    </div>
+  </main>
+
+  <footer class="bottom-bar">
+    <div class="action-cluster">
+      <button type="button" class="primary-action-btn" id="btnMainAction">按住 (Space)</button>
+      <button type="button" class="secondary-action-btn" id="btnReset">重玩本關 (R)</button>
+      <span class="hint-text" id="controlHint"></span>
+    </div>
+    <div class="tech-badge" id="scaleReadout">360×280 px · 2x Nearest · 30° Ortho</div>
+  </footer>
+
+  <!-- 開場／結算 -->
+  <div class="overlay hidden" id="stageOverlay">
+    <div class="panel">
+      <div class="kicker" id="ovKicker"></div>
+      <h2 id="ovTitle"></h2>
+      <p id="ovText"></p>
+      <div class="stats">
+        <div><span>本關得分</span><b id="ovScore">0</b></div>
+        <div><span>最佳</span><b id="ovBest">0</b></div>
+        <div><span>用時</span><b id="ovTime">0s</b></div>
+      </div>
+      <p class="story" id="ovStory"></p>
+      <div class="row" id="ovRow"></div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="rulesModal" role="dialog" aria-modal="true" aria-labelledby="modalTitleText">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title" id="modalTitleText"></div>
+        <button type="button" class="close-btn" id="btnCloseModal">關閉</button>
+      </div>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      "use strict";
+
+      const THEME = {"id":"keeper","storageKey":"px_keeper_best","coolDark":[26,34,72],"warmLight":[255,224,154],"mats":{"1":[22,44,76],"2":[126,126,138],"3":[92,94,104],"4":[176,84,66],"5":[116,92,68],"6":[72,104,84],"7":[248,200,92]},"trunk":[104,78,56],"leafBright":[140,168,118],"leafMid":[78,108,86],"skin":[252,214,176],"charShadow":[40,48,84],"accessory":{"color":[248,200,92],"dx":3,"dy":-9,"w":3,"h":4},"audio":{"wave":"sine","subWave":"triangle","subRatio":0.5,"cutoff":900,"vibrato":3.2},"trees":[{"x":-52,"y":16,"z":18,"r":9},{"x":-44,"y":-14,"z":18,"r":8},{"x":60,"y":2,"z":14,"r":9}],"grass":[{"x":-56,"y":2,"z":18},{"x":-50,"y":12,"z":18},{"x":52,"y":-8,"z":14},{"x":62,"y":40,"z":14},{"x":-70,"y":-32,"z":18},{"x":72,"y":-30,"z":14}],"stages":[{"tab":"第一晚 · 初霧","banner":"「霧從海面爬上來。阿澄絞高燈芯，把光丟進夜裡——今晚還有三艘船要入港。」","hint":"按住＝絞高燈芯（光亮但耗油）· 放開＝節油回復。船駛過防波堤一刻，亮度要達到綠色需求線。","btn":"按住絞高燈芯 (Space)","clearTitle":"第一晚 · 平安入港","failTitle":"第一晚 · 港口封閉","clearStory":"三艘船都靠上了碼頭。阿澄在值班簿寫下日期，然後抬頭望海——三年了，那艘漆著「雙鯉」的船還是沒有回來。","failStory":"霧太厚，光太弱。船在防波堤外打橫。阿澄抓緊欄杆，聽著浪聲，整晚沒有再說話。"},{"tab":"第二晚 · 漲霧","banner":"「霧更濃了，能見度剩不到百米。今晚五艘船，海面還不時扯起陣風。」","hint":"陣風會把亮度壓低（畫面右上會出現風勢提示）；油量見底會熄燈，放開再按住可重新點燃。","btn":"按住頂住陣風 (Space)","clearTitle":"第二晚 · 濃霧中的五道光","failTitle":"第二晚 · 霧鎖港口","clearStory":"五艘船穿過霧牆。老船長在碼頭向燈塔方向揮帽：「阿澄，你盞燈今晚救咗我哋。」","failStory":"陣風一次又一次把光扯走。阿澄的手一直沒有離開絞盤，但霧還是吞掉了船影。"},{"tab":"第三晚 · 風暴前夜","banner":"「颱風信號掛起了。七艘船要趕在風暴前入港——最後一艘，是那艘舊漁船。」","hint":"陣風更強更密，而且會吹熄偏弱的火（亮度低於 26 時被吹熄）。油量回復也變慢了。","btn":"按住守著最後一夜 (Space)","clearTitle":"第三晚 · 七道光進港","failTitle":"第三晚 · 燈在風裡熄了","clearStory":"第七艘船駛過防波堤時，船燈閃了三下——那是老漁民的暗號：「多謝你。」阿澄放下絞盤，第一次在值班簿上寫下自己的名字。","failStory":"風太大，燈芯一次又一次熄掉。阿澄望著黑掉的海面，把燈罩合上，坐了一整夜。"}],"modalTitle":"關於《霧港守燈人》與零圖片像素規格","modalHtml":"\n<div class=\"modal-section\">\n  <h4>故事：三年來每晚都亮著的燈</h4>\n  <p>\n    霧港的燈塔上只有一個人。守燈人<strong>阿澄</strong>的父親是上一任守燈人——三年前的一個霧夜，\n    他連人帶船消失在航道外。此後阿澄每晚把燈芯絞到剛好，讓光貼著防波堤，\n    彷彿只要那道光還在，總有一天會有船順著它回來。\n  </p>\n</div>\n\n<div class=\"modal-section\">\n  <h4>玩法：一顆按鈕的油量取捨</h4>\n  <ul>\n    <li><strong>按住</strong>＝絞高燈芯：亮度上升（每秒約 +62），但柴油以每秒 14–18 的速度燒掉。</li>\n    <li><strong>放開</strong>＝回落節油：亮度每秒下降約 46，油量慢慢回復（每秒 6–9，第三晚最慢）。</li>\n    <li><strong>判定時刻</strong>：每艘船駛過<strong>防波堤那一條線</strong>的瞬間，亮度必須達到該船需求（左上方亮度條上的紅線）。達標即安全入港，否則觸礁記一次失誤。</li>\n    <li><strong>光束</strong>會即時告訴你夠不夠：實線＝亮度足夠，虛線＝不足。船頭的小燈亦會由紅轉綠。</li>\n    <li><strong>熄燈</strong>：油量歸零會熄火，亮度歸零；放開鍵再按住即可重新點燃（需要一點油）。</li>\n    <li><strong>陣風</strong>（第二晚起）會持續拉扯亮度，第三晚更會吹熄弱火（亮度低於 26 時）。</li>\n    <li>評分：每次成功入港 +120，連續成功每次再加 20；亮度超出需求 22 以上算「完美引航」再 +60。</li>\n    <li>失敗條件：觸礁次數達上限（第一、二晚 2 次，第三晚 3 次）。</li>\n  </ul>\n</div>\n\n<div class=\"modal-section\">\n  <h4>零圖片像素引擎（十條視覺與工法規格）</h4>\n  <div class=\"rule-grid\">\n    <div class=\"rule-item\"><b>1. 純白無框浮島</b>微縮場景漂浮於純白背景，邊緣以 Bayer 抖點自然消融。</div>\n    <div class=\"rule-item\"><b>2. 360×280 整數倍放大</b>低解析度畫布以最近鄰整數倍縮放（1x–4x），永不模糊。</div>\n    <div class=\"rule-item\"><b>3. 固定 30° 正交鏡頭</b>不旋轉不縮放，真實 (x,y,z) 投影與 Z-Buffer 深度緩衝。</div>\n    <div class=\"rule-item\"><b>4. 4×4 Bayer 規律抖點</b>地形、水面與材質採有序矩陣抖點。</div>\n    <div class=\"rule-item\"><b>5. 右傾長硬陰影</b>建築、物件與人物一致向右投出平行硬邊長影。</div>\n    <div class=\"rule-item\"><b>6. 暗冷亮暖偏色</b>暗部往海霧藍紫偏移 (26,34,72)，亮部往燈火暖黃偏移 (255,224,154)。</div>\n    <div class=\"rule-item\"><b>7. 深度緩衝輪廓光</b>前景自動壓暗交界線，左上受光邊緣補暖色高光。</div>\n    <div class=\"rule-item\"><b>8. 平整人物＋8FPS 植物</b>人物為平整色塊加 1px 黑框；植物每秒 8 格整像素擺動。</div>\n    <div class=\"rule-item\"><b>9. 零圖片</b>場景、角色與特效全部程式即時繪製，沒有任何圖檔。</div>\n    <div class=\"rule-item\"><b>10. 零音檔</b>所有音效由 WebAudio 振盪器即時合成。</div>\n  </div>\n</div>\n"};
+
+      /* =========================================================================
+       * 1. 軟體光柵化常數、色偏與材料表（360 × 280）
+       * ========================================================================= */
+      const W = 360;
+      const H = 280;
+      const SHADOW_X = 1.3;
+      const SHADOW_Y = 0.28;
+      const COOL_DARK = THEME.coolDark;
+      const WARM_LIGHT = THEME.warmLight;
+      const BAYER4 = [[0,8,2,10],[12,4,14,6],[3,11,1,9],[15,7,13,5]];
+
+      const MAT_BG = 0, MAT_PLANE = 1, MAT_STONE = 2, MAT_GROUND = 3,
+            MAT_ROOF = 4, MAT_WOOD = 5, MAT_LEAF = 6, MAT_ACCENT = 7, MAT_CHAR = 8;
+
+      const BASE_MATS = {};
+      Object.keys(THEME.mats).forEach(function(k) { BASE_MATS[k] = THEME.mats[k]; });
+
+      function mixRGB(a, b, t) {
+        return [Math.round(a[0] + (b[0]-a[0])*t), Math.round(a[1] + (b[1]-a[1])*t), Math.round(a[2] + (b[2]-a[2])*t)];
+      }
+      function packRGB(r, g, b) { return (255 << 24) | ((b & 255) << 16) | ((g & 255) << 8) | (r & 255); }
+      function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
+      function lerp(a, b, t) { return a + (b - a) * t; }
+
+      const RAMPS = {};
+      Object.keys(BASE_MATS).forEach(function(k) {
+        const base = BASE_MATS[k];
+        RAMPS[k] = [
+          mixRGB(base, COOL_DARK, 0.66), mixRGB(base, COOL_DARK, 0.36), base.slice(),
+          mixRGB(base, WARM_LIGHT, 0.32), mixRGB(base, WARM_LIGHT, 0.64)
+        ];
+      });
+
+      /* =========================================================================
+       * 2. 畫布與整數倍縮放（最近鄰，永不模糊）
+       * ========================================================================= */
+      const canvas = document.getElementById("dioramaCanvas");
+      const ctx = canvas.getContext("2d", { alpha: false });
+      ctx.imageSmoothingEnabled = false;
+
+      const imgData = ctx.createImageData(W, H);
+      const fb = new Uint32Array(imgData.data.buffer);
+      const zbuf = new Float32Array(W * H);
+      const matbuf = new Uint8Array(W * H);
+      const objbuf = new Uint16Array(W * H);
+      const shadowMask = new Uint8Array(W * H);
+
+      const staticFB = new Uint32Array(W * H);
+      const staticZ = new Float32Array(W * H);
+      const staticMat = new Uint8Array(W * H);
+      const staticObj = new Uint16Array(W * H);
+      let staticDirty = true;
+
+      const scaleReadout = document.getElementById("scaleReadout");
+      const WHITE_PACKED = packRGB(255, 255, 255);
+      const OUTLINE_DARK = packRGB(36, 28, 62);
+
+      function updateCanvasScale() {
+        const availW = Math.max(360, window.innerWidth - 32);
+        const availH = Math.max(280, window.innerHeight - 165);
+        let scale = Math.floor(Math.min(availW / W, availH / H));
+        scale = clamp(scale, 1, 4);
+        if (window.innerWidth < 380) {
+          canvas.style.width = (window.innerWidth - 20) + "px";
+          canvas.style.height = Math.round((window.innerWidth - 20) * (H / W)) + "px";
+          scaleReadout.textContent = "360×280 px · Fit · 30° Ortho";
+        } else {
+          canvas.style.width = (W * scale) + "px";
+          canvas.style.height = (H * scale) + "px";
+          scaleReadout.textContent = "360×280 px · " + scale + "x Nearest · 30° Ortho";
+        }
+      }
+      window.addEventListener("resize", updateCanvasScale);
+      updateCanvasScale();
+
+      /* =========================================================================
+       * 3. 30° 正交投影、Bayer 抖點、等角方塊
+       * ========================================================================= */
+      const CAM_X = 180, CAM_Y = 158;
+
+      function projectIso(wx, wy, wz) {
+        return {
+          sx: Math.round(CAM_X + (wx - wy) * 0.866025),
+          sy: Math.round(CAM_Y + (wx + wy) * 0.5 - wz),
+          depth: (wx + wy) * 0.7071 + wz * 0.35
+        };
+      }
+
+      function sampleRampDithered(matId, lightVal, sx, sy) {
+        const ramp = RAMPS[matId];
+        if (!ramp) return WHITE_PACKED;
+        const c = clamp(lightVal, 0, 3.999);
+        const idx = Math.floor(c), frac = c - idx;
+        const bayerVal = (BAYER4[sy & 3][sx & 3] + 0.5) / 16.0;
+        const finalIdx = (frac > bayerVal && idx < 4) ? idx + 1 : idx;
+        const col = ramp[finalIdx];
+        return packRGB(col[0], col[1], col[2]);
+      }
+
+      function putPixelZ(sx, sy, depth, colorPacked, matId, objId) {
+        if (sx < 0 || sx >= W || sy < 0 || sy >= H) return;
+        const i = sy * W + sx;
+        if (depth >= zbuf[i]) { zbuf[i] = depth; fb[i] = colorPacked; matbuf[i] = matId; objbuf[i] = objId; }
+      }
+
+      function drawIsoBox(x0, y0, z0, x1, y1, z1, matId, objId, castShadow) {
+        const step = 0.9;
+        for (let wx = x0; wx <= x1; wx += step)
+          for (let wy = y0; wy <= y1; wy += step) {
+            const p = projectIso(wx, wy, z1);
+            putPixelZ(p.sx, p.sy, p.depth, sampleRampDithered(matId, 3.45, p.sx, p.sy), matId, objId);
+          }
+        for (let wy = y0; wy <= y1; wy += step)
+          for (let wz = z0; wz <= z1; wz += step) {
+            const p = projectIso(x1, wy, wz);
+            putPixelZ(p.sx, p.sy, p.depth + 0.1, sampleRampDithered(matId, 2.35, p.sx, p.sy), matId, objId);
+          }
+        for (let wx = x0; wx <= x1; wx += step)
+          for (let wz = z0; wz <= z1; wz += step) {
+            const p = projectIso(wx, y1, wz);
+            putPixelZ(p.sx, p.sy, p.depth + 0.1, sampleRampDithered(matId, 1.15, p.sx, p.sy), matId, objId);
+          }
+        if (castShadow) {
+          for (let wx = x0; wx <= x1; wx += 1.5)
+            for (let wy = y0; wy <= y1; wy += 1.5)
+              for (let wz = Math.max(0, z0); wz <= z1; wz += 1.5) {
+                const b = projectIso(wx, wy, 0);
+                const sx = Math.round(b.sx + wz * SHADOW_X), sy = Math.round(b.sy + wz * SHADOW_Y);
+                if (sx >= 0 && sx < W && sy >= 0 && sy < H) {
+                  shadowMask[sy * W + sx] = 1;
+                  if (sx + 1 < W) shadowMask[sy * W + sx + 1] = 1;
+                }
+              }
+        }
+      }
+
+      /* 2D 像素矩形：非有限值／超大字面一律擋掉（防止 NaN 造成卡死） */
+      function drawPixelRect2D(x, y, w, h, packedCol) {
+        if (!isFinite(x) || !isFinite(y) || !isFinite(w) || !isFinite(h)) return;
+        x = Math.round(x); y = Math.round(y);
+        w = Math.min(4096, Math.round(w)); h = Math.min(4096, Math.round(h));
+        for (let dy = 0; dy < h; dy++) {
+          const sy = y + dy;
+          if (sy < 0 || sy >= H) continue;
+          for (let dx = 0; dx < w; dx++) {
+            const sx = x + dx;
+            if (sx >= 0 && sx < W) fb[sy * W + sx] = packedCol;
+          }
+        }
+      }
+
+      /* 像素直線（Bresenham）：端點先取整，並設安全閥；非有限值直接返回 */
+      function drawPixelLine2D(x0, y0, x1, y1, packedCol, dashed) {
+        if (!isFinite(x0) || !isFinite(y0) || !isFinite(x1) || !isFinite(y1)) return;
+        x0 = Math.round(x0); y0 = Math.round(y0); x1 = Math.round(x1); y1 = Math.round(y1);
+        let dx = Math.abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
+        let dy = -Math.abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
+        let err = dx + dy, n = 0, guard = 0;
+        while (true) {
+          if ((!dashed || (n % 4) < 3) && x0 >= 0 && x0 < W && y0 >= 0 && y0 < H) fb[y0 * W + x0] = packedCol;
+          n++;
+          if (x0 === x1 && y0 === y1) break;
+          if (++guard > 4096) break;                 // 安全閥：永不無限迴圈
+          const e2 = 2 * err;
+          if (e2 >= dy) { err += dy; x0 += sx; }
+          if (e2 <= dx) { err += dx; y0 += sy; }
+        }
+      }
+
+      /* 畫一條像素計量條（可帶「目標線」標記） */
+      function drawBar(x, y, w, h, frac, fillRGB, markerFrac, bgRGB) {
+        drawPixelRect2D(x - 1, y - 1, w + 2, h + 2, OUTLINE_DARK);
+        drawPixelRect2D(x, y, w, h, packRGB(bgRGB[0], bgRGB[1], bgRGB[2]));
+        const fw = Math.round(clamp(frac, 0, 1) * w);
+        if (fw > 0) drawPixelRect2D(x, y, fw, h, packRGB(fillRGB[0], fillRGB[1], fillRGB[2]));
+        if (markerFrac !== null && markerFrac !== undefined) {
+          const mx = x + Math.round(clamp(markerFrac, 0, 1) * (w - 2));
+          drawPixelRect2D(mx, y - 2, 2, h + 4, packRGB(255, 92, 62));
+        }
+      }
+
+      /* 以下由建置器注入遊戲模組 */
+            /* =====================================================================
+       * 遊戲一：霧港守燈人
+       * 玩法：油量 ⇄ 亮度取捨。按住絞高燈芯（亮但耗油），放開節油。
+       *       船隻駛過防波堤一刻，亮度必須達到該船需要值；油盡會熄燈，
+       *       要重新點燃。陣風會拉扯亮度（第三晚的陣風更會吹熄弱火）。
+       * ===================================================================== */
+
+      // ---- 關卡參數 ----
+      const K_STAGES = [
+        { ships: 3, need: 42, failLimit: 2, burn: 14, regen: 9,  spawnEvery: 9.5, gustEvery: 0,   gustDur: 0,   gustPull: 0,  blowOut: false },
+        { ships: 5, need: 56, failLimit: 2, burn: 16, regen: 8,  spawnEvery: 8.0, gustEvery: 9.0, gustDur: 2.2, gustPull: 26, blowOut: false },
+        { ships: 7, need: 70, failLimit: 3, burn: 18, regen: 6,  spawnEvery: 7.0, gustEvery: 7.0, gustDur: 2.6, gustPull: 32, blowOut: true }
+      ];
+
+      const SHIP_SPAWN_Y = -92, SHIP_CROSS_Y = 6, SHIP_END_Y = 66, SHIP_SPEED = 7.2;
+
+      const K = {
+        bright: 0, oil: 100, outTimer: 0, relit: 0,
+        ships: [], queue: 0, spawnT: 2.5, escorted: 0, fails: 0, combo: 0,
+        gustT: 6, gustLeft: 0, cfg: K_STAGES[0], moored: 0, fogPhase: 0
+      };
+
+      /* --------------------------- 微縮場景 --------------------------- */
+      const THEME_DIORAMA = function() {
+        const R_MAX = 96;
+
+        // 島面：中央海港水道 + 兩岸石砌碼頭
+        for (let wx = -R_MAX; wx <= R_MAX; wx += 0.85) {
+          for (let wy = -R_MAX; wy <= R_MAX; wy += 0.85) {
+            const dist = Math.sqrt(wx * wx * 0.9 + wy * wy * 0.9);
+            const p0 = projectIso(wx, wy, 0);
+            if (p0.sx < 0 || p0.sx >= W || p0.sy < 0 || p0.sy >= H) continue;
+            const bayerEdge = (BAYER4[p0.sy & 3][p0.sx & 3] / 16.0) * 14.0;
+            if (dist > R_MAX - bayerEdge) continue;
+
+            const shore = Math.sin(wy * 0.03) * 9;
+            const rx = wx - shore;
+            if (rx > -30 && rx < 32) {
+              // 海水（深色、離岸愈遠愈深）
+              const pw = projectIso(wx, wy, -4);
+              const edge = Math.min(rx - (-30), 32 - rx);
+              let l = 2.35 + Math.sin(wy * 0.07 + wx * 0.05) * 0.35;
+              if (edge > 14) l -= 0.5; else if (edge > 8) l -= 0.22;
+              if (edge < 4) l = 3.5;
+              putPixelZ(pw.sx, pw.sy, pw.depth, sampleRampDithered(MAT_PLANE, l, pw.sx, pw.sy), MAT_PLANE, 1);
+            } else {
+              const isLeft = rx <= -30;
+              const bankH = isLeft ? 18 : 14;
+              for (let wz = -4; wz < bankH; wz += 1.0) {
+                const pc = projectIso(wx, wy, wz);
+                const rockLight = (wx > wy) ? 2.25 : 1.2;
+                putPixelZ(pc.sx, pc.sy, pc.depth, sampleRampDithered(MAT_STONE, rockLight, pc.sx, pc.sy), MAT_STONE, isLeft ? 2 : 3);
+                if (((wx + wy * 1.7) | 0) % 6 === 0) {  // 石縫
+                  putPixelZ(pc.sx, pc.sy, pc.depth + 0.06, sampleRampDithered(MAT_STONE, 0.9, pc.sx, pc.sy), MAT_STONE, isLeft ? 2 : 3);
+                }
+              }
+              const pg = projectIso(wx, wy, bankH);
+              putPixelZ(pg.sx, pg.sy, pg.depth + 0.2,
+                sampleRampDithered(MAT_GROUND, 2.62 + Math.cos(wx * 0.07) * 0.3, pg.sx, pg.sy), MAT_GROUND, isLeft ? 2 : 3);
+            }
+          }
+        }
+
+        // 防波堤：判斷線 wy=6 上的一列石樁與燈
+        for (let wx = -26; wx <= 28; wx += 9) {
+          drawIsoBox(wx - 1.5, 4.5, -4, wx + 1.5, 7.5, 18, MAT_STONE, 5, true);
+          const pL = projectIso(wx, 6, 21);
+          for (let dy = -1; dy <= 1; dy++)
+            for (let dx = -1; dx <= 1; dx++)
+              putPixelZ(pL.sx + dx, pL.sy + dy, pL.depth + 3, sampleRampDithered(MAT_ACCENT, 3.3 - dy * 0.2, pL.sx + dx, pL.sy + dy), MAT_ACCENT, 5);
+        }
+
+        // 燈塔：左岬角，逐層收窄的塔身 + 燈室
+        drawIsoBox(-72, -26, 18, -58, -12, 26, MAT_STONE, 20, true);      // 基座
+        drawIsoBox(-70, -24, 26, -60, -14, 44, MAT_STONE, 20, true);      // 塔身下段
+        drawIsoBox(-68, -22, 44, -62, -16, 56, MAT_STONE, 20, true);      // 塔身上段
+        drawIsoBox(-70, -24, 56, -60, -14, 58, MAT_STONE, 20, true);      // 平台
+        for (let wx = -68; wx <= -62; wx += 0.7) {                         // 燈室玻璃
+          for (let wy = -22; wy <= -16; wy += 0.7) {
+            const pl = projectIso(wx, wy, 61);
+            putPixelZ(pl.sx, pl.sy, pl.depth + 1.2, sampleRampDithered(MAT_ACCENT, 3.6, pl.sx, pl.sy), MAT_ACCENT, 21);
+          }
+        }
+        // 燈室前的透鏡（大顆暖金，令燈塔一眼可辨）
+        for (let dz = 0; dz < 5; dz++) {
+          for (let dy = -3; dy <= 3; dy++) {
+            const pl = projectIso(-71.5, -19 + dy, 59 + dz);
+            putPixelZ(pl.sx, pl.sy, pl.depth + 6, sampleRampDithered(MAT_ACCENT, 3.9 - Math.abs(dy) * 0.08, pl.sx, pl.sy), MAT_ACCENT, 21);
+          }
+        }
+        drawIsoBox(-69, -23, 63, -61, -15, 67, MAT_ROOF, 22, true);        // 圓頂
+
+        // 守燈人的小屋（左岸）
+        drawIsoBox(-58, -6, 18, -44, 8, 30, MAT_STONE, 25, true);
+        for (let wy = -2; wy <= 4; wy += 0.8)
+          for (let wz = 22; wz <= 27; wz += 0.8) {
+            const pw = projectIso(-43.6, wy, wz);
+            putPixelZ(pw.sx, pw.sy, pw.depth + 0.4, packRGB(255, 226, 150), MAT_ACCENT, 25);
+          }
+        for (let wz = 30; wz <= 40; wz += 0.8) {                            // 屋頂
+          const shrink = (wz - 30) * 0.9;
+          for (let wx = -60 + shrink; wx <= -42 - shrink; wx += 0.85)
+            for (let wy = -8 + shrink * 0.5; wy <= 10 - shrink * 0.5; wy += 0.85) {
+              const pr = projectIso(wx, wy, wz);
+              putPixelZ(pr.sx, pr.sy, pr.depth + 0.6, sampleRampDithered(MAT_ROOF, (wx > -52) ? 2.4 : 3.4, pr.sx, pr.sy), MAT_ROOF, 26);
+              const b = projectIso(wx, wy, 18);
+              const shX = Math.round(b.sx + (wz - 18) * SHADOW_X), shY = Math.round(b.sy + (wz - 18) * SHADOW_Y);
+              if (shX >= 0 && shX < W && shY >= 0 && shY < H) shadowMask[shY * W + shX] = 1;
+            }
+        }
+
+        // 右岸倉庫與屋舍
+        drawIsoBox(44, -40, 14, 68, -18, 32, MAT_STONE, 30, true);
+        drawIsoBox(42, -42, 32, 70, -16, 37, MAT_ROOF, 31, true);
+        drawIsoBox(46, 14, 14, 66, 34, 28, MAT_STONE, 32, true);
+        drawIsoBox(44, 12, 28, 68, 36, 33, MAT_ROOF, 33, true);
+        for (let wy = 20; wy <= 28; wy += 0.8)
+          for (let wz = 20; wz <= 25; wz += 0.8) {
+            const pw = projectIso(45.6, wy, wz);
+            putPixelZ(pw.sx, pw.sy, pw.depth + 0.4, packRGB(255, 226, 150), MAT_ACCENT, 32);
+          }
+
+        // 碼頭貨箱與吊臂
+        drawIsoBox(36, -34, 14, 42, -26, 20, MAT_WOOD, 35, true);
+        drawIsoBox(36, -22, 14, 41, -15, 18, MAT_WOOD, 36, true);
+        drawIsoBox(38, 22, 14, 43, 29, 19, MAT_ACCENT, 37, true);
+        for (let wz = 14; wz <= 40; wz += 0.8) {                            // 吊臂
+          const pa = projectIso(34, -30, wz);
+          putPixelZ(pa.sx, pa.sy, pa.depth + 0.6, sampleRampDithered(MAT_WOOD, (wz > 30) ? 2.6 : 1.6, pa.sx, pa.sy), MAT_WOOD, 38);
+        }
+        for (let d = 0; d < 15; d++) {
+          const pa = projectIso(34 + d * 0.8, -30, 40);
+          putPixelZ(pa.sx, pa.sy, pa.depth + 0.8, sampleRampDithered(MAT_WOOD, 2.9, pa.sx, pa.sy), MAT_WOOD, 38);
+        }
+
+        // 泊在碼頭的漁船（靜態）
+        const MOORED = [[-6, 46], [4, 54], [-16, 60]];
+        MOORED.forEach(function(m, i) {
+          drawIsoBox(m[0] - 5, m[1] - 2.5, -4, m[0] + 5, m[1] + 2.5, -1.4, MAT_WOOD, 40 + i, false);
+          for (let h = 0; h < 9; h++) {
+            const pm = projectIso(m[0], m[1], -1 + h);
+            putPixelZ(pm.sx, pm.sy, pm.depth + 3, packRGB(120, 96, 72), MAT_WOOD, 40 + i);
+          }
+          const pl = projectIso(m[0] + 3, m[1] + 1, 1);
+          putPixelZ(pl.sx, pl.sy, pl.depth + 4, packRGB(250, 214, 120), MAT_ACCENT, 40 + i);
+        });
+      };
+
+      /* --------------------------- 環境動畫 --------------------------- */
+      const THEME_AMBIENT = function(tick8, now) {
+        // 海面反光
+        for (let r = -60; r <= 60; r += 16) {
+          const wx = Math.sin((r + tick8 * 3) * 0.12) * 14;
+          const pw = projectIso(wx, r, -3.8);
+          putPixelZ(pw.sx, pw.sy, pw.depth + 0.3, packRGB(198, 220, 236), MAT_PLANE, 4);
+          putPixelZ(pw.sx + 1, pw.sy, pw.depth + 0.3, packRGB(170, 198, 222), MAT_PLANE, 4);
+        }
+        // 海霧：由外向內飄的淡色帶
+        const drift = (tick8 * 0.35) % 120 - 60;
+        for (let band = 0; band < 3; band++) {
+          const wy = -70 + band * 46 + Math.sin(tick8 * 0.12 + band) * 8;
+          for (let wx = -30; wx <= 30; wx += 1.6) {
+            const pf = projectIso(wx, wy + Math.sin(wx * 0.2 + tick8 * 0.1) * 4, -2.4);
+            if (((wx * 3 + tick8) | 0) % 5 === 0) {
+              putPixelZ(pf.sx, pf.sy, pf.depth + 6, packRGB(236, 238, 246), MAT_ACCENT, 6);
+            }
+          }
+        }
+        // 燈塔光暈（隨亮度放大）
+        const r = 2 + Math.round(K.bright / 12);
+        const pl = projectIso(-65, -19, 61);
+        for (let dy = -r; dy <= r; dy++)
+          for (let dx = -r; dx <= r; dx++) {
+            if (dx * dx + dy * dy > r * r) continue;
+            if ((dx + dy + tick8) % 2 === 0 && Math.abs(dx) + Math.abs(dy) > r - 3) continue;
+            putPixelZ(pl.sx + dx, pl.sy + dy, pl.depth + 9, packRGB(255, 236, 168), MAT_ACCENT, 7);
+          }
+      };
+
+      /* --------------------------- 遊戲模組 --------------------------- */
+      const GAME = {
+        wind: function() { return K.gustLeft > 0 ? 1.4 : 0.4; },
+
+        stageInit: function(i) {
+          K.cfg = K_STAGES[i];
+          K.bright = 0; K.oil = 100; K.outTimer = 0; K.relit = 0;
+          K.ships = []; K.spawnT = 2.5; K.queue = K.cfg.ships;
+          K.escorted = 0; K.fails = 0; K.combo = 0; K.moored = 0;
+          K.gustT = 4; K.gustLeft = 0;
+          say(STAGES[i].banner);
+          setHUDSub("待引航 " + K.queue + " 艘");
+        },
+
+        onHold: function() {
+          if (K.outTimer > 0) return;   // 熄燈中，按住只是準備重新點燃
+        },
+        onRelease: function() {},
+
+        stageUpdate: function(dt, now, tick8) {
+          const S = K.cfg;
+
+          /* --- 亮度 / 油量 --- */
+          if (K.outTimer > 0) {
+            K.outTimer -= dt;
+            K.bright = 0;
+            if (K.outTimer <= 0 && isHolding && K.oil >= 12) {
+              K.bright = 45; K.relit = 0.5;
+              chord([392.0, 523.25, 659.25]);
+              say("🔥 燈芯重新點著了——抓緊時間！");
+            }
+          } else {
+            if (K.relit > 0) K.relit -= dt;
+            if (isHolding) {
+              K.bright += 62 * dt;
+              K.oil -= S.burn * dt;
+            } else {
+              K.bright -= 46 * dt;
+              K.oil += S.regen * dt;
+            }
+            if (K.gustLeft > 0) K.bright -= S.gustPull * dt;
+            K.bright = clamp(K.bright, 0, 100);
+            K.oil = clamp(K.oil, 0, 100);
+            if (K.oil <= 0.05) {
+              K.outTimer = S.blowOut ? 1.5 : 1.2;
+              K.bright = 0;
+              rumble(1.1, 0.1);
+              say("💨 油盡燈熄！放開再按住，重新點燃燈芯");
+            }
+          }
+
+          /* --- 陣風 --- */
+          if (S.gustEvery > 0) {
+            if (K.gustLeft > 0) {
+              K.gustLeft -= dt;
+            } else {
+              K.gustT -= dt;
+              if (K.gustT <= 0) {
+                K.gustT = S.gustEvery;
+                K.gustLeft = S.gustDur;
+                tone(180, 0.5, false, 0.07);
+                if (S.blowOut && K.bright > 0 && K.bright < 26) {
+                  K.outTimer = Math.max(K.outTimer, 0.9);
+                  K.bright = 0;
+                  say("🌬️ 陣風把弱火吹熄了！快放開再按住重新點燃");
+                } else {
+                  say("🌬️ 陣風來了——壓住燈芯別讓光被扯低");
+                }
+              }
+            }
+          }
+
+          /* --- 出船 --- */
+          if (K.queue > 0) {
+            K.spawnT -= dt;
+            if (K.spawnT <= 0) {
+              K.spawnT = S.spawnEvery;
+              K.queue--;
+              const isFinal = (S.ships === 7 && K.queue === 0);
+              K.ships.push({
+                y: SHIP_SPAWN_Y, need: S.need * (0.92 + Math.random() * 0.16),
+                state: "sail", flagged: false,
+                name: isFinal ? "雙鯉" : null
+              });
+              if (isFinal) say("⛵ 遠處出現一艘舊漁船——船身漆著「雙鯉」……那是父親的船。");
+            }
+          }
+
+          /* --- 船隻航行與判定 --- */
+          for (let i = K.ships.length - 1; i >= 0; i--) {
+            const sh = K.ships[i];
+            if (sh.state === "sail") {
+              sh.y += SHIP_SPEED * dt;
+              // 過防波堤一刻的判定
+              if (!sh.flagged && sh.y >= SHIP_CROSS_Y) {
+                sh.flagged = true;
+                if (K.bright >= sh.need) {
+                  sh.state = "safe";
+                  K.escorted++; K.combo++; K.moored++;
+                  const margin = K.bright - sh.need;
+                  const perfect = margin >= 22;
+                  const pts = 120 + K.combo * 20 + (perfect ? 60 : 0);
+                  addScore(pts);
+                  chord(perfect ? [659.25, 880, 1046.5] : [523.25, 659.25, 783.99]);
+                  say("⛵ " + (sh.name || "漁船") + "安全駛過防波堤，靠上碼頭（+" + pts + " 分" + (perfect ? " ‧ 完美引航" : "") + (K.combo > 1 ? " ‧ 連續 " + K.combo : "") + "）");
+                } else {
+                  sh.state = "struck";
+                  K.combo = 0; K.fails++;
+                  tone(120, 0.6, false, 0.12); rumble(1.4, 0.12);
+                  say("⚠️ 光太弱了——" + (sh.name || "漁船") + "在防波堤外打橫、觸礁（失誤 " + K.fails + "/" + K.cfg.failLimit + "）");
+                }
+              }
+              if (sh.y >= SHIP_END_Y) K.ships.splice(i, 1);
+            } else if (sh.state === "safe") {
+              sh.y += SHIP_SPEED * 0.55 * dt;
+              if (sh.y >= SHIP_END_Y) K.ships.splice(i, 1);
+            } else {
+              sh.y -= 4 * dt;                       // 觸礁後漂走
+              if (sh.y < SHIP_SPAWN_Y) K.ships.splice(i, 1);
+            }
+          }
+
+          /* --- 成敗判定 --- */
+          if (K.fails >= S.failLimit) {
+            setHUDSub("已引航 " + K.escorted + "/" + S.ships);
+            endStage(false, "今晚有 " + K.fails + " 艘船在防波堤外觸礁，港口只能暫時封閉。");
+            return;
+          }
+          if (K.escorted >= S.ships && K.ships.length === 0) {
+            endStage(true, "全部 " + S.ships + " 艘船安全入港。");
+            return;
+          }
+          setHUDSub("已引航 " + K.escorted + "/" + S.ships + " · 失誤 " + K.fails + "/" + S.failLimit +
+                    " · 光 " + Math.round(K.bright) + "% · 油 " + Math.round(K.oil) + "%" +
+                    (K.gustLeft > 0 ? " · 陣風中" : "") + (K.outTimer > 0 ? " · 熄燈" : ""));
+
+          /* --- 畫面：船、光束、計量條 --- */
+          // 判斷線提示
+          const lineA = projectIso(-30, SHIP_CROSS_Y, -3.6), lineB = projectIso(32, SHIP_CROSS_Y, -3.6);
+          drawPixelLine2D(lineA.sx, lineA.sy, lineB.sx, lineB.sy, packRGB(150, 176, 200), true);
+
+          const lamp = projectIso(-65, -19, 59);
+          let target = null;
+          for (let i = 0; i < K.ships.length; i++) {
+            const sh = K.ships[i];
+            const wx = Math.sin(sh.y * 0.03) * 7;
+            const p = projectIso(wx, sh.y, -4);
+            if (sh.state === "struck") {
+              // 觸礁：船身傾斜 + 水花
+              drawIsoBox(wx - 5, sh.y - 2.5, -4.5, wx + 5, sh.y + 2.5, -2.6, MAT_WOOD, 60, false);
+              drawPixelRect2D(p.sx - 6, p.sy - 4, 12, 3, packRGB(240, 244, 250));
+              continue;
+            }
+            // 船身、桅杆、帆、船燈
+            drawIsoBox(wx - 5, sh.y - 2.5, -4, wx + 5, sh.y + 2.5, -1.6, MAT_WOOD, 60, false);
+            for (let h = 1; h <= 11; h++) putPixelZ(p.sx, p.sy - 2 - h, p.depth + 3, packRGB(122, 98, 74), MAT_WOOD, 60);
+            for (let fy = 0; fy < 7; fy++)
+              for (let fx = -3; fx <= 3; fx++)
+                putPixelZ(p.sx + fx, p.sy - 6 - fy, p.depth + 2.6,
+                  sampleRampDithered(MAT_ROOF, 3.0 - Math.abs(fx) * 0.12, p.sx + fx, p.sy - 6 - fy), MAT_ROOF, 60);
+            const lit = K.bright >= sh.need;
+            putPixelZ(p.sx + 4, p.sy - 4, p.depth + 4, lit ? packRGB(150, 255, 190) : packRGB(255, 140, 110), MAT_ACCENT, 60);
+
+            if (sh.state === "sail" && !target) target = sh;
+
+            // 光束連到目標船（亮度足夠時為實線，不足時為虛線）
+            if (sh.state === "sail") {
+              drawPixelLine2D(lamp.sx, lamp.sy, p.sx, p.sy - 6, lit ? packRGB(255, 232, 150) : packRGB(206, 210, 224), !lit);
+            }
+          }
+
+          // 計量條：亮度（附需求線）+ 油量；左側各有像素圖示
+          const need = target ? target.need / 100 : (K.cfg.need / 100);
+          // 圖示：燈（暖金方塊 + 光點）
+          drawPixelRect2D(4, 12, 7, 9, OUTLINE_DARK);
+          drawPixelRect2D(5, 13, 5, 7, packRGB(250, 208, 96));
+          drawPixelRect2D(7, 15, 2, 3, packRGB(255, 246, 200));
+          // 圖示：油桶（木色 + 深色箍）
+          drawPixelRect2D(4, 27, 7, 9, OUTLINE_DARK);
+          drawPixelRect2D(5, 28, 5, 7, packRGB(150, 116, 82));
+          drawPixelRect2D(5, 30, 5, 1, packRGB(96, 72, 54));
+          drawBar(16, 16, 96, 6, K.bright / 100, [255, 214, 110], need, [232, 230, 240]);
+          drawBar(16, 30, 96, 6, K.oil / 100, [120, 196, 220], null, [232, 230, 240]);
+        },
+
+        debug: function() {
+          return {
+            bright: Math.round(K.bright), oil: Math.round(K.oil),
+            outTimer: +K.outTimer.toFixed(2), escorted: K.escorted, fails: K.fails,
+            queue: K.queue, ships: K.ships.length, combo: K.combo,
+            gustLeft: +K.gustLeft.toFixed(2), need: Math.round(K.cfg.need)
+          };
+        },
+        set: function(k, v) {
+          if (k === "bright") K.bright = v;
+          if (k === "oil") K.oil = v;
+          if (k === "gustLeft") K.gustLeft = v;
+          if (k === "spawnT") K.spawnT = v;
+          if (k === "shipY") K.ships.forEach(function(s) { s.y = v; });
+        }
+      };
+
+
+      /* =========================================================================
+       * 5. 靜態場景合成 + 硬陰影 + 輪廓光
+       * ========================================================================= */
+      function buildStaticDiorama() {
+        for (let i = 0; i < W * H; i++) {
+          fb[i] = WHITE_PACKED; zbuf[i] = -99999; matbuf[i] = MAT_BG; objbuf[i] = 0; shadowMask[i] = 0;
+        }
+        THEME_DIORAMA();
+        for (let i = 0; i < W * H; i++) {
+          if (shadowMask[i] && matbuf[i] !== MAT_BG && objbuf[i] < 10) {
+            const c = fb[i];
+            const d = mixRGB([c & 255, (c >> 8) & 255, (c >> 16) & 255], COOL_DARK, 0.45);
+            fb[i] = packRGB(d[0], d[1], d[2]);
+          }
+        }
+        const copyFB = new Uint32Array(fb);
+        for (let sy = 2; sy < H - 2; sy++) {
+          for (let sx = 2; sx < W - 2; sx++) {
+            const i = sy * W + sx;
+            if (matbuf[i] === MAT_BG) continue;
+            const zc = zbuf[i], oc = objbuf[i];
+            if ((objbuf[i + 1] !== oc && zc - zbuf[i + 1] > 4.5) ||
+                (objbuf[i + W] !== oc && zc - zbuf[i + W] > 4.5)) {
+              copyFB[i] = OUTLINE_DARK;
+            } else if ((objbuf[i - 1] !== oc && zc - zbuf[i - 1] > 5.0) &&
+                       (objbuf[i - W] !== oc && zc - zbuf[i - W] > 5.0)) {
+              copyFB[i] = packRGB(Math.min(255, (copyFB[i] & 255) + 28),
+                                  Math.min(255, ((copyFB[i] >> 8) & 255) + 22),
+                                  Math.min(255, ((copyFB[i] >> 16) & 255) + 8));
+            }
+          }
+        }
+        staticFB.set(copyFB); staticZ.set(zbuf); staticMat.set(matbuf); staticObj.set(objbuf);
+        staticDirty = false;
+      }
+
+      /* =========================================================================
+       * 6. 植物 8FPS 擺動與平整人物
+       * ========================================================================= */
+      function drawFoliage8FPS(tick8, windDir) {
+        const sway = Math.round(Math.sin(tick8 * 0.85) + windDir * 0.7);
+        for (let t = 0; t < THEME.trees.length; t++) {
+          const tr = THEME.trees[t];
+          const pb = projectIso(tr.x, tr.y, tr.z);
+          const trunkA = packRGB(THEME.trunk[0], THEME.trunk[1], THEME.trunk[2]);
+          const trunkB = packRGB(Math.round(THEME.trunk[0]*.76), Math.round(THEME.trunk[1]*.76), Math.round(THEME.trunk[2]*.76));
+          for (let h = 0; h < 10; h++) {
+            putPixelZ(pb.sx, pb.sy - h, pb.depth + 2, trunkA, MAT_WOOD, 30 + t);
+            putPixelZ(pb.sx + 1, pb.sy - h, pb.depth + 2, trunkB, MAT_WOOD, 30 + t);
+          }
+          for (let sx = 2; sx <= 16; sx++)
+            for (let sy = -3; sy <= 3; sy++) {
+              const idx = (pb.sy + sy) * W + (pb.sx + sx);
+              if (idx >= 0 && idx < W * H && matbuf[idx] === MAT_GROUND) {
+                const c = fb[idx];
+                const d = mixRGB([c & 255, (c >> 8) & 255, (c >> 16) & 255], COOL_DARK, 0.42);
+                fb[idx] = packRGB(d[0], d[1], d[2]);
+              }
+            }
+          const cx = pb.sx + sway, cy = pb.sy - 14, rad = tr.r;
+          for (let dy = -rad; dy <= rad; dy++)
+            for (let dx = -rad; dx <= rad; dx++)
+              if (dx * dx + dy * dy <= rad * rad) {
+                const px = cx + dx, py = cy + dy;
+                putPixelZ(px, py, pb.depth + 6 - dy * 0.1,
+                  sampleRampDithered(MAT_LEAF, 2.4 - (dx * 0.09 + dy * 0.11), px, py), MAT_LEAF, 30 + t);
+              }
+        }
+        for (let g = 0; g < THEME.grass.length; g++) {
+          const gt = THEME.grass[g];
+          const pg = projectIso(gt.x, gt.y, gt.z);
+          const shift = ((tick8 + g) % 2 === 0) ? sway : 0;
+          const cb = packRGB(THEME.leafBright[0], THEME.leafBright[1], THEME.leafBright[2]);
+          const cm = packRGB(THEME.leafMid[0], THEME.leafMid[1], THEME.leafMid[2]);
+          putPixelZ(pg.sx, pg.sy, pg.depth + 2, cm, MAT_LEAF, 40);
+          putPixelZ(pg.sx + shift, pg.sy - 1, pg.depth + 2, cb, MAT_LEAF, 40);
+          putPixelZ(pg.sx + 2 + shift, pg.sy - 2, pg.depth + 2, cb, MAT_LEAF, 40);
+        }
+      }
+
+      function drawCrispCharacter(wx, wy, wz, coatRGB, pantsRGB, accessory, angleRad, glow) {
+        const p = projectIso(wx, wy, wz);
+        const cx = p.sx, cy = p.sy, d = p.depth + 8;
+        for (let sh = 1; sh <= 9; sh++) {
+          const sx = cx + sh, sy = cy + Math.round(sh * 0.2);
+          if (sx >= 0 && sx < W && sy >= 0 && sy < H) {
+            const idx = sy * W + sx;
+            if (matbuf[idx] !== MAT_BG) fb[idx] = packRGB(THEME.charShadow[0], THEME.charShadow[1], THEME.charShadow[2]);
+          }
+        }
+        const coatPack = packRGB(coatRGB[0], coatRGB[1], coatRGB[2]);
+        const pantsPack = packRGB(pantsRGB[0], pantsRGB[1], pantsRGB[2]);
+        const skinPack = packRGB(THEME.skin[0], THEME.skin[1], THEME.skin[2]);
+        const accPack = packRGB(THEME.accessory.color[0], THEME.accessory.color[1], THEME.accessory.color[2]);
+
+        function rect(x0, y0, w, h, fill) {
+          for (let dy = -1; dy <= h; dy++)
+            for (let dx = -1; dx <= w; dx++) {
+              const px = x0 + dx, py = y0 + dy;
+              const border = (dx === -1 || dx === w || dy === -1 || dy === h);
+              putPixelZ(px, py, border ? d - 0.05 : d, border ? OUTLINE_DARK : fill, MAT_CHAR, 90);
+            }
+        }
+        if (angleRad && Math.abs(angleRad) > 0.05) {
+          const cosA = Math.cos(angleRad), sinA = Math.sin(angleRad);
+          for (let ly = -12; ly <= 2; ly++)
+            for (let lx = -3; lx <= 3; lx++) {
+              let col = null;
+              if (ly <= -9 && Math.abs(lx) <= 2) col = skinPack;
+              else if (ly > -9 && ly <= -3 && Math.abs(lx) <= 2) col = coatPack;
+              else if (ly > -3 && Math.abs(lx) <= 1) col = pantsPack;
+              if (!col) continue;
+              const rx = Math.round(cx + lx * cosA - (ly + 6) * sinA);
+              const ry = Math.round(cy - 6 + lx * sinA + (ly + 6) * cosA);
+              putPixelZ(rx-1, ry, d-0.1, OUTLINE_DARK, MAT_CHAR, 90);
+              putPixelZ(rx+1, ry, d-0.1, OUTLINE_DARK, MAT_CHAR, 90);
+              putPixelZ(rx, ry-1, d-0.1, OUTLINE_DARK, MAT_CHAR, 90);
+              putPixelZ(rx, ry+1, d-0.1, OUTLINE_DARK, MAT_CHAR, 90);
+              putPixelZ(rx, ry, d, col, MAT_CHAR, 90);
+            }
+          return;
+        }
+        rect(cx - 1, cy - 4, 3, 4, pantsPack);
+        rect(cx - 2, cy - 9, 5, 5, coatPack);
+        rect(cx - 1, cy - 12, 3, 3, skinPack);
+        if (accessory) {
+          const a = THEME.accessory;
+          rect(cx + a.dx, cy + a.dy, a.w, a.h, accPack);
+          putPixelZ(cx + a.dx + a.w - 1, cy + a.dy + 1, d + 0.1, packRGB(255, 244, 180), MAT_CHAR, 90);
+        }
+        if (glow) rect(cx - 1, cy - 18, 3, 3, accPack);
+      }
+
+      /* 汽笛／風聲用的低頻短音（模組可選用） */
+      function rumble(duration, vol) {
+        const ac = ensureAudio(); if (!ac) return;
+        const now = ac.currentTime;
+        const o = ac.createOscillator(), g = ac.createGain(), f = ac.createBiquadFilter();
+        o.type = "sawtooth"; o.frequency.setValueAtTime(70, now);
+        f.type = "lowpass"; f.frequency.value = 320;
+        g.gain.setValueAtTime(0.001, now);
+        g.gain.linearRampToValueAtTime(vol || 0.09, now + 0.15);
+        g.gain.exponentialRampToValueAtTime(0.001, now + (duration || 0.9));
+        o.connect(f); f.connect(g); g.connect(ac.destination);
+        o.start(now); o.stop(now + (duration || 0.9));
+      }
+
+      /* =========================================================================
+       * 7. WebAudio 合成器（0 音檔）
+       * ========================================================================= */
+      let audioCtx = null, isMuted = false;
+
+      function ensureAudio() {
+        if (isMuted) return null;
+        if (!audioCtx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if (AC) audioCtx = new AC();
+        }
+        if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+        return audioCtx;
+      }
+
+      function tone(freq, duration, warm, vol) {
+        const ac = ensureAudio(); if (!ac) return;
+        const now = ac.currentTime, cfg = THEME.audio;
+        const osc = ac.createOscillator(), sub = ac.createOscillator();
+        const filter = ac.createBiquadFilter(), gain = ac.createGain();
+        osc.type = cfg.wave; osc.frequency.setValueAtTime(freq, now);
+        sub.type = cfg.subWave; sub.frequency.setValueAtTime(freq * cfg.subRatio, now);
+        if (warm) {
+          const lfo = ac.createOscillator(), lg = ac.createGain();
+          lfo.frequency.value = cfg.vibrato || 5.2; lg.gain.value = 4.5;
+          lfo.connect(lg); lg.connect(osc.frequency);
+          lfo.start(now); lfo.stop(now + duration);
+        }
+        filter.type = "lowpass"; filter.frequency.setValueAtTime(cfg.cutoff || 1150, now);
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(vol || 0.14, now + 0.04);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+        osc.connect(filter); sub.connect(filter); filter.connect(gain); gain.connect(ac.destination);
+        osc.start(now); sub.start(now); osc.stop(now + duration); sub.stop(now + duration);
+      }
+      function chord(notes) { notes.forEach(function(f, i) { setTimeout(function() { tone(f, 0.38, true); }, i * 90); }); }
+
+      /* =========================================================================
+       * 8. 關卡流程（每款遊戲三關，模組自行判定成敗）
+       * ========================================================================= */
+      const STAGES = THEME.stages;
+      let stageIndex = 0;
+      let stageScore = 0;
+      let stageStart = 0;
+      let running = false;
+      let ended = false;
+      let bestScores = [0, 0, 0];
+      let cleared = [false, false, false];
+
+      try {
+        const saved = localStorage.getItem(THEME.storageKey);
+        if (saved) { const o = JSON.parse(saved); bestScores = o.best || bestScores; cleared = o.cleared || cleared; }
+      } catch (e) {}
+
+      function saveBest() {
+        if (stageScore > bestScores[stageIndex]) bestScores[stageIndex] = stageScore;
+        try { localStorage.setItem(THEME.storageKey, JSON.stringify({ best: bestScores, cleared: cleared })); } catch (e) {}
+      }
+
+      function addScore(n) { stageScore += n; updateHUD(); }
+      function getScore() { return stageScore; }
+      function say(text) { document.getElementById("storyBanner").textContent = text; }
+      let subText = "";
+      function setHUDSub(text) { subText = text; updateHUD(); }
+
+      function updateHUD() {
+        document.getElementById("valScore").textContent = stageScore;
+        document.getElementById("valBest").textContent = bestScores[stageIndex];
+        document.getElementById("valSubStat").textContent = subText;
+      }
+
+      function setTabs() {
+        for (let i = 0; i < 3; i++) {
+          const t = document.getElementById("tab" + i);
+          t.classList.toggle("active", i === stageIndex);
+          t.classList.toggle("done", !!cleared[i]);
+        }
+      }
+
+      function loadStage(i) {
+        stageIndex = clamp(i, 0, 2);
+        stageScore = 0;
+        ended = false;
+        running = true;
+        isHolding = false;
+        document.getElementById("btnMainAction").classList.remove("charging");
+        const S = STAGES[stageIndex];
+        say(S.banner);
+        document.getElementById("controlHint").textContent = S.hint;
+        document.getElementById("btnMainAction").textContent = S.btn;
+        document.getElementById("stageOverlay").classList.add("hidden");
+        document.getElementById("rulesModal").classList.remove("open");
+        staticDirty = true;              // 每關重繪場景（部分關卡會改變地形）
+        buildStaticDiorama();
+        GAME.stageInit(stageIndex);
+        stageStart = performance.now();
+        setTabs();
+        updateHUD();
+      }
+
+      function endStage(won, text) {
+        if (ended) return;
+        ended = true;
+        running = false;
+        isHolding = false;
+        const elapsed = Math.max(1, Math.round((performance.now() - stageStart) / 1000));
+        if (won) { cleared[stageIndex] = true; isMuted || chord([523.25, 659.25, 783.99]); }
+        else { tone(146.83, 0.4, false, 0.12); }
+        saveBest();
+        setTabs();
+        updateHUD();
+
+        const ov = document.getElementById("stageOverlay");
+        document.getElementById("ovKicker").textContent = won
+          ? ("STAGE " + (stageIndex + 1) + " CLEARED")
+          : ("STAGE " + (stageIndex + 1) + " FAILED");
+        document.getElementById("ovTitle").textContent = won ? STAGES[stageIndex].clearTitle : STAGES[stageIndex].failTitle;
+        document.getElementById("ovText").textContent = text || "";
+        document.getElementById("ovScore").textContent = stageScore;
+        document.getElementById("ovBest").textContent = bestScores[stageIndex];
+        document.getElementById("ovTime").textContent = elapsed + "s";
+        document.getElementById("ovStory").innerHTML = won ? (STAGES[stageIndex].clearStory || "") : (STAGES[stageIndex].failStory || "");
+
+        const row = document.getElementById("ovRow");
+        row.innerHTML = "";
+        function mkBtn(label, fn, primary) {
+          const b = document.createElement("button");
+          b.className = primary ? "primary-action-btn" : "secondary-action-btn";
+          b.textContent = label;
+          b.addEventListener("click", fn);
+          row.appendChild(b);
+        }
+        mkBtn("重玩本關", function() { loadStage(stageIndex); });
+        if (won && stageIndex < 2) mkBtn("下一關 →", function() { loadStage(stageIndex + 1); }, true);
+        if (won && stageIndex === 2) {
+          const b = document.createElement("button");
+          b.className = "primary-action-btn";
+          b.textContent = "三部曲完成 ★";
+          b.disabled = true;
+          row.appendChild(b);
+        }
+        ov.classList.remove("hidden");
+      }
+
+      /* =========================================================================
+       * 9. 輸入（一顆按鈕：按住 / 放開；另有滑鼠與鍵盤）
+       * ========================================================================= */
+      let isHolding = false;
+
+      function startHold() {
+        ensureAudio();
+        if (!running || ended) return;
+        if (isHolding) return;
+        isHolding = true;
+        document.getElementById("btnMainAction").classList.add("charging");
+        GAME.onHold();
+      }
+      function endHold() {
+        if (!isHolding) return;
+        isHolding = false;
+        document.getElementById("btnMainAction").classList.remove("charging");
+        if (GAME.onRelease) GAME.onRelease();
+      }
+
+      /* =========================================================================
+       * 10. 主迴圈
+       * ========================================================================= */
+      let lastTime = performance.now();
+
+      function frame(now) {
+        const dt = Math.min(0.05, (now - lastTime) / 1000);
+        lastTime = now;
+        if (staticDirty) buildStaticDiorama();
+        fb.set(staticFB); zbuf.set(staticZ); matbuf.set(staticMat); objbuf.set(staticObj);
+        const reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const tick8 = reduced ? 0 : Math.floor(now / 125);
+        drawFoliage8FPS(tick8, GAME.wind ? GAME.wind() : 0.5);
+        THEME_AMBIENT(tick8, now);
+        if (running && !ended) GAME.stageUpdate(dt, now, tick8);
+        if (ended) GAME.stageDraw ? GAME.stageDraw(dt, now, tick8) : null;
+        ctx.putImageData(imgData, 0, 0);
+        requestAnimationFrame(frame);
+      }
+
+      /* =========================================================================
+       * 11. 介面綁定
+       * ========================================================================= */
+      const canvasContainer = document.getElementById("canvasContainer");
+      const btnMainAction = document.getElementById("btnMainAction");
+
+      function bindPressRelease(el) {
+        el.addEventListener("mousedown", function(e) { e.preventDefault(); startHold(); });
+        el.addEventListener("touchstart", function(e) { e.preventDefault(); startHold(); }, { passive: false });
+      }
+      bindPressRelease(canvasContainer);
+      bindPressRelease(btnMainAction);
+      window.addEventListener("mouseup", endHold);
+      window.addEventListener("touchend", endHold);
+      window.addEventListener("keydown", function(e) {
+        if (e.code === "Space") { e.preventDefault(); startHold(); }
+        else if (e.code === "KeyR") { loadStage(stageIndex); }
+      });
+      window.addEventListener("keyup", function(e) { if (e.code === "Space") { e.preventDefault(); endHold(); } });
+
+      document.getElementById("tab0").addEventListener("click", function() { loadStage(0); });
+      document.getElementById("tab1").addEventListener("click", function() { loadStage(1); });
+      document.getElementById("tab2").addEventListener("click", function() { loadStage(2); });
+      document.getElementById("btnReset").addEventListener("click", function() { loadStage(stageIndex); });
+
+      const rulesModal = document.getElementById("rulesModal");
+      document.getElementById("btnRules").addEventListener("click", function() { rulesModal.classList.add("open"); });
+      document.getElementById("btnCloseModal").addEventListener("click", function() { rulesModal.classList.remove("open"); });
+      rulesModal.addEventListener("click", function(e) { if (e.target === rulesModal) rulesModal.classList.remove("open"); });
+      const btnMute = document.getElementById("btnMute");
+      btnMute.addEventListener("click", function() {
+        isMuted = !isMuted;
+        btnMute.textContent = isMuted ? "音效：關" : "音效：開";
+      });
+
+      document.getElementById("modalTitleText").textContent = THEME.modalTitle;
+      document.getElementById("modalBody").innerHTML = THEME.modalHtml;
+
+      window.onload = function() {
+        buildStaticDiorama();
+        loadStage(0);
+        requestAnimationFrame(frame);
+      };
+
+      /* 自動化測試用除錯介面 */
+      window.PP = {
+        game: THEME.id,
+        stage: function(i) { if (i !== undefined) loadStage(i); return stageIndex; },
+        hold: startHold, release: endHold,
+        step: function(n) {
+          n = n || 1;
+          for (let i = 0; i < n; i++) { lastTime = performance.now() - 16.7; frame(performance.now()); }
+          return this.debug();
+        },
+        set: function(k, v) { if (GAME.set) GAME.set(k, v); return this.debug(); },
+        debug: function() {
+          return {
+            stage: stageIndex, score: stageScore, running: running, ended: ended,
+            best: bestScores.slice(), cleared: cleared.slice(),
+            game: GAME.debug ? GAME.debug() : {}
+          };
+        },
+        end: function(won, txt) { endStage(!!won, txt || "（測試）"); },
+        overlayVisible: function() { return !document.getElementById("stageOverlay").classList.contains("hidden"); }
+      };
+    })();
+  </script>
+</body>
+</html>

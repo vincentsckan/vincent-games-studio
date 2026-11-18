@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-HK">
+<head>
+<meta charset="utf-8"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<meta http-equiv="Pragma" content="no-cache"/>
+<meta http-equiv="Expires" content="0"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
+<title>霓虹方舟：1994 · NEON ARK: 1994 — Vincent Games Studio</title>
+<meta name="description" content="霓虹方舟：1994 (NEON ARK: 1994) — 致敬《Crow Country》之 32-Bit 復古微縮箱庭 3D 生存恐怖遊戲。Vincent Games Studio 瀏覽器即開即玩與 PC 原生版下載。"/>
+<meta property="og:title" content="霓虹方舟：1994 · NEON ARK: 1994"/>
+<meta property="og:description" content="1994年東海人工島荒廢的太陽神穹頂博覽館。可旋轉等距 3D 視角、雷射停步瞄準、智慧地圖與雙重時空敘事反轉。"/>
+<meta property="og:type" content="website"/>
+<meta property="og:url" content="https://vincentsckan.github.io/vincent-games-studio/demos/neon-ark-1994/"/>
+<meta property="og:image" content="https://vincentsckan.github.io/vincent-games-studio/demos/neon-ark-1994/cover.jpg"/>
+<meta property="og:locale" content="zh_HK"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:#080b16;color:#f1f5f9;font-family:"Noto Sans TC",system-ui,sans-serif;overflow:hidden;touch-action:none;user-select:none}
+#wrap{position:fixed;inset:0}
+#c{display:block;width:100%;height:100%;outline:none;background:#080b16}
+#crtOverlay{position:fixed;inset:0;pointer-events:none;z-index:8;background:repeating-linear-gradient(0deg,rgba(0,0,0,0.22) 0px,rgba(0,0,0,0.22) 1px,transparent 1px,transparent 3px);box-shadow:inset 0 0 70px rgba(0,0,0,0.65)}
+#crtOverlay.off{display:none}
+
+/* Top & Bottom Retro Survival Horror HUD */
+#hud{position:fixed;inset:0;pointer-events:none;z-index:5}
+.hud-box{background:rgba(10,16,30,0.88);border:1.5px solid rgba(75,215,255,0.65);border-radius:12px;padding:10px 14px;box-shadow:0 6px 24px rgba(0,0,0,0.55);pointer-events:auto}
+#hudTopLeft{position:fixed;left:14px;top:calc(12px + env(safe-area-inset-top));width:min(360px,54vw)}
+.ecg-row{display:flex;align-items:center;gap:12px}
+#ecgCanvas{width:128px;height:36px;background:rgba(4,12,20,0.85);border:1px solid rgba(75,215,255,0.35);border-radius:6px}
+.hp-meta b{display:block;font-size:17px;letter-spacing:0.03em}
+.hp-meta small{display:block;font-size:11px;color:#cbd5e1;margin-top:2px}
+#roomBanner{margin-top:6px;font-size:12px;font-weight:800;color:#fde047;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+#hudTopRight{position:fixed;right:148px;top:calc(12px + env(safe-area-inset-top));display:flex;flex-wrap:wrap;gap:6px;max-width:44vw;justify-content:flex-end}
+.hud-btn{appearance:none;background:rgba(14,24,44,0.9);border:1.5px solid rgba(90,210,250,0.6);color:#e2e8f0;border-radius:8px;padding:6px 10px;font:800 12px/1.2 "Noto Sans TC",sans-serif;cursor:pointer;pointer-events:auto;transition:all .15s}
+.hud-btn:hover,.hud-btn.active{background:rgba(30,90,130,0.95);border-color:#fde047;color:#fde047}
+
+#bossBarWrap{position:fixed;left:50%;top:calc(14px + env(safe-area-inset-top));transform:translateX(-50%);width:min(440px,78vw);background:rgba(28,8,38,0.92);border:2px solid #f472b6;border-radius:10px;padding:6px 12px;display:none;z-index:6;text-align:center}
+#bossBarWrap.on{display:block}
+#bossName{font-size:13px;font-weight:900;color:#fbcfe8;margin-bottom:4px}
+.boss-track{height:10px;background:#1e1028;border-radius:99px;overflow:hidden}
+#bossFill{height:100%;width:100%;background:linear-gradient(90deg,#ec4899,#facc15);transition:width .12s}
+
+#hudBotLeft{position:fixed;left:14px;bottom:calc(14px + env(safe-area-inset-bottom));width:min(420px,68vw)}
+.weap-row{display:flex;justify-content:space-between;align-items:baseline;font-weight:900;font-size:15px;color:#fde047}
+.weap-row span.ammo{color:#38bdf8;font-size:16px}
+.slot-strip{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.slot-pill{appearance:none;background:rgba(20,32,58,0.9);border:1px solid rgba(100,200,255,0.45);color:#cbd5e1;border-radius:6px;padding:4px 8px;font:800 11px/1.1 "Noto Sans TC",sans-serif;cursor:pointer}
+.slot-pill.on{border-color:#fde047;color:#fde047;background:rgba(80,65,20,0.65)}
+.focus-track{height:8px;background:#1e293b;border-radius:99px;margin-top:7px;overflow:hidden}
+#focusFill{height:100%;width:0%;background:#38bdf8;transition:background .1s}
+
+#promptBanner{position:fixed;left:50%;bottom:calc(112px + env(safe-area-inset-bottom));transform:translateX(-50%);background:rgba(16,28,52,0.95);border:2px solid #fde047;color:#fef08a;padding:8px 18px;border-radius:999px;font-weight:900;font-size:14px;box-shadow:0 4px 20px rgba(0,0,0,0.7);display:none;pointer-events:auto;cursor:pointer;z-index:6;white-space:nowrap}
+#promptBanner.on{display:inline-flex;align-items:center;gap:8px}
+
+#toastBox{position:fixed;right:14px;bottom:calc(16px + env(safe-area-inset-bottom));max-width:min(460px,82vw);background:rgba(14,24,46,0.94);border:1.5px solid #38bdf8;color:#e0f2fe;padding:10px 14px;border-radius:10px;font-size:13px;font-weight:700;line-height:1.45;box-shadow:0 6px 24px rgba(0,0,0,0.65);z-index:6;opacity:0;transition:opacity .25s;pointer-events:none}
+#toastBox.on{opacity:1}
+
+/* Mobile Touch Controls */
+#touchPad{position:fixed;right:14px;bottom:calc(78px + env(safe-area-inset-bottom));display:none;gap:8px;z-index:6;pointer-events:auto}
+@media (pointer:coarse),(max-width:820px){#touchPad{display:flex;flex-wrap:wrap;width:210px;justify-content:flex-end}}
+.t-btn{min-width:62px;min-height:46px;border-radius:12px;border:2px solid rgba(90,220,255,0.75);background:rgba(12,20,38,0.85);color:#fff;font:900 13px "Noto Sans TC",sans-serif;cursor:pointer}
+.t-btn.aim{border-color:#f43f5e;color:#fda4af}
+.t-btn.fire{border-color:#fde047;background:rgba(120,40,30,0.85);color:#fde047}
+
+/* Modals (Title, Smart Map, Inventory/Notes, Keypad, Organ, Oracle, Victory, GameOver) */
+.modal-backdrop{position:fixed;inset:0;background:rgba(6,10,22,0.86);z-index:20;display:none;align-items:center;justify-content:center;padding:16px;overflow-y:auto}
+.modal-backdrop.on{display:flex}
+.modal-card{width:100%;max-width:860px;max-height:min(92vh,820px);overflow-y:auto;background:linear-gradient(160deg,#111a30,#090d1a);border:2px solid #38bdf8;border-radius:16px;padding:22px;box-shadow:0 0 50px rgba(56,189,248,0.22);color:#f1f5f9}
+.modal-card h1{font-family:Syne,"Noto Sans TC",sans-serif;font-size:clamp(1.45rem,3.2vw,2.1rem);color:#f472b6;text-align:center}
+.modal-card h2{font-size:1.25rem;color:#fde047;margin-bottom:8px}
+.modal-sub{text-align:center;color:#38bdf8;font-size:13px;font-weight:700;margin-top:4px;margin-bottom:14px}
+.story-block{background:rgba(15,25,48,0.85);border:1px solid rgba(90,200,250,0.35);border-radius:10px;padding:12px 14px;font-size:13px;line-height:1.65;color:#dbeafe;margin-bottom:12px}
+.btn-row{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:14px}
+.btn-primary{appearance:none;border:0;border-radius:999px;padding:12px 26px;background:linear-gradient(90deg,#ec4899,#38bdf8);color:#fff;font:900 15px "Noto Sans TC",sans-serif;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:8px;box-shadow:0 6px 24px rgba(236,72,153,0.35)}
+.btn-sec{appearance:none;border:1.5px solid #38bdf8;border-radius:999px;padding:10px 20px;background:rgba(15,30,55,0.85);color:#7dd3fc;font:800 13px "Noto Sans TC",sans-serif;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+
+/* Crow Country Smart Map Grid */
+.smart-map-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:14px 0}
+.map-cell{border-radius:10px;padding:10px;border:2px solid #475569;background:rgba(20,28,44,0.85);min-height:78px;display:flex;flex-direction:column;justify-content:space-between}
+.map-cell.cleared{background:rgba(16,62,52,0.9);border-color:#34d399}
+.map-cell.remaining{background:rgba(68,38,18,0.9);border-color:#fbbf24}
+.map-cell.saveroom{background:rgba(16,58,68,0.9);border-color:#38bdf8}
+.map-cell.current{box-shadow:0 0 18px rgba(250,204,21,0.65);outline:2px solid #fde047}
+.map-cell b{font-size:13px;color:#fff}
+.map-cell small{font-size:11px;font-weight:700}
+
+/* Keypad & Organ */
+.keypad-led{background:#052018;border:2px solid #34d399;border-radius:8px;padding:10px;font:900 28px monospace;color:#6ee7b7;text-align:center;letter-spacing:10px;margin:12px auto;max-width:260px}
+.keypad-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:260px;margin:0 auto}
+.kp-btn{padding:14px;border-radius:8px;border:1.5px solid #38bdf8;background:#162440;color:#fff;font:900 18px "Noto Sans TC",sans-serif;cursor:pointer}
+.organ-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0}
+.organ-key{padding:24px 10px;border-radius:10px;border:2px solid #fff;color:#fff;font:900 16px "Noto Sans TC",sans-serif;cursor:pointer;text-align:center}
+
+/* Back to catalog button */
+#vg-back-root{position:fixed;inset:0;z-index:2147483647;pointer-events:none}
+#vg-back-root a.vg-back-btn{pointer-events:auto;position:fixed;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 14px;border-radius:14px;font:800 14px/1.2 "Noto Sans TC",system-ui,sans-serif;text-decoration:none;border:2px solid #38bdf8;background:#080b16;color:#38bdf8;box-shadow:0 6px 28px rgba(0,0,0,.65);right:max(12px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top))}
+</style>
+<script type="importmap">
+{"imports":{"three":"../vendor/three.module.min.js"}}
+</script>
+</head>
+<body>
+<div id="wrap"><canvas id="c" tabindex="0"></canvas></div>
+<div id="crtOverlay"></div>
+
+<!-- Always-on Retro Survival Horror HUD -->
+<div id="hud">
+  <div id="hudTopLeft" class="hud-box">
+    <div class="ecg-row">
+      <canvas id="ecgCanvas" width="128" height="36"></canvas>
+      <div class="hp-meta">
+        <b id="hpText" style="color:#4ade80">HP 100/100</b>
+        <small id="statusText">FINE · 狀態正常</small>
+        <small id="secretText" style="color:#f472b6">神諭: 10/10 · 秘密: 0/8</small>
+      </div>
+    </div>
+    <div id="roomBanner">【入口棧橋與安檢亭】 ◆ 尚有未解謎題或物資</div>
+  </div>
+
+  <div id="hudTopRight">
+    <button type="button" class="hud-btn" id="btnMap" title="快捷鍵 TAB / M">🗺️ 智慧地圖</button>
+    <button type="button" class="hud-btn" id="btnInv" title="快捷鍵 I">📁 文獻與物品</button>
+    <button type="button" class="hud-btn active" id="btnCrt" title="快捷鍵 F1">📺 CRT濾鏡</button>
+    <button type="button" class="hud-btn" id="btnCtrl" title="快捷鍵 F2">🎮 現代360°</button>
+    <button type="button" class="hud-btn" id="btnMode" title="快捷鍵 F3">💀 生存恐怖</button>
+    <button type="button" class="hud-btn" id="btnRotL" title="快捷鍵 Q">↺ 轉視角Q</button>
+    <button type="button" class="hud-btn" id="btnRotR" title="快捷鍵 E/C">↻ 轉視角C</button>
+  </div>
+
+  <div id="bossBarWrap">
+    <div id="bossName">【最終首領】時空融合體・維克多·斯旺 (320/320)</div>
+    <div class="boss-track"><div id="bossFill"></div></div>
+  </div>
+
+  <div id="hudBotLeft" class="hud-box">
+    <div class="weap-row">
+      <span id="weapName">武器：88式警用手槍 (9mm)</span>
+      <span class="ammo" id="ammoText">彈藥：24</span>
+    </div>
+    <div class="slot-strip" id="weaponSlots"></div>
+    <div class="focus-track" title="按住右鍵或空白鍵停步雷射瞄準，蓄滿紅格爆頭雙倍暴擊"><div id="focusFill"></div></div>
+  </div>
+
+  <button type="button" id="promptBanner">⚡ [E] 調查</button>
+  <div id="toastBox"></div>
+
+  <div id="touchPad">
+    <button type="button" class="t-btn aim" id="tAim">按住瞄準</button>
+    <button type="button" class="t-btn fire" id="tFire">開火射擊</button>
+    <button type="button" class="t-btn" id="tAct">調查 [E]</button>
+    <button type="button" class="t-btn" id="tHeal">治療 [H]</button>
+  </div>
+</div>
+
+<!-- Modal Backdrop -->
+<div id="modalBackdrop" class="modal-backdrop on">
+  <div class="modal-card" id="modalContent"></div>
+</div>
+
+<div id="vg-back-root" aria-label="catalog">
+  <a id="vg-back-tr" class="vg-back-btn" href="https://vincentsckan.github.io/vincent-games-studio/games/neon-ark-1994/" title="← 返回霓虹方舟：1994">← 返回目錄</a>
+</div>
+
+<script type="module" src="./game.js"></script>
+</body>
+</html>
