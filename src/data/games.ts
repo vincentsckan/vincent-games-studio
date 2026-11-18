@@ -62,6 +62,58 @@ The studio's aim is simple: make players stop—and hit "play again."`,
 }
 
 export const games: Game[] = [
+  {
+    id: 'eiswald-sanatorium',
+    slug: 'eiswald-sanatorium',
+    titleZh: '霧嶺療養院：白鴉之冬',
+    titleEn: 'Eiswald Sanatorium: Winter of the White Crow',
+    taglineZh: '1991 年阿爾卑斯雪山孤立療養院——箱庭式立體解謎生存恐怖。點擊即啟動本機 3D 遊戲。',
+    taglineEn: '1991 Alpine sanatorium—Metroidvania-lite 3D survival horror. Click to launch native 3D game.',
+    dimension: '3D',
+    status: 'demo',
+    year: 2026,
+    genres: ['生存恐怖', '箱庭解謎', '3D'],
+    hookZh:
+      '1991 年冬，奧地利阿爾卑斯山脈深處的「霧嶺溫泉療養院」突遭封院，院長愛德華·克勞失蹤。特別調查員薇拉·林德奎斯特（Vera Lindqvist）獨自駕車穿過暴風雪抵達童話鎮中庭，卻發現整座渡假村已被詭異的「蒼白靈液」與機械傀儡吞噬。',
+    hookEn:
+      'Winter 1991. Investigator Vera Lindqvist arrives at the snowbound Eiswald Sanatorium in the Austrian Alps, only to find the fairytale resort overrun by Pale Ichor monstrosities and clockwork automata.',
+    gameplayZh:
+      '致敬《Crow Country》箱庭式互聯結構（童話鎮中庭、鬧鬼山丘、海洋王國、地底挖掘場四大分區）。支援 45° 自由旋轉微縮視角、3D 雷射瞄準弱點暴擊、現代直覺與經典坦克雙操作（F4 切換）、算命機三階段提示與三大難度模式。點擊遊戲 Icon 即可透過 vincentgame:// 協定直接啟動本機 Godot 4.3 Forward+ 3D 遊戲！',
+    gameplayEn:
+      'Crow Country-inspired interconnected Metroidvania-lite hub across 4 themed zones. 45° rotatable diorama camera, laser-sight weakpoint crits, Modern/Tank controls, Fortune Teller hints, and 3 difficulty modes. Click to launch directly on your PC!',
+    features: [
+      {
+        titleZh: '箱庭式四大分區與捷徑',
+        titleEn: 'Interconnected 4-Zone Hub',
+        bodyZh: '童話鎮中庭放射連接哥德墓園、深海展示廳與地下實驗室，解鎖單向鐵門捷徑與營火安全屋。',
+        bodyEn: 'Fairytale Courtyard radiating into Gothic Crypt, Ocean Kingdom, and Underground Bio-Lab with shortcuts and safe rooms.',
+      },
+      {
+        titleZh: '45° 旋轉視角與雷射弱點瞄準',
+        titleEn: 'Rotatable Diorama & Laser Aim',
+        bodyZh: 'Q/E 自由旋轉 3D 鏡頭，右鍵舉槍觸發體積雷射紅線與準星收縮（最高 +55% 弱點暴擊）。',
+        bodyEn: 'Free 3D camera rotation and over-the-shoulder volumetric laser aiming with reticle focus criticals.',
+      },
+      {
+        titleZh: '點擊 Icon 本機即時啟動',
+        titleEn: 'One-Click Native PC Launch',
+        bodyZh: '點擊網頁 Icon 自動喚醒本機 Godot 4.3 Forward+ 3D 引擎視窗，享受原生 3A 級光影與暴風雪粒子。',
+        bodyEn: 'Clicking the game icon launches the native Godot 4.3 Forward+ 3D engine directly on your computer.',
+      },
+    ],
+    coverImage: 'covers/eiswald-sanatorium.png',
+    palette: {
+      from: '#0b1320',
+      via: '#1b2a42',
+      to: '#8ecae6',
+      accent: '#e63946',
+      pattern: 'void',
+    },
+    links: {
+      play: '/vincent-games-studio/demos/eiswald-sanatorium/',
+      download: '/vincent-games-studio/demos/eiswald-sanatorium/EiswaldSanatorium_ClickToPlay_Setup.bat',
+    },
+  },
 
   {
     id: 'rift-arena',

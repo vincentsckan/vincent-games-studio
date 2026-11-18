@@ -3,6 +3,20 @@ import type { Game } from '../data/games'
 import { isExternalPlayHref, resolvePlayHref } from '../lib/demoPlay'
 import { GameArt } from './GameArt'
 
+function launchEiswaldNative(e: React.MouseEvent, fallbackHref: string) {
+  e.preventDefault()
+  let blurred = false
+  const onBlur = () => { blurred = true }
+  window.addEventListener('blur', onBlur, { once: true })
+  window.location.href = 'vincentgame://launch/eiswald-sanatorium'
+  setTimeout(() => {
+    window.removeEventListener('blur', onBlur)
+    if (!blurred) {
+      window.location.href = fallbackHref
+    }
+  }, 1200)
+}
+
 const statusLabel: Record<Game['status'], string> = {
   demo: '可試玩',
   'early-access': '搶先體驗',
@@ -18,6 +32,7 @@ export function GameCard({ game }: { game: Game }) {
     <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-panel/50 transition-colors hover:border-gold/35">
       <Link
         to={`/games/${game.slug}`}
+        onClick={game.slug === 'eiswald-sanatorium' && playHref ? (e) => launchEiswaldNative(e, playHref) : undefined}
         className="group relative block focus-visible:outline-none"
       >
         <div className="relative overflow-hidden">
@@ -57,7 +72,8 @@ export function GameCard({ game }: { game: Game }) {
         <div className="mt-3 flex flex-wrap items-center gap-2 pt-1">
           {playHref ? (
             <a
-              href={playHref}
+              href={game.slug === 'eiswald-sanatorium' ? 'vincentgame://launch/eiswald-sanatorium' : playHref}
+              onClick={game.slug === 'eiswald-sanatorium' ? (e) => launchEiswaldNative(e, playHref) : undefined}
               className="inline-flex min-h-11 items-center justify-center rounded-full bg-gold px-5 text-sm font-bold text-ink hover:bg-gold-dim"
               {...(openTab ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
             >

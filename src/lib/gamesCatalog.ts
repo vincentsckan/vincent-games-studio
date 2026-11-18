@@ -125,6 +125,7 @@ export async function fetchPublishedGames(): Promise<Game[]> {
     })
   }
   const merged = Array.from(bySlug.values()).filter(isPublicGame)
+  merged.sort((a, b) => (a.slug === 'eiswald-sanatorium' ? -1 : b.slug === 'eiswald-sanatorium' ? 1 : 0))
   return (merged.length > 0 ? merged : localGames.filter(isPublicGame)).map(withBustedPlay)
 }
 
