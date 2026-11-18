@@ -121,6 +121,8 @@ export async function fetchPublishedGames(): Promise<Game[]> {
         play: resolvePlayHref(local.links.play || remoteGame.links.play),
         download: remoteGame.links.download || local.links.download,
       },
+      playTitles: local.playTitles ?? remoteGame.playTitles,
+      stills: local.stills ?? remoteGame.stills,
       status: local.links.play || remoteGame.links.play ? 'demo' : remoteGame.status,
     })
   }
@@ -169,6 +171,8 @@ export async function fetchGameBySlug(slug: string): Promise<Game | undefined> {
       play: local.links.play || remoteGame.links.play,
       download: remoteGame.links.download || local.links.download,
     },
+    playTitles: local.playTitles ?? remoteGame.playTitles,
+    stills: local.stills ?? remoteGame.stills,
     status: local.links.play || remoteGame.links.play ? 'demo' : remoteGame.status,
   })
 }

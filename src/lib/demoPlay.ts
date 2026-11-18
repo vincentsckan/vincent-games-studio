@@ -17,6 +17,7 @@ const DEMO_SLUGS = [
   'eiswald-sanatorium',
   'rift-arena',
   'pixel-plays-diorama',
+  'pixel-plays-trilogy',
   'pulse-arena',
   'midnight-estate',
   'neon-chase',

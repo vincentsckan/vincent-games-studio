@@ -8,6 +8,19 @@ export interface GameLinks {
   itch?: string
 }
 
+/** A separately playable title under one catalog entry. `links.play` stays the hub. */
+export interface GamePlayTitle {
+  titleZh: string
+  titleEn: string
+  href: string
+}
+
+/** Supplied still for the detail gallery. */
+export interface GameStill {
+  src: string
+  labelZh: string
+}
+
 export interface GameFeature {
   titleZh: string
   titleEn: string
@@ -42,6 +55,10 @@ export interface Game {
     pattern: 'harbor' | 'fault' | 'crane' | 'void'
   }
   links: GameLinks
+  /** Extra titles that stay inside this entry and open their own demo HTML. */
+  playTitles?: GamePlayTitle[]
+  /** Real stills. When present, the detail gallery uses these instead of placeholders. */
+  stills?: GameStill[]
 }
 
 export const studio = {
@@ -215,6 +232,79 @@ export const games: Game[] = [
     links: {
       play: '/vincent-games-studio/demos/pixel-plays-diorama/',
     },
+  },
+  {
+    id: 'pixel-plays-trilogy',
+    slug: 'pixel-plays-trilogy',
+    titleZh: '像素劇場三部曲',
+    titleEn: 'Three Pixel Plays',
+    taglineZh: '三個原創故事，各自可玩，共用零圖片等角像素。',
+    taglineEn: 'Three original stories, each playable, one zero-image isometric craft.',
+    dimension: '2D',
+    status: 'demo',
+    year: 2026,
+    genres: ['微遊戲', '像素', '等角'],
+    hookZh:
+      '《霧港守燈人》、《廟街夜貓》、《茶樓點心塔》三部各自可玩。故事與玩法完全分開，共用同一套零圖片等角像素：360×280 軟體光柵、Z-Buffer、Bayer 抖點，場景與音效都由程式即時生成。',
+    hookEn:
+      '《霧港守燈人》, 《廟街夜貓》, and 《茶樓點心塔》 are separately playable. The stories and mechanics stay apart, and they share one zero-image isometric craft: a 360×280 software raster, z-buffer, and Bayer dither, with scenes and sound drawn live.',
+    gameplayZh:
+      '從三部曲入口分別進入。《霧港守燈人》主角阿澄，章節是第一晚初霧、第二晚漲霧、第三晚風暴前夜，玩法是油量 ⇋ 亮度取捨。《廟街夜貓》主角阿灰，章節是第一夜魚檔初探、第二夜狗仔巡更、第三夜全街清醒，玩法是潛行 ⇋ 疾走節奏。《茶樓點心塔》主角阿珍，章節是第一朝首籠、第二朝風起、第三朝開市前，玩法是精準吊放＋平衡物理。按住空白鍵、畫布或主按鈕，放開完成動作；R 重玩本關。',
+    gameplayEn:
+      'Open each title from the trilogy hub. 《霧港守燈人》 follows 阿澄 through 第一晚初霧、第二晚漲霧、第三晚風暴前夜 — 油量 ⇋ 亮度取捨. 《廟街夜貓》 follows 阿灰 through 第一夜魚檔初探、第二夜狗仔巡更、第三夜全街清醒 — 潛行 ⇋ 疾走節奏. 《茶樓點心塔》 follows 阿珍 through 第一朝首籠、第二朝風起、第三朝開市前 — 精準吊放＋平衡物理. Hold Space, the canvas, or the main button; release to act. R restarts the current stage.',
+    features: [
+      {
+        titleZh: '霧港守燈人',
+        titleEn: 'Fog Harbor Keeper',
+        bodyZh: '可單獨試玩。主角阿澄。油量 ⇋ 亮度取捨。章節：第一晚初霧、第二晚漲霧、第三晚風暴前夜。',
+        bodyEn: 'Separately playable. 阿澄. 油量 ⇋ 亮度取捨. Chapters: 第一晚初霧、第二晚漲霧、第三晚風暴前夜.',
+      },
+      {
+        titleZh: '廟街夜貓',
+        titleEn: 'Temple Street Cat',
+        bodyZh: '可單獨試玩。主角阿灰。潛行 ⇋ 疾走節奏。章節：第一夜魚檔初探、第二夜狗仔巡更、第三夜全街清醒。',
+        bodyEn: 'Separately playable. 阿灰. 潛行 ⇋ 疾走節奏. Chapters: 第一夜魚檔初探、第二夜狗仔巡更、第三夜全街清醒.',
+      },
+      {
+        titleZh: '茶樓點心塔',
+        titleEn: 'Dim Sum Tower',
+        bodyZh: '可單獨試玩。主角阿珍。精準吊放＋平衡物理。章節：第一朝首籠、第二朝風起、第三朝開市前。',
+        bodyEn: 'Separately playable. 阿珍. 精準吊放＋平衡物理. Chapters: 第一朝首籠、第二朝風起、第三朝開市前.',
+      },
+    ],
+    coverImage: 'covers/pixel-plays-trilogy.png',
+    stills: [
+      { src: 'covers/fog-harbor-keeper.png', labelZh: '霧港守燈人' },
+      { src: 'covers/temple-street-cat.png', labelZh: '廟街夜貓' },
+      { src: 'covers/dim-sum-tower.png', labelZh: '茶樓點心塔' },
+    ],
+    palette: {
+      from: '#16202e',
+      via: '#3a3344',
+      to: '#c96a3b',
+      accent: '#f8c85c',
+      pattern: 'harbor',
+    },
+    links: {
+      play: '/vincent-games-studio/demos/pixel-plays-trilogy/',
+    },
+    playTitles: [
+      {
+        titleZh: '霧港守燈人',
+        titleEn: 'Fog Harbor Keeper',
+        href: '/vincent-games-studio/demos/pixel-plays-trilogy/game-keeper.html',
+      },
+      {
+        titleZh: '廟街夜貓',
+        titleEn: 'Temple Street Cat',
+        href: '/vincent-games-studio/demos/pixel-plays-trilogy/game-cat.html',
+      },
+      {
+        titleZh: '茶樓點心塔',
+        titleEn: 'Dim Sum Tower',
+        href: '/vincent-games-studio/demos/pixel-plays-trilogy/game-stall.html',
+      },
+    ],
   },
   {
     id: 'pulse-arena',

@@ -1,15 +1,40 @@
 import { Link, useParams } from 'react-router-dom'
 import { GameArt, GalleryFrame } from '../components/GameArt'
-import { GameCtaRow } from '../components/CtaButton'
+import { CtaButton, GameCtaRow } from '../components/CtaButton'
 import { EmptyState, LoadingBlock } from '../components/ui/States'
 import { useCatalogGame } from '../hooks/useCatalogGames'
 import { usePageMeta } from '../hooks/usePageMeta'
+import { isExternalPlayHref, resolvePlayHref } from '../lib/demoPlay'
+import type { GamePlayTitle } from '../data/games'
 
 const statusLabel: Record<string, string> = {
   demo: '可試玩',
   'early-access': '搶先體驗',
   released: '已發行',
   'coming-soon': '即將推出',
+}
+
+function PlayTitleLinks({ titles }: { titles: GamePlayTitle[] }) {
+  return (
+    <div className="mt-5">
+      <p className="text-sm font-semibold text-gold">三部各自開玩</p>
+      <div className="mt-3 flex flex-wrap gap-3">
+        {titles.map((title) => {
+          const href = resolvePlayHref(title.href)
+          if (!href) return null
+          const openTab = isExternalPlayHref(href)
+          return (
+            <CtaButton key={title.href} href={href} variant="secondary" external={openTab}>
+              <span className="flex flex-col items-start leading-tight">
+                <span>試玩 · {title.titleZh}</span>
+                <span className="font-en text-xs font-semibold opacity-80">{title.titleEn}</span>
+              </span>
+            </CtaButton>
+          )
+        })}
+      </div>
+    </div>
+  )
 }
 
 function GameDetailMeta({
@@ -98,6 +123,9 @@ export function GameDetailPage() {
             <p className="mt-4 text-lg text-paper/90 text-balance">{game.taglineZh}</p>
             <p className="mt-6 max-w-xl text-base leading-relaxed text-fog">{game.hookZh}</p>
             <GameCtaRow links={game.links} className="mt-8" />
+            {game.playTitles && game.playTitles.length > 0 ? (
+              <PlayTitleLinks titles={game.playTitles} />
+            ) : null}
           </div>
           <GameArt
             game={game}
@@ -146,13 +174,21 @@ export function GameDetailPage() {
       <section className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
         <p className="text-sm font-semibold text-teal">截圖</p>
         <h2 className="mt-2 font-display text-2xl font-bold text-paper sm:text-3xl">畫面預覽</h2>
-        <p className="mt-2 text-sm text-mist">佔位畫面 — 之後會替換成真實截圖。</p>
+        {game.stills && game.stills.length > 0 ? null : (
+          <p className="mt-2 text-sm text-mist">佔位畫面 — 之後會替換成真實截圖。</p>
+        )}
         <ul className="mt-8 grid gap-4 sm:grid-cols-2">
-          {galleryLabels.map((label, i) => (
-            <li key={label}>
-              <GalleryFrame game={game} index={i} label={label} />
-            </li>
-          ))}
+          {game.stills && game.stills.length > 0
+            ? game.stills.map((still, i) => (
+                <li key={still.src}>
+                  <GalleryFrame game={game} index={i} label={still.labelZh} image={still.src} />
+                </li>
+              ))
+            : galleryLabels.map((label, i) => (
+                <li key={label}>
+                  <GalleryFrame game={game} index={i} label={label} />
+                </li>
+              ))}
         </ul>
       </section>
 
