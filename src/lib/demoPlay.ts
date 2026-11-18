@@ -15,8 +15,10 @@ export const BUILD_SHA: string =
 
 const DEMO_SLUGS = [
   'neon-ark-1994',
+  'eiswald-sanatorium',
   'rift-arena',
   'pixel-plays-diorama',
+  'pixel-plays-trilogy',
   'pulse-arena',
   'midnight-estate',
   'neon-chase',

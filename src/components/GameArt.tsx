@@ -141,11 +141,14 @@ export function GalleryFrame({
   game,
   index,
   label,
+  image,
   className = '',
 }: {
   game: Game
   index: number
   label?: string
+  /** Supplied still. Falls back to the cover on the first frame. */
+  image?: string
   className?: string
 }) {
   const gradients = [
@@ -154,10 +157,11 @@ export function GalleryFrame({
     `linear-gradient(120deg, ${game.palette.to}, ${game.palette.from})`,
     `radial-gradient(circle at 30% 40%, ${game.palette.accent}55, ${game.palette.from})`,
   ]
-  if (game.coverImage && index === 0) {
+  const frameImage = image ?? (index === 0 ? game.coverImage : undefined)
+  if (frameImage) {
     return (
       <div className={`relative aspect-video overflow-hidden rounded-xl ${className}`}>
-        <img src={assetUrl(game.coverImage)} alt="" className="h-full w-full object-cover" loading="lazy" />
+        <img src={assetUrl(frameImage)} alt="" className="h-full w-full object-cover" loading="lazy" />
         {label && (
           <span className="absolute bottom-3 left-3 rounded-md bg-black/50 px-2 py-1 font-en text-[10px] text-white/80 backdrop-blur">
             {label}

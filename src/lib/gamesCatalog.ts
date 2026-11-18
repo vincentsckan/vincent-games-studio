@@ -127,10 +127,21 @@ export async function fetchPublishedGames(): Promise<Game[]> {
         play: resolvePlayHref(local.links.play || remoteGame.links.play),
         download: remoteGame.links.download || local.links.download,
       },
+      playTitles: local.playTitles ?? remoteGame.playTitles,
+      stills: local.stills ?? remoteGame.stills,
       status: local.links.play || remoteGame.links.play ? 'demo' : remoteGame.status,
     })
   }
   const merged = Array.from(bySlug.values()).filter(isPublicGame)
+  const topPriority = ['neon-ark-1994', 'eiswald-sanatorium']
+  merged.sort((a, b) => {
+    const ia = topPriority.indexOf(a.slug)
+    const ib = topPriority.indexOf(b.slug)
+    if (ia !== -1 && ib !== -1) return ia - ib
+    if (ia !== -1) return -1
+    if (ib !== -1) return 1
+    return 0
+  })
   return (merged.length > 0 ? merged : localGames.filter(isPublicGame)).map(withBustedPlay)
 }
 
@@ -174,6 +185,8 @@ export async function fetchGameBySlug(slug: string): Promise<Game | undefined> {
       play: local.links.play || remoteGame.links.play,
       download: remoteGame.links.download || local.links.download,
     },
+    playTitles: local.playTitles ?? remoteGame.playTitles,
+    stills: local.stills ?? remoteGame.stills,
     status: local.links.play || remoteGame.links.play ? 'demo' : remoteGame.status,
   })
 }

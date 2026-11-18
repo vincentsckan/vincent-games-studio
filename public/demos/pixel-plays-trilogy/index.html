@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>像素劇場三部曲 · Three Pixel Plays</title>
+  <style>
+    :root {
+      --ink-main: #231f2e;
+      --ink-muted: #6e6782;
+      --ink-faint: #b3adc4;
+      --border-soft: #eae6f0;
+      --accent-warm: #c96a3b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #fff; color: var(--ink-main); min-height: 100vh;
+      font-family: "Inter", "Noto Serif TC", "PingFang HK", "Microsoft JhengHei", sans-serif;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .wrap { width: 100%; max-width: 1020px; padding: 46px 24px 60px; }
+    header { text-align: center; margin-bottom: 42px; }
+    .eyebrow { font-family: monospace; font-size: 11px; letter-spacing: .22em; color: var(--ink-faint); text-transform: uppercase; margin-bottom: 14px; }
+    h1 { font-size: clamp(26px, 4.6vw, 42px); font-weight: 700; letter-spacing: .02em; }
+    header p { margin-top: 14px; font-size: 14.5px; line-height: 1.95; color: var(--ink-muted); }
+    header p b { color: var(--ink-main); }
+    .rule-line { display: inline-flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 18px; }
+    .chip { font-size: 11.5px; font-family: monospace; border: 1px solid var(--border-soft); border-radius: 999px; padding: 4px 10px; color: var(--ink-muted); }
+
+    .grid { display: grid; gap: 24px; }
+    .card {
+      display: grid; grid-template-columns: 168px 1fr; gap: 22px; align-items: start;
+      text-decoration: none; color: inherit; border: 1px solid var(--border-soft); border-radius: 20px;
+      padding: 24px; background: #fff; transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+    }
+    .card:hover { transform: translateY(-3px); border-color: var(--ink-muted); box-shadow: 0 18px 42px rgba(35,31,46,.09); }
+    .side { display: flex; flex-direction: column; gap: 12px; }
+    .num { font-family: monospace; font-size: 11px; color: var(--ink-faint); }
+    .swatch { display: flex; flex-direction: column; gap: 3px; height: 120px; border-radius: 12px; overflow: hidden; border: 1px solid var(--border-soft); }
+    .swatch i { flex: 1; }
+    .body h2 { font-size: 21px; margin-bottom: 6px; }
+    .hook { font-size: 14px; line-height: 1.95; color: var(--ink-main); }
+    .mech { margin-top: 10px; font-size: 13px; line-height: 1.9; color: var(--ink-muted); }
+    .mech b { color: var(--accent-warm); }
+    .stages { margin-top: 10px; font-size: 12.5px; color: var(--ink-muted); font-family: monospace; }
+    .cta { margin-top: 14px; font-size: 13.5px; font-weight: 600; color: var(--accent-warm); }
+
+    .panel { margin-top: 44px; border: 1px solid var(--border-soft); border-radius: 18px; padding: 26px 24px; }
+    .panel h3 { font-size: 15px; margin-bottom: 14px; }
+    .rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+    .rules div { font-size: 12.5px; line-height: 1.7; color: var(--ink-muted); background: #faf9fc; border: 1px solid var(--border-soft); border-radius: 10px; padding: 10px 12px; }
+    .rules b { display: block; color: var(--ink-main); margin-bottom: 2px; font-size: 12.5px; }
+    footer { text-align: center; margin-top: 34px; font-size: 12px; color: var(--ink-faint); line-height: 1.9; }
+    code { font-family: monospace; background: #f4f2f8; border-radius: 5px; padding: 1px 6px; }
+    @media (max-width: 700px) { .card { grid-template-columns: 1fr; } .swatch { height: 64px; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Three Pixel Plays · 360 × 280 · 0 Images · 0 Audio Files</div>
+    <h1>像素劇場三部曲</h1>
+    <p>
+      三個<b>完全原創的故事與玩法</b>，共用同一套自製的等角像素引擎：360×280 軟體光柵化、Z-Buffer 深度緩衝、
+      4×4 Bayer 抖點、右傾長硬陰影、8FPS 整像素植物擺動；所有場景、角色、特效與音效都由程式即時生成。<br>
+      每款三個關卡，一個故事走完三晚／三朝；操作都只有<strong>一顆按住與放開的按鈕</strong>，但三款的玩法完全唔同。
+    </p>
+    <div class="rule-line">
+      <span class="chip">油量取捨</span><span class="chip">潛行節奏</span><span class="chip">精準吊放</span>
+      <span class="chip">30° 正交</span><span class="chip">Bayer 抖點</span><span class="chip">硬邊長影</span>
+    </div>
+  </header>
+
+  <div class="grid">
+    <a class="card" href="game-keeper.html">
+      <div class="side">
+        <span class="num">PLAY 01 · 霧港守燈人</span>
+        <div class="swatch">
+          <i style="background:#162c4c"></i><i style="background:#7e7e8a"></i><i style="background:#5c5e68"></i>
+          <i style="background:#b05442"></i><i style="background:#745c44"></i><i style="background:#f8c85c"></i>
+        </div>
+      </div>
+      <div class="body">
+        <h2>🕯️ 霧港守燈人</h2>
+        <p class="hook">三年前的一個霧夜，守燈人阿澄的父親連人帶船消失在航道外。此後阿澄每晚把燈芯絞到剛好，讓光貼著防波堤——彷彿只要那道光還在，總有一天會有船順著它回來。</p>
+        <p class="mech"><b>玩法：油量 ⇄ 亮度取捨。</b>按住＝絞高燈芯（亮但燒油）、放開＝節油回復；船隻駛過防波堤那一刻亮度必須達標。油盡會熄燈，要放開再按住重新點燃；陣風會拉扯燈火，第三晚的陣風更會吹熄弱火。</p>
+        <p class="stages">第一晚 · 初霧　｜　第二晚 · 漲霧　｜　第三晚 · 風暴前夜</p>
+        <p class="cta">▶ 開始守這一晚</p>
+      </div>
+    </a>
+
+    <a class="card" href="game-cat.html">
+      <div class="side">
+        <span class="num">PLAY 02 · 廟街夜貓</span>
+        <div class="swatch">
+          <i style="background:#282c42"></i><i style="background:#847e84"></i><i style="background:#686470"></i>
+          <i style="background:#b65646"></i><i style="background:#7e6244"></i><i style="background:#fac45c"></i>
+        </div>
+      </div>
+      <div class="body">
+        <h2>🐈 廟街夜貓</h2>
+        <p class="hook">廟街的野貓阿灰沒有主人，只有一隻住在紙箱裡的小貓小花。小花病了，能來的只有魚——勝記魚檔每天黃昏掛起一排小黃花，旁邊坐著看更陳伯、綁在柱上的大黃，和二樓那位永遠看得見整條巷的嬸嬸。</p>
+        <p class="mech"><b>玩法：潛行 ⇄ 疾走的節奏。</b>按住＝潛行（慢、無聲）、放開＝疾走（快、大聲）；守衛視線會畫在地面，噪音太大會令他們回頭，貨箱可以擋住視線。摸到魚檔叼魚，第二、三夜還要帶著魚穿回起點。</p>
+        <p class="stages">第一夜 · 魚檔初探　｜　第二夜 · 狗仔巡更　｜　第三夜 · 全街清醒</p>
+        <p class="cta">▶ 開始這一夜</p>
+      </div>
+    </a>
+
+    <a class="card" href="game-stall.html">
+      <div class="side">
+        <span class="num">PLAY 03 · 茶樓點心塔</span>
+        <div class="swatch">
+          <i style="background:#2e3440"></i><i style="background:#9e9894"></i><i style="background:#bab4aa"></i>
+          <i style="background:#b24a3e"></i><i style="background:#92704a"></i><i style="background:#face6e"></i>
+        </div>
+      </div>
+      <div class="body">
+        <h2>🏯 茶樓點心塔</h2>
+        <p class="hook">同興茶樓的點心師傅阿珍，每天清晨四點回到地堂。茶市五點半開門之前，她要把一座竹蒸籠塔疊到規定層數——那是廚房出籠的次序，也是茶樓的面子。師父退休時只留下那副竹吊臂和一句話：「手要定，眼要準，心要慢。」</p>
+        <p class="mech"><b>玩法：精準吊放 ＋ 平衡物理。</b>按住＝吊車放繩、放開＝放手；滑車一直在吊臂來回，落點偏移與放手高度都會累積「搖晃」，搖晃滿 100 蒸籠塔就倒。第二朝起有陣風，第三朝還有開市倒數。</p>
+        <p class="stages">第一朝 · 首籠　｜　第二朝 · 風起　｜　第三朝 · 開市前</p>
+        <p class="cta">▶ 開始這一朝</p>
+      </div>
+    </a>
+  </div>
+
+  <div class="panel">
+    <h3>三款共用的十條視覺與工法規格</h3>
+    <div class="rules">
+      <div><b>1. 純白無框浮島</b>微縮場景漂浮於純白背景，邊緣以 Bayer 抖點自然消融。</div>
+      <div><b>2. 360×280 整數倍放大</b>低解析度畫布以最近鄰整數倍縮放（1x–4x），永不模糊。</div>
+      <div><b>3. 固定 30° 正交鏡頭</b>不旋轉不縮放，真實 (x,y,z) 投影與 Z-Buffer 深度緩衝。</div>
+      <div><b>4. 4×4 Bayer 規律抖點</b>地形、水面與材質採有序矩陣抖點。</div>
+      <div><b>5. 右傾長硬陰影</b>建築、物件與人物一致向右投出平行硬邊長影。</div>
+      <div><b>6. 暗冷亮暖偏色</b>每款題材有自己的冷暖色偏錨點（見各遊戲內「故事與規則」）。</div>
+      <div><b>7. 深度緩衝輪廓光</b>前景自動壓暗交界線，左上受光邊緣補暖色高光。</div>
+      <div><b>8. 平整人物＋8FPS 植物</b>人物為平整色塊加 1px 黑框；植物每秒 8 格整像素擺動。</div>
+      <div><b>9. 零圖片</b>場景、角色與特效全部程式即時繪製，沒有任何圖檔。</div>
+      <div><b>10. 零音檔</b>所有音效由 WebAudio 振盪器即時合成（三款各有不同音色）。</div>
+    </div>
+  </div>
+
+  <footer>
+    每款都是單一自足 HTML 檔（約 64 KB）· 鍵盤 <code>Space</code> 按住／放開、<code>R</code> 重玩本關
+  </footer>
+</div>
+</body>
+</html>

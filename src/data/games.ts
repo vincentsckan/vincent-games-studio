@@ -8,6 +8,19 @@ export interface GameLinks {
   itch?: string
 }
 
+/** A separately playable title under one catalog entry. `links.play` stays the hub. */
+export interface GamePlayTitle {
+  titleZh: string
+  titleEn: string
+  href: string
+}
+
+/** Supplied still for the detail gallery. */
+export interface GameStill {
+  src: string
+  labelZh: string
+}
+
 export interface GameFeature {
   titleZh: string
   titleEn: string
@@ -42,6 +55,10 @@ export interface Game {
     pattern: 'harbor' | 'fault' | 'crane' | 'void'
   }
   links: GameLinks
+  /** Extra titles that stay inside this entry and open their own demo HTML. */
+  playTitles?: GamePlayTitle[]
+  /** Real stills. When present, the detail gallery uses these instead of placeholders. */
+  stills?: GameStill[]
 }
 
 export const studio = {
@@ -112,6 +129,58 @@ export const games: Game[] = [
     links: {
       play: '/vincent-games-studio/demos/neon-ark-1994/',
       download: '/vincent-games-studio/demos/neon-ark-1994/neon-ark-1994-pc-opengl.zip',
+    },
+  },
+  {
+    id: 'eiswald-sanatorium',
+    slug: 'eiswald-sanatorium',
+    titleZh: '霧嶺療養院：白鴉之冬',
+    titleEn: 'Eiswald Sanatorium: Winter of the White Crow',
+    taglineZh: '1991 年阿爾卑斯雪山孤立療養院——箱庭式立體解謎生存恐怖。點擊即啟動本機 3D 遊戲。',
+    taglineEn: '1991 Alpine sanatorium—Metroidvania-lite 3D survival horror. Click to launch native 3D game.',
+    dimension: '3D',
+    status: 'demo',
+    year: 2026,
+    genres: ['生存恐怖', '箱庭解謎', '3D'],
+    hookZh:
+      '1991 年冬，奧地利阿爾卑斯山脈深處的「霧嶺溫泉療養院」突遭封院，院長愛德華·克勞失蹤。特別調查員薇拉·林德奎斯特（Vera Lindqvist）獨自駕車穿過暴風雪抵達童話鎮中庭，卻發現整座渡假村已被詭異的「蒼白靈液」與機械傀儡吞噬。',
+    hookEn:
+      'Winter 1991. Investigator Vera Lindqvist arrives at the snowbound Eiswald Sanatorium in the Austrian Alps, only to find the fairytale resort overrun by Pale Ichor monstrosities and clockwork automata.',
+    gameplayZh:
+      '致敬《Crow Country》箱庭式互聯結構（童話鎮中庭、鬧鬼山丘、海洋王國、地底挖掘場四大分區）。支援 45° 自由旋轉微縮視角、3D 雷射瞄準弱點暴擊、現代直覺與經典坦克雙操作（F4 切換）、算命機三階段提示與三大難度模式。點擊遊戲 Icon 即可透過 vincentgame:// 協定直接啟動本機 Godot 4.3 Forward+ 3D 遊戲！',
+    gameplayEn:
+      'Crow Country-inspired interconnected Metroidvania-lite hub across 4 themed zones. 45° rotatable diorama camera, laser-sight weakpoint crits, Modern/Tank controls, Fortune Teller hints, and 3 difficulty modes. Click to launch directly on your PC!',
+    features: [
+      {
+        titleZh: '箱庭式四大分區與捷徑',
+        titleEn: 'Interconnected 4-Zone Hub',
+        bodyZh: '童話鎮中庭放射連接哥德墓園、深海展示廳與地下實驗室，解鎖單向鐵門捷徑與營火安全屋。',
+        bodyEn: 'Fairytale Courtyard radiating into Gothic Crypt, Ocean Kingdom, and Underground Bio-Lab with shortcuts and safe rooms.',
+      },
+      {
+        titleZh: '45° 旋轉視角與雷射弱點瞄準',
+        titleEn: 'Rotatable Diorama & Laser Aim',
+        bodyZh: 'Q/E 自由旋轉 3D 鏡頭，右鍵舉槍觸發體積雷射紅線與準星收縮（最高 +55% 弱點暴擊）。',
+        bodyEn: 'Free 3D camera rotation and over-the-shoulder volumetric laser aiming with reticle focus criticals.',
+      },
+      {
+        titleZh: '點擊 Icon 本機即時啟動',
+        titleEn: 'One-Click Native PC Launch',
+        bodyZh: '點擊網頁 Icon 自動喚醒本機 Godot 4.3 Forward+ 3D 引擎視窗，享受原生 3A 級光影與暴風雪粒子。',
+        bodyEn: 'Clicking the game icon launches the native Godot 4.3 Forward+ 3D engine directly on your computer.',
+      },
+    ],
+    coverImage: 'covers/eiswald-sanatorium.png',
+    palette: {
+      from: '#0b1320',
+      via: '#1b2a42',
+      to: '#8ecae6',
+      accent: '#e63946',
+      pattern: 'void',
+    },
+    links: {
+      play: '/vincent-games-studio/demos/eiswald-sanatorium/',
+      download: '/vincent-games-studio/demos/eiswald-sanatorium/EiswaldSanatorium_ClickToPlay_Setup.bat',
     },
   },
   {
@@ -214,6 +283,79 @@ export const games: Game[] = [
     links: {
       play: '/vincent-games-studio/demos/pixel-plays-diorama/',
     },
+  },
+  {
+    id: 'pixel-plays-trilogy',
+    slug: 'pixel-plays-trilogy',
+    titleZh: '像素劇場三部曲',
+    titleEn: 'Three Pixel Plays',
+    taglineZh: '三個原創故事，各自可玩，共用零圖片等角像素。',
+    taglineEn: 'Three original stories, each playable, one zero-image isometric craft.',
+    dimension: '2D',
+    status: 'demo',
+    year: 2026,
+    genres: ['微遊戲', '像素', '等角'],
+    hookZh:
+      '《霧港守燈人》、《廟街夜貓》、《茶樓點心塔》三部各自可玩。故事與玩法完全分開，共用同一套零圖片等角像素：360×280 軟體光柵、Z-Buffer、Bayer 抖點，場景與音效都由程式即時生成。',
+    hookEn:
+      '《霧港守燈人》, 《廟街夜貓》, and 《茶樓點心塔》 are separately playable. The stories and mechanics stay apart, and they share one zero-image isometric craft: a 360×280 software raster, z-buffer, and Bayer dither, with scenes and sound drawn live.',
+    gameplayZh:
+      '從三部曲入口分別進入。《霧港守燈人》主角阿澄，章節是第一晚初霧、第二晚漲霧、第三晚風暴前夜，玩法是油量 ⇋ 亮度取捨。《廟街夜貓》主角阿灰，章節是第一夜魚檔初探、第二夜狗仔巡更、第三夜全街清醒，玩法是潛行 ⇋ 疾走節奏。《茶樓點心塔》主角阿珍，章節是第一朝首籠、第二朝風起、第三朝開市前，玩法是精準吊放＋平衡物理。按住空白鍵、畫布或主按鈕，放開完成動作；R 重玩本關。',
+    gameplayEn:
+      'Open each title from the trilogy hub. 《霧港守燈人》 follows 阿澄 through 第一晚初霧、第二晚漲霧、第三晚風暴前夜 — 油量 ⇋ 亮度取捨. 《廟街夜貓》 follows 阿灰 through 第一夜魚檔初探、第二夜狗仔巡更、第三夜全街清醒 — 潛行 ⇋ 疾走節奏. 《茶樓點心塔》 follows 阿珍 through 第一朝首籠、第二朝風起、第三朝開市前 — 精準吊放＋平衡物理. Hold Space, the canvas, or the main button; release to act. R restarts the current stage.',
+    features: [
+      {
+        titleZh: '霧港守燈人',
+        titleEn: 'Fog Harbor Keeper',
+        bodyZh: '可單獨試玩。主角阿澄。油量 ⇋ 亮度取捨。章節：第一晚初霧、第二晚漲霧、第三晚風暴前夜。',
+        bodyEn: 'Separately playable. 阿澄. 油量 ⇋ 亮度取捨. Chapters: 第一晚初霧、第二晚漲霧、第三晚風暴前夜.',
+      },
+      {
+        titleZh: '廟街夜貓',
+        titleEn: 'Temple Street Cat',
+        bodyZh: '可單獨試玩。主角阿灰。潛行 ⇋ 疾走節奏。章節：第一夜魚檔初探、第二夜狗仔巡更、第三夜全街清醒。',
+        bodyEn: 'Separately playable. 阿灰. 潛行 ⇋ 疾走節奏. Chapters: 第一夜魚檔初探、第二夜狗仔巡更、第三夜全街清醒.',
+      },
+      {
+        titleZh: '茶樓點心塔',
+        titleEn: 'Dim Sum Tower',
+        bodyZh: '可單獨試玩。主角阿珍。精準吊放＋平衡物理。章節：第一朝首籠、第二朝風起、第三朝開市前。',
+        bodyEn: 'Separately playable. 阿珍. 精準吊放＋平衡物理. Chapters: 第一朝首籠、第二朝風起、第三朝開市前.',
+      },
+    ],
+    coverImage: 'covers/pixel-plays-trilogy.png',
+    stills: [
+      { src: 'covers/fog-harbor-keeper.png', labelZh: '霧港守燈人' },
+      { src: 'covers/temple-street-cat.png', labelZh: '廟街夜貓' },
+      { src: 'covers/dim-sum-tower.png', labelZh: '茶樓點心塔' },
+    ],
+    palette: {
+      from: '#16202e',
+      via: '#3a3344',
+      to: '#c96a3b',
+      accent: '#f8c85c',
+      pattern: 'harbor',
+    },
+    links: {
+      play: '/vincent-games-studio/demos/pixel-plays-trilogy/',
+    },
+    playTitles: [
+      {
+        titleZh: '霧港守燈人',
+        titleEn: 'Fog Harbor Keeper',
+        href: '/vincent-games-studio/demos/pixel-plays-trilogy/game-keeper.html',
+      },
+      {
+        titleZh: '廟街夜貓',
+        titleEn: 'Temple Street Cat',
+        href: '/vincent-games-studio/demos/pixel-plays-trilogy/game-cat.html',
+      },
+      {
+        titleZh: '茶樓點心塔',
+        titleEn: 'Dim Sum Tower',
+        href: '/vincent-games-studio/demos/pixel-plays-trilogy/game-stall.html',
+      },
+    ],
   },
   {
     id: 'pulse-arena',
