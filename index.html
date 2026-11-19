@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="zh-Hant-HK">
   <head>
     <meta charset="UTF-8" />
@@ -51,5 +51,44 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-  </body>
+  
+<!-- === EISWALD SANATORIUM: WINTER OF THE WHITE CROW (CLICK-TO-PLAY CARD) === -->
+<div class="game-card" id="card-eiswald-sanatorium" style="position:relative; border-radius:16px; overflow:hidden; background:linear-gradient(145deg,#101722,#192334); border:1px solid rgba(120,180,255,0.28); box-shadow:0 12px 32px rgba(0,0,0,0.55); transition:transform 0.25s ease, box-shadow 0.25s ease; cursor:pointer; max-width:380px; margin:16px auto;" onclick="window.LaunchEiswaldSanatorium(event)">
+  <div style="position:relative; height:210px; overflow:hidden; background:#0b0f17;">
+    <img src="eiswald-sanatorium/scene_fairytale_hub.png" alt="霧嶺療養院：白鴉之冬" style="width:100%; height:100%; object-fit:cover; filter:contrast(1.08) brightness(0.92);">
+    <span style="position:absolute; top:12px; left:12px; background:rgba(180,28,45,0.92); color:#fff; font-size:12px; font-weight:700; padding:4px 10px; border-radius:999px; letter-spacing:0.5px;">3D 生存恐怖 · 點擊即玩</span>
+    <span style="position:absolute; bottom:12px; right:12px; background:rgba(15,23,36,0.88); color:#8ecae6; font-size:12px; font-weight:600; padding:4px 10px; border-radius:6px; border:1px solid rgba(142,202,230,0.35);">Godot 4.3 Forward+</span>
+  </div>
+  <div style="padding:18px 20px;">
+    <h3 style="margin:0 0 8px 0; color:#f1f5f9; font-size:20px; font-weight:700;">《霧嶺療養院：白鴉之冬》</h3>
+    <p style="margin:0 0 14px 0; color:#94a3b8; font-size:13.5px; line-height:1.55;">
+      致敬《Crow Country》箱庭式立體解謎生存恐怖。探索四大主題分區、45° 自由旋轉微縮視角、雷射瞄準弱點暴擊與三大難度模式。
+    </p>
+    <div style="display:flex; gap:10px; align-items:center;">
+      <a href="vincentgame://launch/eiswald-sanatorium" onclick="window.LaunchEiswaldSanatorium(event)" style="flex:1; text-align:center; background:linear-gradient(135deg,#2563eb,#1d4ed8); color:#ffffff; font-weight:700; font-size:14px; padding:10px 14px; border-radius:10px; text-decoration:none; box-shadow:0 4px 14px rgba(37,99,235,0.45);">
+        ▶ 點擊 Icon 立即在本機啟動遊玩
+      </a>
+      <a href="eiswald-sanatorium/index.html" onclick="event.stopPropagation();" style="background:rgba(255,255,255,0.08); color:#cbd5e1; font-size:13px; padding:10px 12px; border-radius:10px; text-decoration:none; border:1px solid rgba(255,255,255,0.12);">
+        詳情 / 首次安裝
+      </a>
+    </div>
+  </div>
+</div>
+<script>
+window.LaunchEiswaldSanatorium = function(e) {
+  if (e) e.preventDefault();
+  var blurred = false;
+  var onBlur = function() { blurred = true; };
+  window.addEventListener('blur', onBlur, { once: true });
+  window.location.href = 'vincentgame://launch/eiswald-sanatorium';
+  setTimeout(function() {
+    window.removeEventListener('blur', onBlur);
+    if (!blurred) {
+      window.location.href = 'eiswald-sanatorium/index.html?autoinstall=1';
+    }
+  }, 1400);
+};
+</script>
+<!-- === END EISWALD SANATORIUM CARD === -->
+</body>
 </html>
