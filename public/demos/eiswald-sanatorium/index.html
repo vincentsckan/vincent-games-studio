@@ -164,12 +164,12 @@
     <p class="subtitle">參照《Crow Country》（鴉國）箱庭架構 · 四大放射狀主題園區 · 3D 體積雷射瞄準 · 雙模式操作 (現代 / 經典坦克)</p>
 
     <div class="hero-grid">
-      <div class="cover-box" onclick="launchLocalGame()" title="已安裝本機啟動器時，點擊可啟動 3D 遊戲">
+      <div class="cover-box" onclick="launchLocalGame(event)" title="已安裝本機啟動器時，點擊可啟動 3D 遊戲">
         <img src="scene_fairytale_hub.png" alt="霧嶺療養院：白鴉之冬 遊戲場景" />
       </div>
 
       <div class="launch-panel">
-        <a href="vincentgame://launch/eiswald-sanatorium" onclick="onLaunchClicked(event)" class="btn-launch-primary">
+        <a href="vincentgame://launch/eiswald-sanatorium" onclick="launchLocalGame(event)" class="btn-launch-primary">
           🎮 點擊立即在本機啟動 3D 遊戲 (Click to Launch)
         </a>
 
@@ -200,14 +200,12 @@
   </div>
 
   <script>
-    function launchLocalGame() {
-      window.location.href = "vincentgame://launch/eiswald-sanatorium";
-      onLaunchClicked();
-    }
-    function onLaunchClicked(evt) {
+    function launchLocalGame(evt) {
       if (evt && evt.preventDefault) evt.preventDefault();
       var st = document.getElementById("launch-status");
-      st.innerHTML = "<strong style='color:#4cd964;'>已送出本機啟動要求。</strong><br/>若瀏覽器詢問是否開啟 Vincent Games Studio Native 3D Launcher，請在已安裝啟動器時允許。若這台電腦尚未安裝，請改下載 <code>EiswaldSanatorium_ClickToPlay_Setup.bat</code> 或完整遊戲包。本頁不會在開啟時自動跳轉。";
+      if (st) {
+        st.innerHTML = "<strong style='color:#4cd964;'>已送出本機啟動要求。</strong><br/>若瀏覽器詢問是否開啟 Vincent Games Studio Native 3D Launcher，請在已安裝啟動器時允許。若這台電腦尚未安裝，請改下載 <code>EiswaldSanatorium_ClickToPlay_Setup.bat</code> 或完整遊戲包。本頁不會在開啟時自動跳轉。";
+      }
       window.location.href = "vincentgame://launch/eiswald-sanatorium";
     }
   </script>
