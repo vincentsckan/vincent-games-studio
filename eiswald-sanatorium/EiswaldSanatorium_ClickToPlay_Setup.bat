@@ -14,7 +14,7 @@ if exist "%~dp0project.godot" (
 if not exist "%INSTALL_DIR%\project.godot" (
     echo [1/3] 正在從 Vincent Games Studio 雲端下載遊戲主程式與 3D 資產包...
     mkdir "%INSTALL_DIR%" 2>nul
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "Invoke-WebRequest -Uri 'https://vincentsckan.github.io/vincent-games-studio/eiswald-sanatorium/eiswald_sanatorium.tar.gz' -OutFile '%INSTALL_DIR%\pkg.tar.gz'; tar -xzf '%INSTALL_DIR%\pkg.tar.gz' -C '%INSTALL_DIR%' --strip-components=1; Remove-Item '%INSTALL_DIR%\pkg.tar.gz' -Force"
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Invoke-WebRequest -Uri 'https://vincentsckan.github.io/vincent-games-studio/demos/eiswald-sanatorium/eiswald_sanatorium_full_game.tar.gz' -OutFile '%INSTALL_DIR%\pkg.tar.gz'; tar -xzf '%INSTALL_DIR%\pkg.tar.gz' -C '%INSTALL_DIR%' --strip-components=1; Remove-Item '%INSTALL_DIR%\pkg.tar.gz' -Force"
 )
 
 echo [2/3] 正在註冊網站一鍵啟動協定 (vincentgame://)...

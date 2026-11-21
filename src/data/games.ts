@@ -136,8 +136,8 @@ export const games: Game[] = [
     slug: 'eiswald-sanatorium',
     titleZh: '霧嶺療養院：白鴉之冬',
     titleEn: 'Eiswald Sanatorium: Winter of the White Crow',
-    taglineZh: '1991 年阿爾卑斯雪山孤立療養院——箱庭式立體解謎生存恐怖。瀏覽器直接進入主選單。',
-    taglineEn: '1991 Alpine sanatorium—Metroidvania-lite 3D survival horror. Opens the in-browser main menu.',
+    taglineZh: '1991 年阿爾卑斯雪山孤立療養院——箱庭式立體解謎生存恐怖。本機 3D 遊戲啟動中心。',
+    taglineEn: '1991 Alpine sanatorium—Metroidvania-lite 3D survival horror. Native 3D launch center and complete game pack.',
     dimension: '3D',
     status: 'demo',
     year: 2026,
@@ -147,9 +147,9 @@ export const games: Game[] = [
     hookEn:
       'Winter 1991. Investigator Vera Lindqvist arrives at the snowbound Eiswald Sanatorium in the Austrian Alps, only to find the fairytale resort overrun by Pale Ichor monstrosities and clockwork automata.',
     gameplayZh:
-      '致敬《Crow Country》箱庭式互聯結構（童話鎮中庭、鬧鬼山丘、海洋王國、地底挖掘場四大分區）。支援 45° 自由旋轉微縮視角、3D 雷射瞄準弱點暴擊、現代直覺與經典坦克雙操作（F4 切換）、算命機三階段提示與三大難度模式。試玩在瀏覽器打開主選單，選擇生存、探索或謀殺之鴉後進入療養院。',
+      '致敬《Crow Country》箱庭式互聯結構（童話鎮中庭、鬧鬼山丘、海洋王國、地底挖掘場四大分區）。支援 45° 自由旋轉微縮視角、3D 雷射瞄準弱點暴擊、現代直覺與經典坦克雙操作（F4 切換）、算命機三階段提示與三大難度模式。試玩開啟本機 3D 遊戲啟動中心，可下載含全部 18 個場景模型的完整 Godot 4.3 遊戲包，或以一鍵安裝程式在電腦上啟動。',
     gameplayEn:
-      'Crow Country-inspired interconnected Metroidvania-lite hub across 4 themed zones. 45° rotatable diorama camera, laser-sight weakpoint crits, Modern/Tank controls, Fortune Teller hints, and 3 difficulty modes. Play opens the in-browser main menu.',
+      'Crow Country-inspired interconnected Metroidvania-lite hub across 4 themed zones. 45° rotatable diorama camera, laser-sight weakpoint crits, Modern/Tank controls, Fortune Teller hints, and 3 difficulty modes. Play opens the native launch center, where you can download the complete Godot 4.3 pack (all 18 scene models) or the one-click installer.',
     features: [
       {
         titleZh: '箱庭式四大分區與捷徑',
@@ -164,10 +164,10 @@ export const games: Game[] = [
         bodyEn: 'Free 3D camera rotation and over-the-shoulder volumetric laser aiming with reticle focus criticals.',
       },
       {
-        titleZh: '瀏覽器主選單即開',
-        titleEn: 'In-browser main menu',
-        bodyZh: '試玩直接進入《霧嶺療養院：白鴉之冬》主選單，選擇難度與操作方式後開始探索。',
-        bodyEn: 'Play opens the Eiswald main menu so you can pick a difficulty and control scheme before exploring.',
+        titleZh: '本機 3D 啟動中心',
+        titleEn: 'Native 3D launch center',
+        bodyZh: '試玩進入《霧嶺療養院：白鴉之冬》啟動中心，下載完整遊戲包或一鍵安裝程式後，在本機 Godot 4.3 啟動原版遊戲。',
+        bodyEn: 'Play opens the Eiswald launch center. Download the complete pack or the one-click installer, then start the original game in Godot 4.3 on your PC.',
       },
     ],
     coverImage: 'covers/eiswald-sanatorium.png',
@@ -180,6 +180,7 @@ export const games: Game[] = [
     },
     links: {
       play: '/vincent-games-studio/demos/eiswald-sanatorium/',
+      download: '/vincent-games-studio/demos/eiswald-sanatorium/eiswald_sanatorium_full_game.tar.gz',
     },
   },
   {
