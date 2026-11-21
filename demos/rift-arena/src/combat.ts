@@ -1,8 +1,9 @@
 import { HEROES } from './heroes'
-import { moveWithCollision, SPAWN_P1, SPAWN_P2, lineHitsCover } from './arena'
+import { moveWithCollision, SPAWN_P1, SPAWN_P2, lineHitsCover, type CoverRect } from './arena'
+import { coversFor } from './maps'
 import { angleBetween, dist, norm } from './math'
 import type { Fighter, HeroId, MatchState, Projectile, Zone } from './types'
-import { KILLS_TO_WIN, RESPAWN_SEC } from './types'
+import { RESPAWN_SEC } from './types'
 
 let nextProjId = 1
 let nextZoneId = 1
@@ -43,7 +44,17 @@ export function makeFighter(
     isBot,
     kills: 0,
     chargeR: 0,
+    damageMul: 1,
   }
+}
+
+function activeCovers(state: MatchState): readonly CoverRect[] {
+  return coversFor(state.mapId)
+}
+
+export function syncWinner(state: MatchState): void {
+  if (state.p1Kills >= state.killsToWin) state.winner = 1
+  else if (state.p2Kills >= state.killsToWin) state.winner = 2
 }
 
 export function tickCooldowns(f: Fighter, dt: number, mul = 1): void {
@@ -70,6 +81,7 @@ function applyDamage(
   now: number,
 ): void {
   if (!target.alive) return
+  amount *= attacker.damageMul
   if (now < target.shieldUntil) amount *= 0.35
   target.hp -= amount
   if (target.hp <= 0) {
@@ -93,8 +105,7 @@ function killFighter(state: MatchState, victim: Fighter, killer: Fighter, now: n
     radius: 48,
   })
   state.screenShake = 0.35
-  if (state.p1Kills >= KILLS_TO_WIN) state.winner = 1
-  else if (state.p2Kills >= KILLS_TO_WIN) state.winner = 2
+  syncWinner(state)
 }
 
 export function respawnIfNeeded(f: Fighter, now: number): void {
@@ -177,7 +188,7 @@ export function castQ(state: MatchState, f: Fighter, aimX: number, aimY: number,
     const len = 680
     const ex = f.x + n.x * len
     const ey = f.y + n.y * len
-    if (!lineHitsCover(f.x, f.y, ex, ey)) {
+    if (!lineHitsCover(f.x, f.y, ex, ey, activeCovers(state))) {
       for (const t of state.fighters) {
         if (t.team === f.team || !t.alive) continue
         if (segmentNearPlayer(f.x, f.y, ex, ey, t.x, t.y, 36)) {
@@ -213,7 +224,7 @@ export function castE(state: MatchState, f: Fighter, aimX: number, aimY: number,
   }
   if (f.hero === 'xianming') {
     const n = norm(aimX - f.x, aimY - f.y)
-    const back = moveWithCollision(f.x - n.x * 140, f.y - n.y * 140, 0, 0)
+    const back = moveWithCollision(f.x - n.x * 140, f.y - n.y * 140, 0, 0, activeCovers(state))
     f.x = back.x
     f.y = back.y
     const n2 = norm(aimX - f.x, aimY - f.y)
@@ -320,7 +331,7 @@ export function tickProjectiles(state: MatchState, dt: number, now: number): voi
   for (const p of state.projectiles) {
     const nx = p.x + p.vx * dt
     const ny = p.y + p.vy * dt
-    if (lineHitsCover(p.x, p.y, nx, ny)) continue
+    if (lineHitsCover(p.x, p.y, nx, ny, activeCovers(state))) continue
     p.x = nx
     p.y = ny
     p.life -= dt

@@ -35,9 +35,19 @@ export async function preloadAll(): Promise<void> {
   const heroes: HeroId[] = ['pofeng', 'xianming', 'dingchao']
   const jobs: Promise<HTMLImageElement>[] = [loadImage(ARENA_BG), loadImage(TITLE_MOOD)]
   for (const h of heroes) {
-    jobs.push(loadImage(heroBust(h, 1)), loadImage(heroBust(h, 2)), loadImage(heroFull(h, 1)))
+    jobs.push(loadImage(heroBust(h, 1)), loadImage(heroBust(h, 2)))
   }
-  await Promise.all(jobs)
+  for (const h of heroes) {
+    jobs.push(loadImage(heroFull(h, 1)), loadImage(heroFull(h, 2)))
+  }
+  const settled = await Promise.allSettled(jobs)
+  const failed = settled.filter((r) => r.status === 'rejected') as PromiseRejectedResult[]
+  if (failed.length > 0) {
+    console.warn(
+      '[rift-arena] asset preload failures:',
+      failed.map((f) => String(f.reason)),
+    )
+  }
 }
 
 export function getCached(src: string): HTMLImageElement | undefined {

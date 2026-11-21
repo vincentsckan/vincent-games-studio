@@ -1,8 +1,17 @@
 import { ARENA_H, ARENA_W } from './types'
 import { circleRectHit, clamp, dist } from './math'
 
-/** Symmetric cover pillars (world coords). */
-export const COVER_RECTS: { x: number; y: number; w: number; h: number }[] = [
+export interface CoverRect {
+  x: number
+  y: number
+  w: number
+  h: number
+  /** Rift segments block sight the same way as stone, and draw as a cracked line. */
+  kind?: 'cover' | 'rift'
+}
+
+/** Practice-arena cover. Campaign maps live in maps.ts and must not replace this. */
+export const COVER_RECTS: CoverRect[] = [
   { x: 620, y: 420, w: 160, h: 90 },
   { x: 620, y: 540, w: 160, h: 90 },
   { x: 200, y: 350, w: 100, h: 140 },
@@ -25,10 +34,15 @@ export function clampToArena(x: number, y: number): { x: number; y: number } {
   }
 }
 
-export function resolveCircleCover(x: number, y: number, r: number): { x: number; y: number } {
+export function resolveCircleCover(
+  x: number,
+  y: number,
+  r: number,
+  covers: readonly CoverRect[] = COVER_RECTS,
+): { x: number; y: number } {
   let nx = x
   let ny = y
-  for (const c of COVER_RECTS) {
+  for (const c of covers) {
     if (circleRectHit(nx, ny, r, c.x, c.y, c.w, c.h)) {
       const cx = c.x + c.w / 2
       const cy = c.y + c.h / 2
@@ -48,13 +62,14 @@ export function moveWithCollision(
   y: number,
   dx: number,
   dy: number,
+  covers: readonly CoverRect[] = COVER_RECTS,
 ): { x: number; y: number } {
   let nx = x + dx
   let ny = y + dy
   const clamped = clampToArena(nx, ny)
   nx = clamped.x
   ny = clamped.y
-  return resolveCircleCover(nx, ny, PLAYER_R)
+  return resolveCircleCover(nx, ny, PLAYER_R, covers)
 }
 
 export function lineHitsCover(
@@ -62,8 +77,9 @@ export function lineHitsCover(
   y1: number,
   x2: number,
   y2: number,
+  covers: readonly CoverRect[] = COVER_RECTS,
 ): boolean {
-  for (const c of COVER_RECTS) {
+  for (const c of covers) {
     if (segmentRectHit(x1, y1, x2, y2, c.x, c.y, c.w, c.h)) return true
   }
   return false

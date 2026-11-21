@@ -1,9 +1,13 @@
 import { ARENA_BG, getCached, heroBust, heroFull, TITLE_MOOD } from './assets'
-import { COVER_RECTS } from './arena'
-import { HEROES, HERO_ORDER } from './heroes'
+import { fighterDrawSize } from './fighterSprite'
+import type { CoverRect } from './arena'
+import { isStageEnterable, nextEnterableStage } from './campaign'
+import { HEROES } from './heroes'
+import { coversFor } from './maps'
 import { clamp, dist, lerp } from './math'
-import type { Fighter, GamePhase, HeroId, MatchState } from './types'
-import { ARENA_H, ARENA_W, KILLS_TO_WIN } from './types'
+import { stageById, STAGES, tierLabel, winLabel } from './stages'
+import type { Fighter, GamePhase, HeroId, MapId, MatchState } from './types'
+import { ARENA_H, ARENA_W } from './types'
 
 export interface Camera {
   x: number
@@ -45,7 +49,15 @@ export function computeCamera(cw: number, ch: number, focus?: Fighter): Camera {
   }
 }
 
-function drawArena(ctx: CanvasRenderingContext2D, cam: Camera, cw: number, ch: number, shake: number): void {
+function drawArena(
+  ctx: CanvasRenderingContext2D,
+  cam: Camera,
+  cw: number,
+  ch: number,
+  shake: number,
+  covers: readonly CoverRect[],
+  mapId: MapId,
+): void {
   const bg = getCached(ARENA_BG)
   const ox = (Math.random() - 0.5) * shake * 12
   const oy = (Math.random() - 0.5) * shake * 12
@@ -53,21 +65,63 @@ function drawArena(ctx: CanvasRenderingContext2D, cam: Camera, cw: number, ch: n
   ctx.translate(ox, oy)
   const tl = worldToScreen(cam, 0, 0, cw, ch)
   const br = worldToScreen(cam, ARENA_W, ARENA_H, cw, ch)
-  if (bg) {
-    ctx.drawImage(bg, tl.x, tl.y, br.x - tl.x, br.y - tl.y)
+  const w = br.x - tl.x
+  const h = br.y - tl.y
+  const practice = mapId === 'practice'
+  if (practice && bg) {
+    ctx.drawImage(bg, tl.x, tl.y, w, h)
   } else {
-    ctx.fillStyle = '#1a2438'
-    ctx.fillRect(tl.x, tl.y, br.x - tl.x, br.y - tl.y)
+    ctx.fillStyle = '#101624'
+    ctx.fillRect(tl.x, tl.y, w, h)
+    const cx = tl.x + w / 2
+    const cy = tl.y + h / 2
+    const rad = Math.min(w, h) * 0.11
+    ctx.strokeStyle = 'rgba(125,211,252,0.4)'
+    ctx.lineWidth = 2
+    ctx.beginPath()
+    ctx.arc(cx, cy, rad, 0, Math.PI * 2)
+    ctx.stroke()
+    ctx.beginPath()
+    ctx.arc(cx, cy, rad * 0.28, 0, Math.PI * 2)
+    ctx.stroke()
   }
-  ctx.strokeStyle = '#334155'
   ctx.lineWidth = 3
-  ctx.strokeRect(tl.x, tl.y, br.x - tl.x, br.y - tl.y)
-  for (const c of COVER_RECTS) {
+  if (practice) {
+    ctx.strokeStyle = '#334155'
+    ctx.strokeRect(tl.x, tl.y, w, h)
+  } else {
+    ctx.strokeStyle = '#22d3ee'
+    ctx.beginPath()
+    ctx.moveTo(tl.x, br.y)
+    ctx.lineTo(tl.x, tl.y)
+    ctx.lineTo(tl.x + w / 2, tl.y)
+    ctx.moveTo(tl.x, br.y)
+    ctx.lineTo(tl.x + w / 2, br.y)
+    ctx.stroke()
+    ctx.strokeStyle = '#e879f9'
+    ctx.beginPath()
+    ctx.moveTo(tl.x + w / 2, tl.y)
+    ctx.lineTo(br.x, tl.y)
+    ctx.lineTo(br.x, br.y)
+    ctx.lineTo(tl.x + w / 2, br.y)
+    ctx.stroke()
+  }
+  for (const c of covers) {
     const a = worldToScreen(cam, c.x, c.y, cw, ch)
     const b = worldToScreen(cam, c.x + c.w, c.y + c.h, cw, ch)
-    ctx.fillStyle = 'rgba(15,23,42,0.55)'
+    const rift = c.kind === 'rift'
+    const cyan = c.x < ARENA_W / 2
+    if (rift) {
+      ctx.fillStyle = cyan ? 'rgba(34,211,238,0.35)' : 'rgba(232,121,249,0.35)'
+      ctx.strokeStyle = cyan ? '#22d3ee' : '#e879f9'
+    } else if (practice) {
+      ctx.fillStyle = 'rgba(15,23,42,0.55)'
+      ctx.strokeStyle = '#64748b'
+    } else {
+      ctx.fillStyle = '#243044'
+      ctx.strokeStyle = '#94a3b8'
+    }
     ctx.fillRect(a.x, a.y, b.x - a.x, b.y - a.y)
-    ctx.strokeStyle = '#64748b'
     ctx.strokeRect(a.x, a.y, b.x - a.x, b.y - a.y)
   }
   ctx.restore()
@@ -83,20 +137,18 @@ function drawFighter(
 ): void {
   if (!f.alive) return
   const p = worldToScreen(cam, f.x, f.y, cw, ch)
-  const full = getCached(heroFull(f.hero, f.team))
+  const spriteKey = heroFull(f.hero, f.team)
+  const full = getCached(spriteKey)
   const r = 38 * cam.scale
   ctx.save()
   ctx.translate(p.x, p.y)
-  if (full) {
-    const aspect = full.naturalWidth / full.naturalHeight
-    const h = r * 2.2
-    const w = h * aspect * 0.45
+  if (full?.naturalWidth && full.naturalHeight) {
+    const { w, h } = fighterDrawSize(full.naturalWidth, full.naturalHeight, cam.scale)
     ctx.globalAlpha = now < f.shieldUntil ? 0.85 : 1
-    if (f.team === 2) ctx.filter = 'none'
-    ctx.drawImage(full, -w / 2, -h * 0.95, w, h)
-    ctx.filter = 'none'
+    ctx.drawImage(full, -w / 2, -h, w, h)
     ctx.globalAlpha = 1
   } else {
+    console.warn('[rift-arena] missing in-arena sprite', spriteKey, f.hero, 'team', f.team)
     ctx.fillStyle = f.team === 1 ? '#2dd4bf' : '#e879f9'
     ctx.beginPath()
     ctx.arc(0, 0, r * 0.7, 0, Math.PI * 2)
@@ -159,25 +211,36 @@ function drawHud(ctx: CanvasRenderingContext2D, cw: number, state: MatchState): 
   ctx.save()
   ctx.font = '700 15px "Noto Sans TC", system-ui'
   ctx.fillStyle = '#e2e8f0'
-  ctx.fillText(`先 ${KILLS_TO_WIN} 殺`, 18, 32)
+  ctx.textAlign = 'left'
+  if (state.mode === 'campaign' && state.stageId) {
+    const stage = stageById(state.stageId)
+    ctx.fillText(`第 ${stage.id} 關 ${stage.name}`, 18, 28)
+    ctx.fillStyle = '#94a3b8'
+    ctx.fillText(`先 ${state.killsToWin} 殺 · 對手 ${tierLabel(stage.enemyTier)}`, 18, 48)
+    ctx.textAlign = 'left'
+  } else {
+    ctx.fillText(`先 ${state.killsToWin} 殺`, 18, 32)
+  }
+  const killY = state.mode === 'campaign' ? 70 : 54
   ctx.fillStyle = '#5eead4'
-  ctx.fillText(`P1 ${state.p1Kills}`, 18, 54)
+  ctx.fillText(`P1 ${state.p1Kills}`, 18, killY)
   ctx.fillStyle = '#f472b6'
   ctx.textAlign = 'right'
-  ctx.fillText(`P2 ${state.p2Kills}`, cw - 18, 54)
+    ctx.fillText(`P2 ${state.p2Kills}`, cw - 18, killY)
   ctx.textAlign = 'left'
   const p1 = state.fighters.find((f) => f.team === 1)
   const p2 = state.fighters.find((f) => f.team === 2)
+  const respawnY = killY + 22
   if (p1 && !p1.alive) {
     const left = Math.max(0, p1.respawnAt - performance.now() / 1000)
     ctx.fillStyle = '#94a3b8'
-    ctx.fillText(`重生 ${left.toFixed(1)}s`, 18, 76)
+    ctx.fillText(`重生 ${left.toFixed(1)}s`, 18, respawnY)
   }
   if (p2 && !p2.alive) {
     const left = Math.max(0, p2.respawnAt - performance.now() / 1000)
     ctx.fillStyle = '#94a3b8'
     ctx.textAlign = 'right'
-    ctx.fillText(`Bot 重生 ${left.toFixed(1)}s`, cw - 18, 76)
+    ctx.fillText(`Bot 重生 ${left.toFixed(1)}s`, cw - 18, respawnY)
   }
   ctx.restore()
 }
@@ -207,7 +270,8 @@ function drawCooldowns(ctx: CanvasRenderingContext2D, cw: number, ch: number, f:
 
 export interface MenuHit {
   hero?: HeroId
-  action?: 'start' | 'diffNormal' | 'diffHard' | 'rematch' | 'title'
+  stageId?: number
+  action?: 'practice' | 'campaign' | 'diffNormal' | 'diffHard' | 'rematch' | 'title' | 'back' | 'next' | 'stages'
 }
 
 export function drawOverlay(
@@ -225,9 +289,9 @@ export function drawOverlay(
   if (phase === 'title') {
     const mood = getCached(TITLE_MOOD)
     const mw = Math.min(cw * 0.88, 720)
-    const mh = mw * 0.56
+    const my = Math.min(ch * 0.06, 36)
+    const mh = Math.min(mw * 0.5, Math.max(120, ch * 0.4))
     const mx = (cw - mw) / 2
-    const my = ch * 0.12
     if (mood) ctx.drawImage(mood, mx, my, mw, mh)
     ctx.textAlign = 'center'
     ctx.font = '800 36px Syne, system-ui'
@@ -236,39 +300,50 @@ export function drawOverlay(
     ctx.font = '600 14px "Noto Sans TC"'
     ctx.fillStyle = '#94a3b8'
     ctx.fillText('Rift Arena · 1v1 技能決鬥', cw / 2, my + mh + 72)
-    const bx = cw / 2 - 100
-    const by = ch - 120
-    const btn = pointInRect(hover.x, hover.y, bx, by, 200, 48)
-    ctx.fillStyle = btn ? '#14b8a6' : '#0d9488'
-    roundRect(ctx, bx, by, 200, 48, 24)
-    ctx.fill()
-    ctx.fillStyle = '#fff'
-    ctx.font = '800 16px "Noto Sans TC"'
-    ctx.fillText('開始', cw / 2, by + 31)
-    if (btn) hit = { action: 'start' }
+    const practiceY = ch - 120
+    if (menuButton(ctx, hover, cw / 2 - 100, practiceY, 200, 48, '自由對練', '#0d9488', '#14b8a6')) {
+      hit = { action: 'practice' }
+    }
+    if (menuButton(ctx, hover, cw / 2 - 100, practiceY - 64, 200, 48, '戰役', '#115e59', '#0f766e')) {
+      hit = { action: 'campaign' }
+    }
+    return hit
+  }
+
+  if (phase === 'campaign') {
+    hit = drawCampaign(ctx, cw, ch, state, hover)
     return hit
   }
 
   if (phase === 'heroSelect') {
+    const allowed = selectableHeroes(state)
     ctx.textAlign = 'center'
     ctx.font = '800 28px Syne'
     ctx.fillStyle = '#f8fafc'
     ctx.fillText('選擇英雄', cw / 2, 56)
+    if (state.mode === 'campaign' && state.stageId) {
+      const stage = stageById(state.stageId)
+      ctx.font = '600 15px "Noto Sans TC"'
+      ctx.fillStyle = '#5eead4'
+      const guide = stage.guidedHero ? `本關引導：${HEROES[stage.guidedHero].nameZh}` : '三人可選'
+      ctx.fillText(`第 ${stage.id} 關 ${stage.name} · ${winLabel(stage)} · ${guide}`, cw / 2, 88)
+    }
     const cardW = Math.min(220, (cw - 80) / 3)
     const gap = 16
-    const total = cardW * 3 + gap * 2
+    const total = cardW * allowed.length + gap * Math.max(0, allowed.length - 1)
     const startX = (cw - total) / 2
-    HERO_ORDER.forEach((id, i) => {
+    const y = ch * 0.22
+    const h = ch * 0.52
+    allowed.forEach((id, i) => {
       const def = HEROES[id]
       const x = startX + i * (cardW + gap)
-      const y = ch * 0.22
-      const h = ch * 0.52
       const over = pointInRect(hover.x, hover.y, x, y, cardW, h)
+      const guided = state.mode === 'campaign' && state.stageId && stageById(state.stageId).guidedHero === id
       ctx.fillStyle = over ? '#1e3a5f' : '#0f172a'
       roundRect(ctx, x, y, cardW, h, 16)
       ctx.fill()
-      ctx.strokeStyle = state.playerHero === id ? '#5eead4' : '#334155'
-      ctx.lineWidth = state.playerHero === id ? 3 : 1
+      ctx.strokeStyle = guided ? '#5eead4' : '#334155'
+      ctx.lineWidth = guided ? 3 : 1
       ctx.stroke()
       const bust = getCached(heroBust(id, 1))
       if (bust) {
@@ -284,6 +359,9 @@ export function drawOverlay(
       ctx.fillText(def.role, x + cardW / 2, y + h - 32)
       if (over) hit = { hero: id }
     })
+    if (menuButton(ctx, hover, 24, ch - 64, 120, 40, '返回', '#1e293b', '#334155')) {
+      hit = { action: 'back' }
+    }
     return hit
   }
 
@@ -308,6 +386,9 @@ export function drawOverlay(
       ctx.fillText(o.label, cw / 2, o.y + 31)
       if (over) hit = { action: o.key }
     }
+    if (menuButton(ctx, hover, 24, ch - 64, 120, 40, '返回', '#1e293b', '#334155')) {
+      hit = { action: 'back' }
+    }
     return hit
   }
 
@@ -316,27 +397,128 @@ export function drawOverlay(
     const win = state.winner === 1
     ctx.font = '800 32px Syne'
     ctx.fillStyle = win ? '#5eead4' : '#f472b6'
-    ctx.fillText(win ? '勝利！' : '落敗', cw / 2, ch * 0.32)
+    ctx.fillText(win ? '勝利！' : '落敗', cw / 2, ch * 0.28)
     ctx.font = '600 16px "Noto Sans TC"'
     ctx.fillStyle = '#cbd5e1'
-    ctx.fillText(`${state.p1Kills} — ${state.p2Kills} 殺`, cw / 2, ch * 0.38)
-    const btns = [
-      { act: 'rematch' as const, label: '再戰', y: ch * 0.48 },
-      { act: 'title' as const, label: '返回標題', y: ch * 0.58 },
-    ]
+    const stage = state.mode === 'campaign' && state.stageId ? stageById(state.stageId) : null
+    const rule = stage ? winLabel(stage) : `先 ${state.killsToWin} 殺`
+    ctx.fillText(`${state.p1Kills} — ${state.p2Kills} 殺 · ${rule}`, cw / 2, ch * 0.35)
+    const nextStage =
+      win && stage ? nextEnterableStage(stage.id, { cleared: state.campaignCleared }) : null
+    if (stage && win && !nextStage) {
+      ctx.fillStyle = '#94a3b8'
+      ctx.font = '600 14px "Noto Sans TC"'
+      ctx.fillText(stage.id === 20 ? '裂空擂台戰役完成。' : '下一關尚未開放。', cw / 2, ch * 0.41)
+    } else if (stage && win && nextStage && nextStage.id !== stage.id + 1) {
+      ctx.fillStyle = '#94a3b8'
+      ctx.font = '600 14px "Noto Sans TC"'
+      ctx.fillText(`第 ${stage.id + 1} 關尚未開放。下一關是第 ${nextStage.id} 關。`, cw / 2, ch * 0.41)
+    }
+    const btns: { act: NonNullable<MenuHit['action']>; label: string; y: number }[] = []
+    const nextOk = Boolean(nextStage)
+    if (nextOk) btns.push({ act: 'next', label: '下一關', y: ch * 0.46 })
+    btns.push({ act: 'rematch', label: '再戰', y: nextOk ? ch * 0.56 : ch * 0.48 })
+    if (state.mode === 'campaign') btns.push({ act: 'stages', label: '返回關卡', y: nextOk ? ch * 0.66 : ch * 0.58 })
+    else btns.push({ act: 'title', label: '返回標題', y: ch * 0.58 })
     for (const b of btns) {
-      const w = 200
-      const x = cw / 2 - w / 2
-      const over = pointInRect(hover.x, hover.y, x, b.y, w, 48)
-      ctx.fillStyle = over ? '#0d9488' : '#115e59'
-      roundRect(ctx, x, b.y, w, 48, 12)
-      ctx.fill()
-      ctx.fillStyle = '#fff'
-      ctx.fillText(b.label, cw / 2, b.y + 31)
-      if (over) hit = { action: b.act }
+      if (menuButton(ctx, hover, cw / 2 - 100, b.y, 200, 48, b.label, '#115e59', '#0d9488')) {
+        hit = { action: b.act }
+      }
     }
   }
   return hit
+}
+
+function selectableHeroes(state: MatchState): HeroId[] {
+  if (state.mode === 'campaign' && state.stageId) return [...stageById(state.stageId).heroes]
+  return ['pofeng', 'xianming', 'dingchao']
+}
+
+function drawCampaign(
+  ctx: CanvasRenderingContext2D,
+  cw: number,
+  ch: number,
+  state: MatchState,
+  hover: { x: number; y: number },
+): MenuHit | null {
+  ctx.textAlign = 'center'
+  ctx.font = '800 28px "Noto Sans TC", system-ui'
+  ctx.fillStyle = '#f0fdfa'
+  ctx.fillText('裂空擂台 · 戰役', cw / 2, 42)
+  ctx.font = '600 13px "Noto Sans TC"'
+  ctx.fillStyle = '#94a3b8'
+  ctx.fillText('順序通關解鎖。第 13 關限時對決尚未開放。', cw / 2, 68)
+
+  const cols = 5
+  const gap = 10
+  const top = 88
+  const side = 28
+  const bottom = 72
+  const gridW = cw - side * 2
+  const gridH = Math.max(160, ch - top - bottom)
+  const cellW = (gridW - gap * (cols - 1)) / cols
+  const cellH = (gridH - gap * 3) / 4
+  let hit: MenuHit | null = null
+  const progress = { cleared: state.campaignCleared }
+
+  STAGES.forEach((stage, i) => {
+    const col = i % cols
+    const row = Math.floor(i / cols)
+    const x = side + col * (cellW + gap)
+    const y = top + row * (cellH + gap)
+    const enterable = isStageEnterable(stage, progress)
+    const cleared = progress.cleared.includes(stage.id)
+    const over = enterable && pointInRect(hover.x, hover.y, x, y, cellW, cellH)
+    ctx.fillStyle = over ? '#134e4a' : enterable ? '#0f172a' : '#111827'
+    roundRect(ctx, x, y, cellW, cellH, 10)
+    ctx.fill()
+    ctx.strokeStyle = cleared ? '#5eead4' : enterable ? '#0f766e' : '#1f2937'
+    ctx.lineWidth = cleared ? 2 : 1
+    ctx.stroke()
+    ctx.fillStyle = enterable ? '#e2e8f0' : '#64748b'
+    ctx.font = '800 13px "Noto Sans TC"'
+    ctx.fillText(`${stage.id} ${stage.name}`, x + cellW / 2, y + cellH * 0.38)
+    ctx.font = '600 12px "Noto Sans TC"'
+    ctx.fillStyle = '#94a3b8'
+    const status = !stage.playable
+      ? stage.win.kind === 'time'
+        ? '限時未開放'
+        : '未開放'
+      : cleared
+        ? '已通關'
+        : enterable
+          ? '可進入'
+          : '未解鎖'
+    ctx.fillText(`${winLabel(stage)} · ${status}`, x + cellW / 2, y + cellH * 0.68)
+    if (over) hit = { stageId: stage.id }
+  })
+
+  if (menuButton(ctx, hover, cw / 2 - 70, ch - 56, 140, 40, '返回', '#1e293b', '#334155')) {
+    hit = { action: 'back' }
+  }
+  return hit
+}
+
+function menuButton(
+  ctx: CanvasRenderingContext2D,
+  hover: { x: number; y: number },
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  label: string,
+  fill: string,
+  hoverFill: string,
+): boolean {
+  const over = pointInRect(hover.x, hover.y, x, y, w, h)
+  ctx.fillStyle = over ? hoverFill : fill
+  roundRect(ctx, x, y, w, h, 12)
+  ctx.fill()
+  ctx.fillStyle = '#fff'
+  ctx.font = '800 16px "Noto Sans TC"'
+  ctx.textAlign = 'center'
+  ctx.fillText(label, x + w / 2, y + h / 2 + 6)
+  return over
 }
 
 function pointInRect(px: number, py: number, x: number, y: number, w: number, h: number): boolean {
@@ -363,7 +545,7 @@ export function renderMatch(
   const player = state.fighters.find((f) => f.team === 1)
   const cam = computeCamera(cw, ch, player)
   ctx.clearRect(0, 0, cw, ch)
-  drawArena(ctx, cam, cw, ch, state.screenShake)
+  drawArena(ctx, cam, cw, ch, state.screenShake, coversFor(state.mapId), state.mapId)
   drawWorldFx(ctx, cam, cw, ch, state)
   for (const f of state.fighters) drawFighter(ctx, cam, cw, ch, f, now)
   drawHud(ctx, cw, state)
