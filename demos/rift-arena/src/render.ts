@@ -1,4 +1,6 @@
+import { isAuthorTestCoverPassive } from './authorTest'
 import { ARENA_BG, getCached, heroBust, heroFull, TITLE_MOOD } from './assets'
+import { fighterDrawSize } from './fighterSprite'
 import { COVER_RECTS } from './arena'
 import { HEROES, HERO_ORDER } from './heroes'
 import { clamp, dist, lerp } from './math'
@@ -37,12 +39,31 @@ export function screenToWorld(
 }
 
 export function computeCamera(cw: number, ch: number, focus?: Fighter): Camera {
-  const scale = Math.min(cw / ARENA_W, ch / ARENA_H) * 0.92
-  return {
-    x: focus?.x ?? ARENA_W / 2,
-    y: focus?.y ?? ARENA_H / 2,
-    scale,
+  const fitScale = Math.min(cw / ARENA_W, ch / ARENA_H) * 0.92
+  const fx = focus?.x ?? ARENA_W / 2
+  const fy = focus?.y ?? ARENA_H / 2
+
+  if (!isAuthorTestCoverPassive()) {
+    return { x: fx, y: fy, scale: fitScale }
   }
+
+  const followScale = Math.max(cw / ARENA_W, ch / ARENA_H) * 1.08
+  const scale = followScale
+  const halfW = cw / (2 * scale)
+  const halfH = ch / (2 * scale)
+  let x = fx
+  let y = fy
+  if (halfW < ARENA_W / 2) {
+    x = clamp(x, halfW, ARENA_W - halfW)
+  } else {
+    x = ARENA_W / 2
+  }
+  if (halfH < ARENA_H / 2) {
+    y = clamp(y, halfH, ARENA_H - halfH)
+  } else {
+    y = ARENA_H / 2
+  }
+  return { x, y, scale }
 }
 
 function drawArena(ctx: CanvasRenderingContext2D, cam: Camera, cw: number, ch: number, shake: number): void {
@@ -83,27 +104,41 @@ function drawFighter(
 ): void {
   if (!f.alive) return
   const p = worldToScreen(cam, f.x, f.y, cw, ch)
-  const full = getCached(heroFull(f.hero, f.team))
+  const spriteKey = heroFull(f.hero, f.team)
+  const full = getCached(spriteKey)
   const r = 38 * cam.scale
+  let spriteH = r * 2.2
+  if (full?.naturalWidth && full.naturalHeight) {
+    spriteH = fighterDrawSize(full.naturalWidth, full.naturalHeight, cam.scale).h
+  }
+  const barW = 56 * cam.scale
+  const barH = 5 * cam.scale
+  const bx = p.x - barW / 2
+  const by = p.y - spriteH - barH - 4 * cam.scale
+  ctx.fillStyle = '#0f172a'
+  ctx.fillRect(bx, by, barW, barH)
+  ctx.fillStyle = f.team === 1 ? '#14b8a6' : '#db2777'
+  ctx.fillRect(bx, by, barW * clamp(f.hp / f.maxHp, 0, 1), barH)
+
   ctx.save()
   ctx.translate(p.x, p.y)
-  if (full) {
-    const aspect = full.naturalWidth / full.naturalHeight
-    const h = r * 2.2
-    const w = h * aspect * 0.45
+  ctx.imageSmoothingEnabled = true
+  ctx.imageSmoothingQuality = 'high'
+  if (full?.naturalWidth && full.naturalHeight) {
+    const { w, h } = fighterDrawSize(full.naturalWidth, full.naturalHeight, cam.scale)
+    spriteH = h
     ctx.globalAlpha = now < f.shieldUntil ? 0.85 : 1
-    if (f.team === 2) ctx.filter = 'none'
-    ctx.drawImage(full, -w / 2, -h * 0.95, w, h)
-    ctx.filter = 'none'
+    ctx.drawImage(full, -w / 2, -h, w, h)
     ctx.globalAlpha = 1
   } else {
+    console.warn('[rift-arena] missing in-arena sprite', spriteKey, f.hero, 'team', f.team)
     ctx.fillStyle = f.team === 1 ? '#2dd4bf' : '#e879f9'
     ctx.beginPath()
     ctx.arc(0, 0, r * 0.7, 0, Math.PI * 2)
     ctx.fill()
   }
   ctx.strokeStyle = f.team === 1 ? '#5eead4' : '#f472b6'
-  ctx.lineWidth = 2
+  ctx.lineWidth = Math.max(1, 2 * cam.scale)
   ctx.beginPath()
   ctx.moveTo(0, 0)
   ctx.lineTo(Math.cos(f.angle) * r, Math.sin(f.angle) * r)
@@ -116,13 +151,6 @@ function drawFighter(
     ctx.stroke()
   }
   ctx.restore()
-  const barW = 56 * cam.scale
-  const bx = p.x - barW / 2
-  const by = p.y - r * 1.35
-  ctx.fillStyle = '#0f172a'
-  ctx.fillRect(bx, by, barW, 5 * cam.scale)
-  ctx.fillStyle = f.team === 1 ? '#14b8a6' : '#db2777'
-  ctx.fillRect(bx, by, barW * clamp(f.hp / f.maxHp, 0, 1), 5 * cam.scale)
 }
 
 function drawWorldFx(ctx: CanvasRenderingContext2D, cam: Camera, cw: number, ch: number, state: MatchState): void {
